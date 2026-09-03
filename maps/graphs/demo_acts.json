@@ -1,0 +1,131 @@
+{
+  "name": "SIH26168 Nodal Campus demo acts",
+  "origin": {
+    "lat": 12.9912,
+    "lon": 77.5523,
+    "alt": 920
+  },
+  "act1": [
+    "gate",
+    "quad",
+    "ramp_top",
+    "ramp_bot",
+    "g_sw",
+    "g_se",
+    "g_ne",
+    "g_nw",
+    "ramp_bot",
+    "ramp_top",
+    "quad",
+    "xmark"
+  ],
+  "act2": [
+    "gate",
+    "xmark",
+    "loop_e",
+    "loop_s",
+    "loop_w",
+    "gate",
+    "quad",
+    "round_n",
+    "round_e",
+    "round_s",
+    "round_w",
+    "round_n",
+    "quad",
+    "xmark",
+    "gate"
+  ],
+  "act3": [
+    "quad",
+    "portal_in",
+    "tun_mid",
+    "portal_out",
+    "exit_true"
+  ],
+  "act4": [
+    "round_n",
+    "j25",
+    "j25a",
+    "j15",
+    "j15a"
+  ],
+  "act5": [
+    "gate",
+    "xmark",
+    "loop_e",
+    "loop_s",
+    "loop_w",
+    "gate",
+    "quad",
+    "round_n",
+    "round_e",
+    "round_s",
+    "round_w",
+    "round_n",
+    "quad",
+    "xmark",
+    "gate"
+  ],
+  "act1_handoff": [
+    "gate",
+    "quad",
+    "ramp_top",
+    "ramp_bot",
+    "g_sw",
+    "g_se",
+    "g_ne",
+    "g_nw",
+    "ramp_bot",
+    "ramp_top",
+    "quad",
+    "xmark"
+  ],
+  "act2_bicycle": [
+    "gate",
+    "xmark",
+    "loop_e",
+    "loop_s",
+    "loop_w",
+    "gate",
+    "quad",
+    "round_n",
+    "round_e",
+    "round_s",
+    "round_w",
+    "round_n",
+    "quad",
+    "xmark",
+    "gate"
+  ],
+  "act3_tunnel": [
+    "quad",
+    "portal_in",
+    "tun_mid",
+    "portal_out",
+    "exit_true"
+  ],
+  "act4_branch25": [
+    "round_n",
+    "j25",
+    "j25a"
+  ],
+  "act4_branch15": [
+    "j25",
+    "j15",
+    "j15a"
+  ],
+  "act4_branch8": [
+    "j15",
+    "j8",
+    "j8a"
+  ],
+  "garage_wrong_ramp": [
+    "g_fork",
+    "g_ne"
+  ],
+  "garage_true_ramp": [
+    "g_fork",
+    "g_se"
+  ]
+}

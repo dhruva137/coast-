@@ -1,0 +1,40 @@
+{
+  "finding": "F10",
+  "name": "exp10_junction",
+  "rows": [
+    {
+      "fork_half_deg": 25.0,
+      "degrades_above_deg": 26.0,
+      "bible_degrades_above_deg": 30
+    },
+    {
+      "fork_half_deg": 15.0,
+      "degrades_above_deg": 16.0,
+      "bible_degrades_above_deg": 20
+    },
+    {
+      "fork_half_deg": 8.0,
+      "degrades_above_deg": 8.0,
+      "bible_degrades_above_deg": 10
+    }
+  ],
+  "garage_no_speed_err_pct": 70.8875,
+  "garage_10pct_speed_err_pct": 25.875,
+  "bible_garage_good_pct": 75.0,
+  "bible_garage_collapse_pct": 25.0,
+  "bible": {
+    "forks_deg": [
+      25,
+      15,
+      8
+    ],
+    "degrade_above_deg": [
+      30,
+      20,
+      10
+    ],
+    "garage_good_pct": 75.0,
+    "garage_collapse_pct": 25.0
+  },
+  "seed": 26168
+}

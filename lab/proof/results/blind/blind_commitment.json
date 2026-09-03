@@ -1,0 +1,41 @@
+{
+  "phase": "COMMITTED_BEFORE_ESTIMATION",
+  "created_utc": "2026-09-03T22:10:18.120172Z",
+  "selection": {
+    "protocol": "SIH26168-blind-outage-v2-corrected-axis-segmented",
+    "seed": 26168,
+    "data_class": "real-car/IO-VNBD",
+    "source_relpath": "data/raw/IO-VNBD/Synchronised V abd S datasets/Categorised IOVNB Dataset/S (Driver A)/S4/S-S4.csv",
+    "source_sha256": "a2bb1e1eb28d111f84963240c54b790f32366f6c5b09dff1713770b52d3f5616",
+    "source_session": "S-S4.csv#session-3",
+    "source_session_index": 2,
+    "source_session_sample_range": [
+      90967,
+      94600
+    ],
+    "start_index": 1720,
+    "end_index_exclusive": 2320,
+    "source_start_index": 92687,
+    "source_end_index_exclusive": 93287,
+    "start_time_s": 172.001,
+    "requested_duration_s": 60.0,
+    "estimator": "bias-calibrated constant-speed gyro/lean DR; no map",
+    "covariance_model": "isotropic sigma_m=3+1*t; chi2(2) 95% radius",
+    "axis_mapping": {
+      "vehicle_gx": "gyro_roll_raw",
+      "vehicle_gy": "gyro_yaw_raw",
+      "vehicle_gz_yaw": "-gyro_pitch_raw",
+      "yaw_validation": "ALIGNMENT_REPORT.md PASS_ALIGNMENT",
+      "horizontal_completion_observable": false
+    },
+    "segmentation": {
+      "dt_nonpositive": true,
+      "max_gap_s": 5.0,
+      "max_coord_speed_mps": 80.0,
+      "absolute_jump_m": 1000.0,
+      "min_duration_s": 55.0,
+      "min_distance_m": 100.0
+    }
+  },
+  "commitment_sha256": "91ba6b06e63dc7bf7c03600348e9aee158ef41fdda981e6261fc093d12050aa8"
+}

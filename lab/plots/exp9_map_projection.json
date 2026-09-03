@@ -1,0 +1,32 @@
+{
+  "finding": "F9",
+  "name": "exp9_map_projection",
+  "D_m": 535.0,
+  "segment_m": 47.0,
+  "rows": [
+    {
+      "heading_err_deg": 10,
+      "raw_m": 93.25664473999424,
+      "proj_m": 0.714035608426223,
+      "killed_pct": 99.23433272726355,
+      "bible": {
+        "raw_m": 93.4,
+        "proj_m": 0.7,
+        "killed_pct": 99.3
+      }
+    },
+    {
+      "heading_err_deg": 30,
+      "raw_m": 276.93637825969716,
+      "proj_m": 6.29680602213138,
+      "killed_pct": 97.72626259442646,
+      "bible": {
+        "raw_m": 276.1,
+        "proj_m": 6.3,
+        "killed_pct": 97.7
+      }
+    }
+  ],
+  "seed": 26168,
+  "note": "Raw error = 2 D sin(\u03b1/2). Residual after centreline snap = L_seg (1\u2212cos \u03b1)."
+}

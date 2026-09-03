@@ -1,0 +1,2157 @@
+{
+  "type": "FeatureCollection",
+  "name": "SIH26168 Nodal Campus",
+  "crs": {
+    "type": "name",
+    "properties": {
+      "name": "urn:ogc:def:crs:OGC:1.3:CRS84"
+    }
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "gate_quad",
+        "from": "gate",
+        "to": "quad",
+        "heading_deg": 26.476638876089964,
+        "length_m": 89.77983089518159,
+        "tunnel": false,
+        "garage": false,
+        "light_spacing_m": null,
+        "grade": 0,
+        "lanes": 1,
+        "kind": "outdoor",
+        "kinds": [
+          "outdoor",
+          "outdoor"
+        ],
+        "style": "outdoor"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.5523,
+            12.9912,
+            920
+          ],
+          [
+            77.55266870269425,
+            12.991923128505892,
+            920
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "quad_x",
+        "from": "quad",
+        "to": "xmark",
+        "heading_deg": 180,
+        "length_m": 60.2725367964305,
+        "tunnel": false,
+        "garage": false,
+        "light_spacing_m": null,
+        "grade": 0,
+        "lanes": 1,
+        "kind": "outdoor",
+        "kinds": [
+          "outdoor",
+          "outdoor"
+        ],
+        "style": "outdoor"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.55266870269425,
+            12.991923128505892,
+            920
+          ],
+          [
+            77.55266870269425,
+            12.991380782126472,
+            920
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "x_gate",
+        "from": "xmark",
+        "to": "gate",
+        "heading_deg": 243.34631468401142,
+        "length_m": 44.78598608856884,
+        "tunnel": false,
+        "garage": false,
+        "light_spacing_m": null,
+        "grade": 0,
+        "lanes": 1,
+        "kind": "outdoor",
+        "kinds": [
+          "outdoor",
+          "outdoor"
+        ],
+        "style": "outdoor"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.55266870269425,
+            12.991380782126472,
+            920
+          ],
+          [
+            77.5523,
+            12.9912,
+            920
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "quad_ramp",
+        "from": "quad",
+        "to": "ramp_top",
+        "heading_deg": 90,
+        "length_m": 50.03335567649497,
+        "tunnel": false,
+        "garage": false,
+        "light_spacing_m": null,
+        "grade": 0,
+        "lanes": 1,
+        "kind": "outdoor",
+        "kinds": [
+          "outdoor",
+          "ramp"
+        ],
+        "style": "outdoor"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.55266870269425,
+            12.991923128505892,
+            920
+          ],
+          [
+            77.55312958106207,
+            12.991923128505892,
+            920
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "ramp_down",
+        "from": "ramp_top",
+        "to": "ramp_bot",
+        "heading_deg": 90,
+        "length_m": 20.013342270906534,
+        "tunnel": false,
+        "garage": true,
+        "light_spacing_m": null,
+        "grade": -0.22484999951965373,
+        "lanes": 1,
+        "kind": "garage",
+        "kinds": [
+          "ramp",
+          "ramp"
+        ],
+        "style": "garage"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.55312958106207,
+            12.991923128505892,
+            920
+          ],
+          [
+            77.5533139324092,
+            12.991923128505892,
+            915.5
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "bot_sw",
+        "from": "ramp_bot",
+        "to": "g_sw",
+        "heading_deg": 180,
+        "length_m": 40.181691197554535,
+        "tunnel": false,
+        "garage": true,
+        "light_spacing_m": null,
+        "grade": 0,
+        "lanes": 1,
+        "kind": "garage",
+        "kinds": [
+          "ramp",
+          "garage"
+        ],
+        "style": "garage"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.5533139324092,
+            12.991923128505892,
+            915.5
+          ],
+          [
+            77.5533139324092,
+            12.991561564252946,
+            915.5
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "sw_se",
+        "from": "g_sw",
+        "to": "g_se",
+        "heading_deg": 90,
+        "length_m": 60.04011422547951,
+        "tunnel": false,
+        "garage": true,
+        "light_spacing_m": null,
+        "grade": 0,
+        "lanes": 1,
+        "kind": "garage",
+        "kinds": [
+          "garage",
+          "garage"
+        ],
+        "style": "garage"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.5533139324092,
+            12.991561564252946,
+            915.5
+          ],
+          [
+            77.55386698645057,
+            12.991561564252946,
+            915.5
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "se_ne",
+        "from": "g_se",
+        "to": "g_ne",
+        "heading_deg": 0,
+        "length_m": 60.27253679623309,
+        "tunnel": false,
+        "garage": true,
+        "light_spacing_m": null,
+        "grade": 0,
+        "lanes": 1,
+        "kind": "garage",
+        "kinds": [
+          "garage",
+          "garage"
+        ],
+        "style": "garage"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.55386698645057,
+            12.991561564252946,
+            915.5
+          ],
+          [
+            77.55386698645057,
+            12.992103910632364,
+            915.5
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "ne_nw",
+        "from": "g_ne",
+        "to": "g_nw",
+        "heading_deg": 270,
+        "length_m": 60.03998310312894,
+        "tunnel": false,
+        "garage": true,
+        "light_spacing_m": null,
+        "grade": 0,
+        "lanes": 1,
+        "kind": "garage",
+        "kinds": [
+          "garage",
+          "garage"
+        ],
+        "style": "garage"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.55386698645057,
+            12.992103910632364,
+            915.5
+          ],
+          [
+            77.5533139324092,
+            12.992103910632364,
+            915.5
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "nw_bot",
+        "from": "g_nw",
+        "to": "ramp_bot",
+        "heading_deg": 180,
+        "length_m": 20.09084559867856,
+        "tunnel": false,
+        "garage": true,
+        "light_spacing_m": null,
+        "grade": 0,
+        "lanes": 1,
+        "kind": "garage",
+        "kinds": [
+          "garage",
+          "ramp"
+        ],
+        "style": "garage"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.5533139324092,
+            12.992103910632364,
+            915.5
+          ],
+          [
+            77.5533139324092,
+            12.991923128505892,
+            915.5
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "sw_fork",
+        "from": "g_sw",
+        "to": "g_fork",
+        "heading_deg": 44.889314916687,
+        "length_m": 42.537025072464516,
+        "tunnel": false,
+        "garage": true,
+        "light_spacing_m": null,
+        "grade": 0,
+        "lanes": 1,
+        "kind": "garage",
+        "kinds": [
+          "garage",
+          "junction"
+        ],
+        "style": "garage"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.5533139324092,
+            12.991561564252946,
+            915.5
+          ],
+          [
+            77.55359045942988,
+            12.991832737442655,
+            915.5
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "fork_se",
+        "from": "g_fork",
+        "to": "g_se",
+        "heading_deg": 135.11071636501669,
+        "length_m": 42.537001938153914,
+        "tunnel": false,
+        "garage": true,
+        "light_spacing_m": null,
+        "grade": 0,
+        "lanes": 1,
+        "kind": "garage",
+        "kinds": [
+          "junction",
+          "garage"
+        ],
+        "style": "garage"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.55359045942988,
+            12.991832737442655,
+            915.5
+          ],
+          [
+            77.55386698645057,
+            12.991561564252946,
+            915.5
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "fork_ne",
+        "from": "g_fork",
+        "to": "g_ne",
+        "heading_deg": 44.889283634983315,
+        "length_m": 42.537001938153914,
+        "tunnel": false,
+        "garage": true,
+        "light_spacing_m": null,
+        "grade": 0,
+        "lanes": 1,
+        "kind": "garage",
+        "kinds": [
+          "junction",
+          "garage"
+        ],
+        "style": "garage"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.55359045942988,
+            12.991832737442655,
+            915.5
+          ],
+          [
+            77.55386698645057,
+            12.992103910632364,
+            915.5
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "fork_nw",
+        "from": "g_fork",
+        "to": "g_nw",
+        "heading_deg": 315.1107163650167,
+        "length_m": 42.537001938153914,
+        "tunnel": false,
+        "garage": true,
+        "light_spacing_m": null,
+        "grade": 0,
+        "lanes": 1,
+        "kind": "garage",
+        "kinds": [
+          "junction",
+          "garage"
+        ],
+        "style": "garage"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.55359045942988,
+            12.991832737442655,
+            915.5
+          ],
+          [
+            77.5533139324092,
+            12.992103910632364,
+            915.5
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "quad_portal",
+        "from": "quad",
+        "to": "portal_in",
+        "heading_deg": 90,
+        "length_m": 160.1067381641668,
+        "tunnel": false,
+        "garage": false,
+        "light_spacing_m": null,
+        "grade": 0,
+        "lanes": 1,
+        "kind": "outdoor",
+        "kinds": [
+          "outdoor",
+          "portal"
+        ],
+        "style": "outdoor"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.55266870269425,
+            12.991923128505892,
+            920
+          ],
+          [
+            77.55414351347126,
+            12.991923128505892,
+            920
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "tun",
+        "from": "portal_in",
+        "to": "tun_mid",
+        "heading_deg": 90,
+        "length_m": 320.21347632679084,
+        "tunnel": true,
+        "garage": false,
+        "light_spacing_m": 20,
+        "grade": -0.006245833320140839,
+        "lanes": 1,
+        "kind": "tunnel",
+        "kinds": [
+          "portal",
+          "tunnel"
+        ],
+        "style": "tunnel"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.55414351347126,
+            12.991923128505892,
+            920
+          ],
+          [
+            77.55709313502527,
+            12.991923128505892,
+            918
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "tun2",
+        "from": "tun_mid",
+        "to": "portal_out",
+        "heading_deg": 90,
+        "length_m": 320.2134763283336,
+        "tunnel": true,
+        "garage": false,
+        "light_spacing_m": 20,
+        "grade": 0.006245833320110747,
+        "lanes": 1,
+        "kind": "tunnel",
+        "kinds": [
+          "tunnel",
+          "portal"
+        ],
+        "style": "tunnel"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.55709313502527,
+            12.991923128505892,
+            918
+          ],
+          [
+            77.56004275657929,
+            12.991923128505892,
+            920
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "out_true",
+        "from": "portal_out",
+        "to": "exit_true",
+        "heading_deg": 0,
+        "length_m": 60.27253679623309,
+        "tunnel": false,
+        "garage": false,
+        "light_spacing_m": null,
+        "grade": 0,
+        "lanes": 1,
+        "kind": "outdoor",
+        "kinds": [
+          "portal",
+          "junction"
+        ],
+        "style": "outdoor"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.56004275657929,
+            12.991923128505892,
+            920
+          ],
+          [
+            77.56004275657929,
+            12.99246547488531,
+            920
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "out_wrong",
+        "from": "portal_out",
+        "to": "exit_wrong",
+        "heading_deg": 180,
+        "length_m": 60.2725367964305,
+        "tunnel": false,
+        "garage": false,
+        "light_spacing_m": null,
+        "grade": 0,
+        "lanes": 1,
+        "kind": "outdoor",
+        "kinds": [
+          "portal",
+          "junction"
+        ],
+        "style": "outdoor"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.56004275657929,
+            12.991923128505892,
+            920
+          ],
+          [
+            77.56004275657929,
+            12.991380782126472,
+            920
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "quad_rn",
+        "from": "quad",
+        "to": "round_n",
+        "heading_deg": 0,
+        "length_m": 80.36338239510907,
+        "tunnel": false,
+        "garage": false,
+        "light_spacing_m": null,
+        "grade": 0,
+        "lanes": 1,
+        "kind": "outdoor",
+        "kinds": [
+          "outdoor",
+          "outdoor"
+        ],
+        "style": "outdoor"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.55266870269425,
+            12.991923128505892,
+            920
+          ],
+          [
+            77.55266870269425,
+            12.992646257011785,
+            920
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "rn_re",
+        "from": "round_n",
+        "to": "round_e",
+        "heading_deg": 135.11081021349287,
+        "length_m": 56.715910044040136,
+        "tunnel": false,
+        "garage": false,
+        "light_spacing_m": null,
+        "grade": 0,
+        "lanes": 1,
+        "kind": "outdoor",
+        "kinds": [
+          "outdoor",
+          "outdoor"
+        ],
+        "style": "outdoor"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.55266870269425,
+            12.992646257011785,
+            920
+          ],
+          [
+            77.55303740538851,
+            12.992284692758838,
+            920
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "re_rs",
+        "from": "round_e",
+        "to": "round_s",
+        "heading_deg": 224.8892314979981,
+        "length_m": 56.715951174029996,
+        "tunnel": false,
+        "garage": false,
+        "light_spacing_m": null,
+        "grade": 0,
+        "lanes": 1,
+        "kind": "outdoor",
+        "kinds": [
+          "outdoor",
+          "outdoor"
+        ],
+        "style": "outdoor"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.55303740538851,
+            12.992284692758838,
+            920
+          ],
+          [
+            77.55266870269425,
+            12.991923128505892,
+            920
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "rs_rw",
+        "from": "round_s",
+        "to": "round_w",
+        "heading_deg": 315.11072679281637,
+        "length_m": 56.715992301836245,
+        "tunnel": false,
+        "garage": false,
+        "light_spacing_m": null,
+        "grade": 0,
+        "lanes": 1,
+        "kind": "outdoor",
+        "kinds": [
+          "outdoor",
+          "outdoor"
+        ],
+        "style": "outdoor"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.55266870269425,
+            12.991923128505892,
+            920
+          ],
+          [
+            77.5523,
+            12.992284692758838,
+            920
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "rw_rn",
+        "from": "round_w",
+        "to": "round_n",
+        "heading_deg": 44.889231496893956,
+        "length_m": 56.71595117294123,
+        "tunnel": false,
+        "garage": false,
+        "light_spacing_m": null,
+        "grade": 0,
+        "lanes": 1,
+        "kind": "outdoor",
+        "kinds": [
+          "outdoor",
+          "outdoor"
+        ],
+        "style": "outdoor"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.5523,
+            12.992284692758838,
+            920
+          ],
+          [
+            77.55266870269425,
+            12.992646257011785,
+            920
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "rn_j25",
+        "from": "round_n",
+        "to": "j25",
+        "heading_deg": 0,
+        "length_m": 60.27253679623309,
+        "tunnel": false,
+        "garage": false,
+        "light_spacing_m": null,
+        "grade": 0,
+        "lanes": 1,
+        "kind": "outdoor",
+        "kinds": [
+          "outdoor",
+          "junction"
+        ],
+        "style": "outdoor"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.55266870269425,
+            12.992646257011785,
+            920
+          ],
+          [
+            77.55266870269425,
+            12.993188603391204,
+            920
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "j25_a",
+        "from": "j25",
+        "to": "j25a",
+        "heading_deg": 333.5235442255073,
+        "length_m": 67.33476599485638,
+        "tunnel": false,
+        "garage": false,
+        "light_spacing_m": null,
+        "grade": 0,
+        "lanes": 1,
+        "kind": "outdoor",
+        "kinds": [
+          "junction",
+          "outdoor"
+        ],
+        "style": "outdoor"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.55266870269425,
+            12.993188603391204,
+            920
+          ],
+          [
+            77.55239217567356,
+            12.993730949770624,
+            920
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "j25_b",
+        "from": "j25",
+        "to": "j25b",
+        "heading_deg": 35.921957251684375,
+        "length_m": 68.22508594777112,
+        "tunnel": false,
+        "garage": false,
+        "light_spacing_m": null,
+        "grade": 0,
+        "lanes": 1,
+        "kind": "outdoor",
+        "kinds": [
+          "junction",
+          "outdoor"
+        ],
+        "style": "outdoor"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.55266870269425,
+            12.993188603391204,
+            920
+          ],
+          [
+            77.55303740538851,
+            12.993685754239005,
+            920
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "j25_j15",
+        "from": "j25",
+        "to": "j15",
+        "heading_deg": 90,
+        "length_m": 80.05296112356632,
+        "tunnel": false,
+        "garage": false,
+        "light_spacing_m": null,
+        "grade": 0,
+        "lanes": 1,
+        "kind": "outdoor",
+        "kinds": [
+          "junction",
+          "junction"
+        ],
+        "style": "outdoor"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.55266870269425,
+            12.993188603391204,
+            920
+          ],
+          [
+            77.55340610808275,
+            12.993188603391204,
+            920
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "j15_a",
+        "from": "j15",
+        "to": "j15a",
+        "heading_deg": 24.69087483186479,
+        "length_m": 71.8655790812881,
+        "tunnel": false,
+        "garage": false,
+        "light_spacing_m": null,
+        "grade": 0,
+        "lanes": 1,
+        "kind": "outdoor",
+        "kinds": [
+          "junction",
+          "outdoor"
+        ],
+        "style": "outdoor"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.55340610808275,
+            12.993188603391204,
+            920
+          ],
+          [
+            77.55368263510344,
+            12.993776145302242,
+            920
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "j15_b",
+        "from": "j15",
+        "to": "j15b",
+        "heading_deg": 47.6159195973496,
+        "length_m": 74.51019722944184,
+        "tunnel": false,
+        "garage": false,
+        "light_spacing_m": null,
+        "grade": 0,
+        "lanes": 1,
+        "kind": "outdoor",
+        "kinds": [
+          "junction",
+          "outdoor"
+        ],
+        "style": "outdoor"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.55340610808275,
+            12.993188603391204,
+            920
+          ],
+          [
+            77.55391307428735,
+            12.993640558707387,
+            920
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "j15_j8",
+        "from": "j15",
+        "to": "j8",
+        "heading_deg": 90,
+        "length_m": 80.05296112356632,
+        "tunnel": false,
+        "garage": false,
+        "light_spacing_m": null,
+        "grade": 0,
+        "lanes": 1,
+        "kind": "outdoor",
+        "kinds": [
+          "junction",
+          "junction"
+        ],
+        "style": "outdoor"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.55340610808275,
+            12.993188603391204,
+            920
+          ],
+          [
+            77.55414351347126,
+            12.993188603391204,
+            920
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "j8_a",
+        "from": "j8",
+        "to": "j8a",
+        "heading_deg": 15.886917627948321,
+        "length_m": 73.11050012313258,
+        "tunnel": false,
+        "garage": false,
+        "light_spacing_m": null,
+        "grade": 0,
+        "lanes": 1,
+        "kind": "outdoor",
+        "kinds": [
+          "junction",
+          "outdoor"
+        ],
+        "style": "outdoor"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.55414351347126,
+            12.993188603391204,
+            920
+          ],
+          [
+            77.55432786481839,
+            12.99382134083386,
+            920
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "j8_b",
+        "from": "j8",
+        "to": "j8b",
+        "heading_deg": 28.208290706937476,
+        "length_m": 74.09515441802522,
+        "tunnel": false,
+        "garage": false,
+        "light_spacing_m": null,
+        "grade": 0,
+        "lanes": 1,
+        "kind": "outdoor",
+        "kinds": [
+          "junction",
+          "outdoor"
+        ],
+        "style": "outdoor"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.55414351347126,
+            12.993188603391204,
+            920
+          ],
+          [
+            77.55446612832873,
+            12.993776145302242,
+            920
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "x_loope",
+        "from": "xmark",
+        "to": "loop_e",
+        "heading_deg": 180,
+        "length_m": 60.27253679623309,
+        "tunnel": false,
+        "garage": false,
+        "light_spacing_m": null,
+        "grade": 0,
+        "lanes": 1,
+        "kind": "outdoor",
+        "kinds": [
+          "outdoor",
+          "outdoor"
+        ],
+        "style": "outdoor"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.55266870269425,
+            12.991380782126472,
+            920
+          ],
+          [
+            77.55266870269425,
+            12.990838435747053,
+            920
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "loope_s",
+        "from": "loop_e",
+        "to": "loop_s",
+        "heading_deg": 270,
+        "length_m": 60.040289046912015,
+        "tunnel": false,
+        "garage": false,
+        "light_spacing_m": null,
+        "grade": 0,
+        "lanes": 1,
+        "kind": "outdoor",
+        "kinds": [
+          "outdoor",
+          "outdoor"
+        ],
+        "style": "outdoor"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.55266870269425,
+            12.990838435747053,
+            920
+          ],
+          [
+            77.55211564865287,
+            12.990838435747053,
+            920
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "loops_w",
+        "from": "loop_s",
+        "to": "loop_w",
+        "heading_deg": 0,
+        "length_m": 60.27253679623309,
+        "tunnel": false,
+        "garage": false,
+        "light_spacing_m": null,
+        "grade": 0,
+        "lanes": 1,
+        "kind": "outdoor",
+        "kinds": [
+          "outdoor",
+          "outdoor"
+        ],
+        "style": "outdoor"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.55211564865287,
+            12.990838435747053,
+            920
+          ],
+          [
+            77.55211564865287,
+            12.991380782126472,
+            920
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "loopw_gate",
+        "from": "loop_w",
+        "to": "gate",
+        "heading_deg": 135.1106642283894,
+        "length_m": 28.358026997037403,
+        "tunnel": false,
+        "garage": false,
+        "light_spacing_m": null,
+        "grade": 0,
+        "lanes": 1,
+        "kind": "outdoor",
+        "kinds": [
+          "outdoor",
+          "outdoor"
+        ],
+        "style": "outdoor"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.55211564865287,
+            12.991380782126472,
+            920
+          ],
+          [
+            77.5523,
+            12.9912,
+            920
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "ramp_up",
+        "from": "ramp_bot",
+        "to": "ramp_top",
+        "heading_deg": 270,
+        "length_m": 20.013342270906534,
+        "tunnel": false,
+        "garage": true,
+        "light_spacing_m": null,
+        "grade": 0.22484999951965373,
+        "lanes": 1,
+        "kind": "garage",
+        "kinds": [
+          "ramp",
+          "ramp"
+        ],
+        "style": "garage"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.5533139324092,
+            12.991923128505892,
+            915.5
+          ],
+          [
+            77.55312958106207,
+            12.991923128505892,
+            920
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "edge",
+        "id": "ramp_quad",
+        "from": "ramp_top",
+        "to": "quad",
+        "heading_deg": 270,
+        "length_m": 50.03335567649497,
+        "tunnel": false,
+        "garage": false,
+        "light_spacing_m": null,
+        "grade": 0,
+        "lanes": 1,
+        "kind": "outdoor",
+        "kinds": [
+          "ramp",
+          "outdoor"
+        ],
+        "style": "outdoor"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.55312958106207,
+            12.991923128505892,
+            920
+          ],
+          [
+            77.55266870269425,
+            12.991923128505892,
+            920
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "node",
+        "id": "gate",
+        "kind": "outdoor",
+        "alt": 920,
+        "e": 0,
+        "n": 0,
+        "u": 0
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.5523,
+          12.9912,
+          920
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "node",
+        "id": "quad",
+        "kind": "outdoor",
+        "alt": 920,
+        "e": 40,
+        "n": 80,
+        "u": 0
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55266870269425,
+          12.991923128505892,
+          920
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "node",
+        "id": "xmark",
+        "kind": "outdoor",
+        "alt": 920,
+        "e": 40,
+        "n": 20,
+        "u": 0
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55266870269425,
+          12.991380782126472,
+          920
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "node",
+        "id": "ramp_top",
+        "kind": "ramp",
+        "alt": 920,
+        "e": 90,
+        "n": 80,
+        "u": 0
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55312958106207,
+          12.991923128505892,
+          920
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "node",
+        "id": "ramp_bot",
+        "kind": "ramp",
+        "alt": 915.5,
+        "e": 110,
+        "n": 80,
+        "u": -4.5
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.5533139324092,
+          12.991923128505892,
+          915.5
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "node",
+        "id": "g_sw",
+        "kind": "garage",
+        "alt": 915.5,
+        "e": 110,
+        "n": 40,
+        "u": -4.5
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.5533139324092,
+          12.991561564252946,
+          915.5
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "node",
+        "id": "g_se",
+        "kind": "garage",
+        "alt": 915.5,
+        "e": 170,
+        "n": 40,
+        "u": -4.5
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55386698645057,
+          12.991561564252946,
+          915.5
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "node",
+        "id": "g_ne",
+        "kind": "garage",
+        "alt": 915.5,
+        "e": 170,
+        "n": 100,
+        "u": -4.5
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55386698645057,
+          12.992103910632364,
+          915.5
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "node",
+        "id": "g_nw",
+        "kind": "garage",
+        "alt": 915.5,
+        "e": 110,
+        "n": 100,
+        "u": -4.5
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.5533139324092,
+          12.992103910632364,
+          915.5
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "node",
+        "id": "g_fork",
+        "kind": "junction",
+        "alt": 915.5,
+        "e": 140,
+        "n": 70,
+        "u": -4.5
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55359045942988,
+          12.991832737442655,
+          915.5
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "node",
+        "id": "portal_in",
+        "kind": "portal",
+        "alt": 920,
+        "e": 200,
+        "n": 80,
+        "u": 0
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55414351347126,
+          12.991923128505892,
+          920
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "node",
+        "id": "tun_mid",
+        "kind": "tunnel",
+        "alt": 918,
+        "e": 520,
+        "n": 80,
+        "u": -2
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55709313502527,
+          12.991923128505892,
+          918
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "node",
+        "id": "portal_out",
+        "kind": "portal",
+        "alt": 920,
+        "e": 840,
+        "n": 80,
+        "u": 0
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.56004275657929,
+          12.991923128505892,
+          920
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "node",
+        "id": "exit_true",
+        "kind": "junction",
+        "alt": 920,
+        "e": 840,
+        "n": 140,
+        "u": 0
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.56004275657929,
+          12.99246547488531,
+          920
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "node",
+        "id": "exit_wrong",
+        "kind": "junction",
+        "alt": 920,
+        "e": 840,
+        "n": 20,
+        "u": 0
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.56004275657929,
+          12.991380782126472,
+          920
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "node",
+        "id": "round_n",
+        "kind": "outdoor",
+        "alt": 920,
+        "e": 40,
+        "n": 160,
+        "u": 0
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55266870269425,
+          12.992646257011785,
+          920
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "node",
+        "id": "round_e",
+        "kind": "outdoor",
+        "alt": 920,
+        "e": 80,
+        "n": 120,
+        "u": 0
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55303740538851,
+          12.992284692758838,
+          920
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "node",
+        "id": "round_s",
+        "kind": "outdoor",
+        "alt": 920,
+        "e": 40,
+        "n": 80,
+        "u": 0
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55266870269425,
+          12.991923128505892,
+          920
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "node",
+        "id": "round_w",
+        "kind": "outdoor",
+        "alt": 920,
+        "e": 0,
+        "n": 120,
+        "u": 0
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.5523,
+          12.992284692758838,
+          920
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "node",
+        "id": "j25",
+        "kind": "junction",
+        "alt": 920,
+        "e": 40,
+        "n": 220,
+        "u": 0
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55266870269425,
+          12.993188603391204,
+          920
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "node",
+        "id": "j25a",
+        "kind": "outdoor",
+        "alt": 920,
+        "e": 10,
+        "n": 280,
+        "u": 0
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55239217567356,
+          12.993730949770624,
+          920
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "node",
+        "id": "j25b",
+        "kind": "outdoor",
+        "alt": 920,
+        "e": 80,
+        "n": 275,
+        "u": 0
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55303740538851,
+          12.993685754239005,
+          920
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "node",
+        "id": "j15",
+        "kind": "junction",
+        "alt": 920,
+        "e": 120,
+        "n": 220,
+        "u": 0
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55340610808275,
+          12.993188603391204,
+          920
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "node",
+        "id": "j15a",
+        "kind": "outdoor",
+        "alt": 920,
+        "e": 150,
+        "n": 285,
+        "u": 0
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55368263510344,
+          12.993776145302242,
+          920
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "node",
+        "id": "j15b",
+        "kind": "outdoor",
+        "alt": 920,
+        "e": 175,
+        "n": 270,
+        "u": 0
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55391307428735,
+          12.993640558707387,
+          920
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "node",
+        "id": "j8",
+        "kind": "junction",
+        "alt": 920,
+        "e": 200,
+        "n": 220,
+        "u": 0
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55414351347126,
+          12.993188603391204,
+          920
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "node",
+        "id": "j8a",
+        "kind": "outdoor",
+        "alt": 920,
+        "e": 220,
+        "n": 290,
+        "u": 0
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55432786481839,
+          12.99382134083386,
+          920
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "node",
+        "id": "j8b",
+        "kind": "outdoor",
+        "alt": 920,
+        "e": 235,
+        "n": 285,
+        "u": 0
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55446612832873,
+          12.993776145302242,
+          920
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "node",
+        "id": "loop_e",
+        "kind": "outdoor",
+        "alt": 920,
+        "e": 40,
+        "n": -40,
+        "u": 0
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55266870269425,
+          12.990838435747053,
+          920
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "node",
+        "id": "loop_s",
+        "kind": "outdoor",
+        "alt": 920,
+        "e": -20,
+        "n": -40,
+        "u": 0
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55211564865287,
+          12.990838435747053,
+          920
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "node",
+        "id": "loop_w",
+        "kind": "outdoor",
+        "alt": 920,
+        "e": -20,
+        "n": 20,
+        "u": 0
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55211564865287,
+          12.991380782126472,
+          920
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "polygon",
+        "kind": "basement",
+        "style": "garage",
+        "name": "basement_footprint"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.55324019187034,
+              12.991489251402356,
+              915.5
+            ],
+            [
+              77.55394072698942,
+              12.991489251402356,
+              915.5
+            ],
+            [
+              77.55394072698942,
+              12.992176223482954,
+              915.5
+            ],
+            [
+              77.55324019187034,
+              12.992176223482954,
+              915.5
+            ],
+            [
+              77.55324019187034,
+              12.991489251402356,
+              915.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "polygon",
+        "kind": "tunnel_tube",
+        "style": "tunnel",
+        "name": "tunnel_tube"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.55414351347126,
+              12.99186889386795,
+              918
+            ],
+            [
+              77.56004275657929,
+              12.99186889386795,
+              918
+            ],
+            [
+              77.56004275657929,
+              12.991977363143834,
+              918
+            ],
+            [
+              77.55414351347126,
+              12.991977363143834,
+              918
+            ],
+            [
+              77.55414351347126,
+              12.99186889386795,
+              918
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

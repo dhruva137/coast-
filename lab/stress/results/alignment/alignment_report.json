@@ -1,0 +1,707 @@
+{
+  "schema_version": 1,
+  "protocol": {
+    "lag_range_s": [
+      -30.0,
+      30.0
+    ],
+    "lag_step_s": 0.1,
+    "minimum_speed_mps": 3.0,
+    "minimum_turn_rate_deg_s": 0.5,
+    "uses_outage_ground_truth": false,
+    "selection": "all speed-gated true-GPS-update turning samples per complete file"
+  },
+  "files": [
+    {
+      "name": "S-M.csv",
+      "path": "C:\\Users\\Dhruva P Gowda\\Desktop\\New folder\\SIH 2026\\data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\M (Driver B)\\S-M.csv",
+      "bytes": 19798721,
+      "n": 105974,
+      "time_scale": {
+        "raw_median_delta": 100.0,
+        "candidates": [
+          {
+            "scale_to_seconds": 1e-06,
+            "implied_hz": 10000.0,
+            "distance_from_10hz_log10": 3.0
+          },
+          {
+            "scale_to_seconds": 0.001,
+            "implied_hz": 10.0,
+            "distance_from_10hz_log10": 0.0
+          },
+          {
+            "scale_to_seconds": 1.0,
+            "implied_hz": 0.01,
+            "distance_from_10hz_log10": 3.0
+          }
+        ],
+        "chosen_scale_to_seconds": 0.001,
+        "loader_hz_est": 10.000000000009095,
+        "separate_gps_clock_available": false,
+        "note": "One shared TIME SINCE START column exists; residual sensor latency is searched as lag."
+      },
+      "gps_orientation": {
+        "gps_updates_after_gating": 457,
+        "turn_updates": 297,
+        "turn_threshold_deg_s": 0.506449062534585,
+        "best": {
+          "axis": "gyro_pitch_raw",
+          "sign": -1,
+          "lag_s": -0.4999999999995808,
+          "correlation": 0.48918429146423725,
+          "signed_correlation": -0.48918429146423725,
+          "n_turn": 297,
+          "scale_to_rad_s": 0.6726275216405313,
+          "intercept_rad_s": 0.0009285621477006266
+        },
+        "mount_transform": {
+          "observable": false,
+          "n": 297,
+          "lag_s": -0.4999999999995808,
+          "cv_correlation": 0.45744997012686556,
+          "cv_signed_correlation": 0.45744997012686556,
+          "coefficients": {
+            "gyro_roll_raw": -0.0759398910001219,
+            "gyro_pitch_raw": -0.6756503277259325,
+            "gyro_yaw_raw": -0.09999697721248017
+          },
+          "unit_yaw_axis_phone": {
+            "gyro_roll_raw": -0.11050322709185947,
+            "gyro_pitch_raw": -0.9831662992414375,
+            "gyro_yaw_raw": -0.14550967266192752
+          },
+          "fold_coefficient_std": {
+            "gyro_roll_raw": 0.2469849177004782,
+            "gyro_pitch_raw": 0.09541018059969382,
+            "gyro_yaw_raw": 0.19228588274969624
+          },
+          "intercept_rad_s": 0.0007305829233681409,
+          "note": "Diagnostic 5-fold contiguous CV; not used by the common-axis gate."
+        }
+      },
+      "latlon_displacement": {
+        "gps_updates_after_gating": 447,
+        "turn_updates": 284,
+        "turn_threshold_deg_s": 0.5,
+        "best": {
+          "axis": "gyro_pitch_raw",
+          "sign": -1,
+          "lag_s": 0.20000000000042917,
+          "correlation": 0.46195267659612416,
+          "signed_correlation": -0.46195267659612416,
+          "n_turn": 284,
+          "scale_to_rad_s": 0.6189717879497842,
+          "intercept_rad_s": 0.0016630936781630546
+        },
+        "mount_transform": {
+          "observable": false,
+          "n": 284,
+          "lag_s": 0.20000000000042917,
+          "cv_correlation": 0.4201088061755867,
+          "cv_signed_correlation": 0.4201088061755867,
+          "coefficients": {
+            "gyro_roll_raw": -1.0813226214899199,
+            "gyro_pitch_raw": -0.8124149514922352,
+            "gyro_yaw_raw": 1.2688858069488105
+          },
+          "unit_yaw_axis_phone": {
+            "gyro_roll_raw": -0.5830653554303346,
+            "gyro_pitch_raw": -0.4380663116027799,
+            "gyro_yaw_raw": 0.6842022346760013
+          },
+          "fold_coefficient_std": {
+            "gyro_roll_raw": 0.6863817073422569,
+            "gyro_pitch_raw": 0.07382414445121864,
+            "gyro_yaw_raw": 0.596147680022336
+          },
+          "intercept_rad_s": 0.0016011021120501542,
+          "note": "Diagnostic 5-fold contiguous CV; not used by the common-axis gate."
+        }
+      },
+      "figure": "C:\\Users\\Dhruva P Gowda\\Desktop\\New folder\\SIH 2026\\lab\\stress\\results\\alignment\\figures\\S-M_alignment.png"
+    },
+    {
+      "name": "S-S1.csv",
+      "path": "C:\\Users\\Dhruva P Gowda\\Desktop\\New folder\\SIH 2026\\data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\S (Driver A)\\S1\\S-S1.csv",
+      "bytes": 9631499,
+      "n": 51746,
+      "time_scale": {
+        "raw_median_delta": 100.0,
+        "candidates": [
+          {
+            "scale_to_seconds": 1e-06,
+            "implied_hz": 10000.0,
+            "distance_from_10hz_log10": 3.0
+          },
+          {
+            "scale_to_seconds": 0.001,
+            "implied_hz": 10.0,
+            "distance_from_10hz_log10": 0.0
+          },
+          {
+            "scale_to_seconds": 1.0,
+            "implied_hz": 0.01,
+            "distance_from_10hz_log10": 3.0
+          }
+        ],
+        "chosen_scale_to_seconds": 0.001,
+        "loader_hz_est": 10.000000000009095,
+        "separate_gps_clock_available": false,
+        "note": "One shared TIME SINCE START column exists; residual sensor latency is searched as lag."
+      },
+      "gps_orientation": {
+        "gps_updates_after_gating": 141,
+        "turn_updates": 83,
+        "turn_threshold_deg_s": 0.5,
+        "best": {
+          "axis": "gyro_pitch_raw",
+          "sign": -1,
+          "lag_s": -0.0999999999995751,
+          "correlation": 0.9919385058853607,
+          "signed_correlation": -0.9919385058853607,
+          "n_turn": 83,
+          "scale_to_rad_s": 0.9792224163885598,
+          "intercept_rad_s": -0.0054285300247111515
+        },
+        "mount_transform": {
+          "observable": true,
+          "n": 83,
+          "lag_s": -0.0999999999995751,
+          "cv_correlation": 0.992621301476655,
+          "cv_signed_correlation": 0.992621301476655,
+          "coefficients": {
+            "gyro_roll_raw": -0.3623835332660587,
+            "gyro_pitch_raw": -1.0400699828539448,
+            "gyro_yaw_raw": -0.03846084480925756
+          },
+          "unit_yaw_axis_phone": {
+            "gyro_roll_raw": -0.32882237230433553,
+            "gyro_pitch_raw": -0.943746742690628,
+            "gyro_yaw_raw": -0.0348988987358976
+          },
+          "fold_coefficient_std": {
+            "gyro_roll_raw": 0.056301298262874507,
+            "gyro_pitch_raw": 0.01339891874057502,
+            "gyro_yaw_raw": 0.033922908640601095
+          },
+          "intercept_rad_s": -0.00477244339082973,
+          "note": "Diagnostic 5-fold contiguous CV; not used by the common-axis gate."
+        }
+      },
+      "latlon_displacement": {
+        "gps_updates_after_gating": 137,
+        "turn_updates": 65,
+        "turn_threshold_deg_s": 0.5,
+        "best": {
+          "axis": "gyro_pitch_raw",
+          "sign": -1,
+          "lag_s": -0.29999999999957794,
+          "correlation": 0.9298062965038842,
+          "signed_correlation": -0.9298062965038842,
+          "n_turn": 65,
+          "scale_to_rad_s": 0.810530325934216,
+          "intercept_rad_s": -0.006707043820625071
+        },
+        "mount_transform": {
+          "observable": true,
+          "n": 65,
+          "lag_s": -0.29999999999957794,
+          "cv_correlation": 0.923059535667802,
+          "cv_signed_correlation": 0.923059535667802,
+          "coefficients": {
+            "gyro_roll_raw": -0.2710325595189354,
+            "gyro_pitch_raw": -0.8489959717539918,
+            "gyro_yaw_raw": -0.08576438077734368
+          },
+          "unit_yaw_axis_phone": {
+            "gyro_roll_raw": -0.3027194694879997,
+            "gyro_pitch_raw": -0.9482536364744828,
+            "gyro_yaw_raw": -0.09579125067470144
+          },
+          "fold_coefficient_std": {
+            "gyro_roll_raw": 0.08840181067936109,
+            "gyro_pitch_raw": 0.020489050031867254,
+            "gyro_yaw_raw": 0.045334787987068845
+          },
+          "intercept_rad_s": -0.005483921734645041,
+          "note": "Diagnostic 5-fold contiguous CV; not used by the common-axis gate."
+        }
+      },
+      "figure": "C:\\Users\\Dhruva P Gowda\\Desktop\\New folder\\SIH 2026\\lab\\stress\\results\\alignment\\figures\\S-S1_alignment.png"
+    },
+    {
+      "name": "S-S2.csv",
+      "path": "C:\\Users\\Dhruva P Gowda\\Desktop\\New folder\\SIH 2026\\data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\S (Driver A)\\S2\\S-S2.csv",
+      "bytes": 17469302,
+      "n": 93876,
+      "time_scale": {
+        "raw_median_delta": 100.0,
+        "candidates": [
+          {
+            "scale_to_seconds": 1e-06,
+            "implied_hz": 10000.0,
+            "distance_from_10hz_log10": 3.0
+          },
+          {
+            "scale_to_seconds": 0.001,
+            "implied_hz": 10.0,
+            "distance_from_10hz_log10": 0.0
+          },
+          {
+            "scale_to_seconds": 1.0,
+            "implied_hz": 0.01,
+            "distance_from_10hz_log10": 3.0
+          }
+        ],
+        "chosen_scale_to_seconds": 0.001,
+        "loader_hz_est": 9.999999999997726,
+        "separate_gps_clock_available": false,
+        "note": "One shared TIME SINCE START column exists; residual sensor latency is searched as lag."
+      },
+      "gps_orientation": {
+        "gps_updates_after_gating": 284,
+        "turn_updates": 147,
+        "turn_threshold_deg_s": 0.5,
+        "best": {
+          "axis": "gyro_pitch_raw",
+          "sign": -1,
+          "lag_s": 4.263256414560601e-13,
+          "correlation": 0.9831001436468213,
+          "signed_correlation": -0.9831001436468213,
+          "n_turn": 147,
+          "scale_to_rad_s": 0.9752858151600634,
+          "intercept_rad_s": -0.007345927912826447
+        },
+        "mount_transform": {
+          "observable": true,
+          "n": 147,
+          "lag_s": 4.263256414560601e-13,
+          "cv_correlation": 0.9817816693677623,
+          "cv_signed_correlation": 0.9817816693677623,
+          "coefficients": {
+            "gyro_roll_raw": -0.011392376559469845,
+            "gyro_pitch_raw": -0.9746318214720451,
+            "gyro_yaw_raw": -0.14426764400010927
+          },
+          "unit_yaw_axis_phone": {
+            "gyro_roll_raw": -0.011562140319271387,
+            "gyro_pitch_raw": -0.9891553198458577,
+            "gyro_yaw_raw": -0.14641745159603278
+          },
+          "fold_coefficient_std": {
+            "gyro_roll_raw": 0.11317659351425871,
+            "gyro_pitch_raw": 0.024083367477592436,
+            "gyro_yaw_raw": 0.07246953831591944
+          },
+          "intercept_rad_s": -0.00688793970297788,
+          "note": "Diagnostic 5-fold contiguous CV; not used by the common-axis gate."
+        }
+      },
+      "latlon_displacement": {
+        "gps_updates_after_gating": 279,
+        "turn_updates": 147,
+        "turn_threshold_deg_s": 0.5,
+        "best": {
+          "axis": "gyro_pitch_raw",
+          "sign": -1,
+          "lag_s": 0.20000000000042917,
+          "correlation": 0.9563874958967556,
+          "signed_correlation": -0.9563874958967556,
+          "n_turn": 147,
+          "scale_to_rad_s": 0.8696517135293415,
+          "intercept_rad_s": -0.006996616952428719
+        },
+        "mount_transform": {
+          "observable": true,
+          "n": 147,
+          "lag_s": 0.20000000000042917,
+          "cv_correlation": 0.958637195162278,
+          "cv_signed_correlation": 0.958637195162278,
+          "coefficients": {
+            "gyro_roll_raw": -0.19705092929624973,
+            "gyro_pitch_raw": -0.8956171950433542,
+            "gyro_yaw_raw": -0.18478873123560474
+          },
+          "unit_yaw_axis_phone": {
+            "gyro_roll_raw": -0.21064353322577556,
+            "gyro_pitch_raw": -0.9573970092679039,
+            "gyro_yaw_raw": -0.19753548682460756
+          },
+          "fold_coefficient_std": {
+            "gyro_roll_raw": 0.02107314928202417,
+            "gyro_pitch_raw": 0.00586282935874101,
+            "gyro_yaw_raw": 0.047463215497800866
+          },
+          "intercept_rad_s": -0.005851892371699051,
+          "note": "Diagnostic 5-fold contiguous CV; not used by the common-axis gate."
+        }
+      },
+      "figure": "C:\\Users\\Dhruva P Gowda\\Desktop\\New folder\\SIH 2026\\lab\\stress\\results\\alignment\\figures\\S-S2_alignment.png"
+    },
+    {
+      "name": "S-S4.csv",
+      "path": "C:\\Users\\Dhruva P Gowda\\Desktop\\New folder\\SIH 2026\\data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\S (Driver A)\\S4\\S-S4.csv",
+      "bytes": 17574514,
+      "n": 94600,
+      "time_scale": {
+        "raw_median_delta": 100.0,
+        "candidates": [
+          {
+            "scale_to_seconds": 1e-06,
+            "implied_hz": 10000.0,
+            "distance_from_10hz_log10": 3.0
+          },
+          {
+            "scale_to_seconds": 0.001,
+            "implied_hz": 10.0,
+            "distance_from_10hz_log10": 0.0
+          },
+          {
+            "scale_to_seconds": 1.0,
+            "implied_hz": 0.01,
+            "distance_from_10hz_log10": 3.0
+          }
+        ],
+        "chosen_scale_to_seconds": 0.001,
+        "loader_hz_est": 10.000000000009095,
+        "separate_gps_clock_available": false,
+        "note": "One shared TIME SINCE START column exists; residual sensor latency is searched as lag."
+      },
+      "gps_orientation": {
+        "gps_updates_after_gating": 21,
+        "turn_updates": 11,
+        "turn_threshold_deg_s": 0.5,
+        "best": {
+          "axis": null,
+          "sign": 0,
+          "lag_s": null,
+          "correlation": null,
+          "signed_correlation": null,
+          "n_turn": 0
+        },
+        "mount_transform": {
+          "observable": false,
+          "reason": "no lag score"
+        }
+      },
+      "latlon_displacement": {
+        "gps_updates_after_gating": 20,
+        "turn_updates": 11,
+        "turn_threshold_deg_s": 0.5,
+        "best": {
+          "axis": null,
+          "sign": 0,
+          "lag_s": null,
+          "correlation": null,
+          "signed_correlation": null,
+          "n_turn": 0
+        },
+        "mount_transform": {
+          "observable": false,
+          "reason": "no lag score"
+        }
+      },
+      "figure": "C:\\Users\\Dhruva P Gowda\\Desktop\\New folder\\SIH 2026\\lab\\stress\\results\\alignment\\figures\\S-S4_alignment.png"
+    }
+  ],
+  "common_mapping": {
+    "exists": true,
+    "threshold": 0.7,
+    "required_files": 2,
+    "best_axis": "gyro_pitch_raw",
+    "best_sign": -1,
+    "files_above_threshold": 2,
+    "per_file_correlation": {
+      "S-M.csv": 0.46195267659612416,
+      "S-S1.csv": 0.9298062965038842,
+      "S-S2.csv": 0.9563874958967556,
+      "S-S4.csv": null
+    },
+    "verdict": "DEFENSIBLE_COMMON_MAPPING",
+    "gate_note": "Uses the weaker of orientation- and displacement-course evidence where both exist.",
+    "all_candidates": [
+      {
+        "axis": "gyro_pitch_raw",
+        "sign": -1,
+        "per_file_correlation": [
+          0.46195267659612416,
+          0.9298062965038842,
+          0.9563874958967556,
+          null
+        ],
+        "files_above_0_7": 2
+      },
+      {
+        "axis": "gyro_roll_raw",
+        "sign": 1,
+        "per_file_correlation": [
+          0.3658157584666458,
+          0.6207999285344132,
+          0.6602981836460254,
+          null
+        ],
+        "files_above_0_7": 0
+      },
+      {
+        "axis": "gyro_roll_raw",
+        "sign": -1,
+        "per_file_correlation": [
+          0.14857567062401836,
+          0.24689088129543052,
+          0.24354861786161558,
+          null
+        ],
+        "files_above_0_7": 0
+      },
+      {
+        "axis": "gyro_yaw_raw",
+        "sign": -1,
+        "per_file_correlation": [
+          0.23838892618758417,
+          0.3685119983094071,
+          0.2115615899261848,
+          null
+        ],
+        "files_above_0_7": 0
+      },
+      {
+        "axis": "gyro_pitch_raw",
+        "sign": 1,
+        "per_file_correlation": [
+          0.12171745194706873,
+          0.1446283213275302,
+          0.2188409002045059,
+          null
+        ],
+        "files_above_0_7": 0
+      },
+      {
+        "axis": "gyro_yaw_raw",
+        "sign": 1,
+        "per_file_correlation": [
+          0.09291126565874819,
+          0.2157484758203887,
+          0.09708233274357213,
+          null
+        ],
+        "files_above_0_7": 0
+      }
+    ]
+  },
+  "verdict": "PASS_ALIGNMENT",
+  "real_data_verdict": "The axis/time alignment gate passes and the loader now maps vehicle yaw to -GYROSCOPE Pitch. The focused navigation/ISRO gate remains red: mapped 60 s replay still has zero ISRO passes; only one S-S1 late-route scenario passes the weaker competitive map-aided criterion, while S-M and the other S-S1 site fail. The separate weak product_gate.py criterion may pass and must not be read as ISRO or field readiness.",
+  "post_mapping_60s_stress": {
+    "source": "C:\\Users\\Dhruva P Gowda\\Desktop\\New folder\\SIH 2026\\lab\\stress\\results\\hardened_slim_report.json",
+    "all_60s_rows": 24,
+    "focus_60s_rows": 16,
+    "focus_pass_competitive_or_better": 2,
+    "pass_isro_rows": 0,
+    "focus_rows": [
+      {
+        "csv": "S-S1.csv",
+        "site": "mid_route",
+        "deny_s": 60.0,
+        "v0": 2.43,
+        "bias_dps": 0.2034,
+        "method": "car_bias",
+        "final_m": 190.86,
+        "drift_pct": 148.25,
+        "m_per_km": 1482.5,
+        "verdict": "FAIL"
+      },
+      {
+        "csv": "S-S1.csv",
+        "site": "mid_route",
+        "deny_s": 60.0,
+        "v0": 2.43,
+        "bias_dps": 0.2034,
+        "method": "idr_bias",
+        "final_m": 190.68,
+        "drift_pct": 148.12,
+        "m_per_km": 1481.2,
+        "verdict": "FAIL"
+      },
+      {
+        "csv": "S-S1.csv",
+        "site": "mid_route",
+        "deny_s": 60.0,
+        "v0": 2.43,
+        "bias_dps": 0.2034,
+        "method": "car_bias_map",
+        "final_m": 206.06,
+        "drift_pct": 160.06,
+        "m_per_km": 1600.6,
+        "verdict": "FAIL"
+      },
+      {
+        "csv": "S-S1.csv",
+        "site": "mid_route",
+        "deny_s": 60.0,
+        "v0": 2.43,
+        "bias_dps": 0.2034,
+        "method": "idr_bias_map",
+        "final_m": 206.06,
+        "drift_pct": 160.06,
+        "m_per_km": 1600.6,
+        "verdict": "FAIL"
+      },
+      {
+        "csv": "S-S1.csv",
+        "site": "late_route",
+        "deny_s": 60.0,
+        "v0": 1.95,
+        "bias_dps": 0.1776,
+        "method": "car_bias",
+        "final_m": 80.15,
+        "drift_pct": 135.1,
+        "m_per_km": 1351.0,
+        "verdict": "FAIL"
+      },
+      {
+        "csv": "S-S1.csv",
+        "site": "late_route",
+        "deny_s": 60.0,
+        "v0": 1.95,
+        "bias_dps": 0.1776,
+        "method": "idr_bias",
+        "final_m": 80.06,
+        "drift_pct": 134.95,
+        "m_per_km": 1349.5,
+        "verdict": "FAIL"
+      },
+      {
+        "csv": "S-S1.csv",
+        "site": "late_route",
+        "deny_s": 60.0,
+        "v0": 1.95,
+        "bias_dps": 0.1776,
+        "method": "car_bias_map",
+        "final_m": 44.48,
+        "drift_pct": 74.98,
+        "m_per_km": 749.8,
+        "verdict": "PASS_COMPETITIVE"
+      },
+      {
+        "csv": "S-S1.csv",
+        "site": "late_route",
+        "deny_s": 60.0,
+        "v0": 1.95,
+        "bias_dps": 0.1776,
+        "method": "idr_bias_map",
+        "final_m": 44.48,
+        "drift_pct": 74.98,
+        "m_per_km": 749.8,
+        "verdict": "PASS_COMPETITIVE"
+      },
+      {
+        "csv": "S-M.csv",
+        "site": "mid_route",
+        "deny_s": 60.0,
+        "v0": 2.59,
+        "bias_dps": -0.0229,
+        "method": "car_bias",
+        "final_m": 348.32,
+        "drift_pct": 251.16,
+        "m_per_km": 2511.6,
+        "verdict": "FAIL"
+      },
+      {
+        "csv": "S-M.csv",
+        "site": "mid_route",
+        "deny_s": 60.0,
+        "v0": 2.59,
+        "bias_dps": -0.0229,
+        "method": "idr_bias",
+        "final_m": 348.52,
+        "drift_pct": 251.31,
+        "m_per_km": 2513.1,
+        "verdict": "FAIL"
+      },
+      {
+        "csv": "S-M.csv",
+        "site": "mid_route",
+        "deny_s": 60.0,
+        "v0": 2.59,
+        "bias_dps": -0.0229,
+        "method": "car_bias_map",
+        "final_m": 551.11,
+        "drift_pct": 397.39,
+        "m_per_km": 3973.9,
+        "verdict": "FAIL"
+      },
+      {
+        "csv": "S-M.csv",
+        "site": "mid_route",
+        "deny_s": 60.0,
+        "v0": 2.59,
+        "bias_dps": -0.0229,
+        "method": "idr_bias_map",
+        "final_m": 551.11,
+        "drift_pct": 397.39,
+        "m_per_km": 3973.9,
+        "verdict": "FAIL"
+      },
+      {
+        "csv": "S-M.csv",
+        "site": "late_route",
+        "deny_s": 60.0,
+        "v0": 1.32,
+        "bias_dps": -0.0516,
+        "method": "car_bias",
+        "final_m": 677.54,
+        "drift_pct": 284.31,
+        "m_per_km": 2843.1,
+        "verdict": "FAIL"
+      },
+      {
+        "csv": "S-M.csv",
+        "site": "late_route",
+        "deny_s": 60.0,
+        "v0": 1.32,
+        "bias_dps": -0.0516,
+        "method": "idr_bias",
+        "final_m": 677.29,
+        "drift_pct": 284.2,
+        "m_per_km": 2842.0,
+        "verdict": "FAIL"
+      },
+      {
+        "csv": "S-M.csv",
+        "site": "late_route",
+        "deny_s": 60.0,
+        "v0": 1.32,
+        "bias_dps": -0.0516,
+        "method": "car_bias_map",
+        "final_m": 779.02,
+        "drift_pct": 326.89,
+        "m_per_km": 3268.9,
+        "verdict": "FAIL"
+      },
+      {
+        "csv": "S-M.csv",
+        "site": "late_route",
+        "deny_s": 60.0,
+        "v0": 1.32,
+        "bias_dps": -0.0516,
+        "method": "idr_bias_map",
+        "final_m": 779.02,
+        "drift_pct": 326.89,
+        "m_per_km": 3268.9,
+        "verdict": "FAIL"
+      }
+    ],
+    "adversarial_tw": {
+      "car": {
+        "final_m": 68.76004952204246,
+        "drift_pct": 7.171469495415359
+      },
+      "lean": {
+        "final_m": 8.866111129754325,
+        "drift_pct": 0.9247091290941097
+      },
+      "verdict": "PASS_CLAIM",
+      "noise_from": "S-S1.csv"
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "finding": "F11",
+  "name": "exp11_light_count",
+  "rmse_dr_m": 11.889854313640718,
+  "rmse_phase_m": 11.889854313640718,
+  "rmse_count_m": 10.035565694248014,
+  "gain_phase_pct": 0.0,
+  "gain_count_pct": 15.595553742532902,
+  "bible": {
+    "phase_gain_pct": 0.0,
+    "count_gain_pct": [
+      9.0,
+      21.0
+    ],
+    "detection": 0.6,
+    "false_alarm": 0.1
+  },
+  "p_detect": 0.6,
+  "p_fa": 0.1,
+  "spacing_m": 20.0,
+  "seed": 26168
+}

@@ -1,0 +1,18 @@
+{
+  "name": "sih26168-idr",
+  "private": true,
+  "version": "0.2.0",
+  "description": "Intelligent Dead Reckoning — SIH 26168 / ISRO. Lean-aware smartphone INS for two-wheelers.",
+  "workspaces": [
+    "core/ts",
+    "web"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @sih26168/web",
+    "build": "npm run build -w @sih26168/nav-core && npm run build -w @sih26168/web",
+    "test": "npm run test -w @sih26168/nav-core",
+    "lab": "python -m lab.eval.harness",
+    "gate:prototype": "python lab/stress/product_gate.py --level prototype",
+    "gate:deployment": "python lab/stress/product_gate.py --level deployment"
+  }
+}

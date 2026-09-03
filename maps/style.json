@@ -1,0 +1,371 @@
+{
+  "version": 8,
+  "name": "SIH26168 Nodal Campus (offline, no API key)",
+  "metadata": {
+    "sih26168:origin": {
+      "lat": 12.9912,
+      "lon": 77.5523,
+      "alt": 920
+    },
+    "sih26168:note": "CARTO Dark Matter raster + local GeoJSON. No Mapbox/Google key."
+  },
+  "glyphs": "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
+  "sources": {
+    "carto-dark": {
+      "type": "raster",
+      "tiles": [
+        "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png"
+      ],
+      "tileSize": 256,
+      "attribution": "© OpenStreetMap contributors © CARTO",
+      "maxzoom": 19
+    },
+    "campus": {
+      "type": "geojson",
+      "data": "graphs/campus.geojson"
+    },
+    "lights": {
+      "type": "geojson",
+      "data": "graphs/lights.geojson"
+    }
+  },
+  "layers": [
+    {
+      "id": "background",
+      "type": "background",
+      "paint": {
+        "background-color": "#0b0f14"
+      }
+    },
+    {
+      "id": "basemap",
+      "type": "raster",
+      "source": "carto-dark",
+      "paint": {
+        "raster-opacity": 0.88,
+        "raster-saturation": -0.15
+      }
+    },
+    {
+      "id": "basement-fill",
+      "type": "fill",
+      "source": "campus",
+      "filter": [
+        "==",
+        [
+          "get",
+          "kind"
+        ],
+        "basement"
+      ],
+      "paint": {
+        "fill-color": "#3a2410",
+        "fill-opacity": 0.45,
+        "fill-outline-color": "#f5a623"
+      }
+    },
+    {
+      "id": "tunnel-tube-fill",
+      "type": "fill",
+      "source": "campus",
+      "filter": [
+        "==",
+        [
+          "get",
+          "kind"
+        ],
+        "tunnel_tube"
+      ],
+      "paint": {
+        "fill-color": "#2a1408",
+        "fill-opacity": 0.55,
+        "fill-outline-color": "#ff6b2b"
+      }
+    },
+    {
+      "id": "edges-outdoor-glow",
+      "type": "line",
+      "source": "campus",
+      "filter": [
+        "all",
+        [
+          "==",
+          [
+            "geometry-type"
+          ],
+          "LineString"
+        ],
+        [
+          "==",
+          [
+            "get",
+            "style"
+          ],
+          "outdoor"
+        ]
+      ],
+      "paint": {
+        "line-color": "#2ee6c7",
+        "line-width": 12,
+        "line-blur": 10,
+        "line-opacity": 0.4
+      }
+    },
+    {
+      "id": "edges-outdoor",
+      "type": "line",
+      "source": "campus",
+      "filter": [
+        "all",
+        [
+          "==",
+          [
+            "geometry-type"
+          ],
+          "LineString"
+        ],
+        [
+          "==",
+          [
+            "get",
+            "style"
+          ],
+          "outdoor"
+        ]
+      ],
+      "paint": {
+        "line-color": "#2ee6c7",
+        "line-width": 3.2,
+        "line-opacity": 0.95
+      }
+    },
+    {
+      "id": "edges-garage-glow",
+      "type": "line",
+      "source": "campus",
+      "filter": [
+        "all",
+        [
+          "==",
+          [
+            "geometry-type"
+          ],
+          "LineString"
+        ],
+        [
+          "==",
+          [
+            "get",
+            "style"
+          ],
+          "garage"
+        ]
+      ],
+      "paint": {
+        "line-color": "#f5a623",
+        "line-width": 12,
+        "line-blur": 10,
+        "line-opacity": 0.42
+      }
+    },
+    {
+      "id": "edges-garage",
+      "type": "line",
+      "source": "campus",
+      "filter": [
+        "all",
+        [
+          "==",
+          [
+            "geometry-type"
+          ],
+          "LineString"
+        ],
+        [
+          "==",
+          [
+            "get",
+            "style"
+          ],
+          "garage"
+        ]
+      ],
+      "paint": {
+        "line-color": "#f5a623",
+        "line-width": 3.2,
+        "line-opacity": 0.95
+      }
+    },
+    {
+      "id": "edges-tunnel-glow",
+      "type": "line",
+      "source": "campus",
+      "filter": [
+        "all",
+        [
+          "==",
+          [
+            "geometry-type"
+          ],
+          "LineString"
+        ],
+        [
+          "==",
+          [
+            "get",
+            "style"
+          ],
+          "tunnel"
+        ]
+      ],
+      "paint": {
+        "line-color": "#ff6b2b",
+        "line-width": 14,
+        "line-blur": 12,
+        "line-opacity": 0.5
+      }
+    },
+    {
+      "id": "edges-tunnel",
+      "type": "line",
+      "source": "campus",
+      "filter": [
+        "all",
+        [
+          "==",
+          [
+            "geometry-type"
+          ],
+          "LineString"
+        ],
+        [
+          "==",
+          [
+            "get",
+            "style"
+          ],
+          "tunnel"
+        ]
+      ],
+      "paint": {
+        "line-color": "#ff6b2b",
+        "line-width": 4,
+        "line-opacity": 0.98
+      }
+    },
+    {
+      "id": "lights-glow",
+      "type": "circle",
+      "source": "lights",
+      "paint": {
+        "circle-color": "#ffd27a",
+        "circle-radius": 7,
+        "circle-blur": 0.85,
+        "circle-opacity": 0.55
+      }
+    },
+    {
+      "id": "lights-core",
+      "type": "circle",
+      "source": "lights",
+      "paint": {
+        "circle-color": "#fff4c8",
+        "circle-radius": 2.4,
+        "circle-opacity": 0.95,
+        "circle-stroke-color": "#ff6b2b",
+        "circle-stroke-width": 0.6
+      }
+    },
+    {
+      "id": "nodes",
+      "type": "circle",
+      "source": "campus",
+      "filter": [
+        "==",
+        [
+          "get",
+          "feature"
+        ],
+        "node"
+      ],
+      "paint": {
+        "circle-radius": [
+          "match",
+          [
+            "get",
+            "kind"
+          ],
+          "portal",
+          6,
+          "junction",
+          5,
+          "ramp",
+          4.5,
+          4
+        ],
+        "circle-color": [
+          "match",
+          [
+            "get",
+            "kind"
+          ],
+          "garage",
+          "#f5a623",
+          "tunnel",
+          "#ff6b2b",
+          "portal",
+          "#ffe08a",
+          "ramp",
+          "#ffc857",
+          "junction",
+          "#e8fff8",
+          "#2ee6c7"
+        ],
+        "circle-stroke-color": "#0b0f14",
+        "circle-stroke-width": 1.2
+      }
+    },
+    {
+      "id": "node-labels",
+      "type": "symbol",
+      "source": "campus",
+      "filter": [
+        "==",
+        [
+          "get",
+          "feature"
+        ],
+        "node"
+      ],
+      "layout": {
+        "text-field": [
+          "get",
+          "id"
+        ],
+        "text-font": [
+          "Open Sans Regular",
+          "Arial Unicode MS Regular"
+        ],
+        "text-size": 11,
+        "text-offset": [
+          0,
+          1.15
+        ],
+        "text-anchor": "top",
+        "text-optional": true
+      },
+      "paint": {
+        "text-color": "#d7ece7",
+        "text-halo-color": "#0b0f14",
+        "text-halo-width": 1.2
+      }
+    }
+  ],
+  "center": [
+    77.5523,
+    12.9912
+  ],
+  "zoom": 16.2,
+  "bearing": 0,
+  "pitch": 0
+}

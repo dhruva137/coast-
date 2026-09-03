@@ -1,0 +1,2492 @@
+{
+  "seed": 26168,
+  "mapping": {
+    "vehicle_yaw_rate": "-GYROSCOPE Pitch",
+    "loader_expression": "gz = -gyro_pitch_raw"
+  },
+  "outage_lengths_s": [
+    20,
+    40,
+    60,
+    90
+  ],
+  "isro_bars": {
+    "drift_pct": 10.0,
+    "m_per_km": 100.0
+  },
+  "files": [
+    {
+      "csv": "C:\\Users\\Dhruva P Gowda\\Desktop\\New folder\\SIH 2026\\data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\M (Driver B)\\S-M.csv",
+      "name": "S-M.csv",
+      "file_bytes": 19798721,
+      "n": 105974,
+      "hz_est": 10.000000000009095,
+      "header_map": {
+        "lat": "GPS LATITUDE (degrees)",
+        "lon": " GPS LONGITUDE (degrees)",
+        "speed": " GPS SPEED (Kmh)",
+        "acc_h": " GPS ACCURACY (m)",
+        "bearing": " GPS ORIENTATION (\u00b0)",
+        "t": " TIME SINCE START (ms)",
+        "ax": " ACCELEROMETER X (m/s) ",
+        "ay": " ACCELEROMETER Y (m/s)",
+        "az": " ACCELEROMETER Z (m/s)",
+        "gyro_yaw_raw": " GYROSCOPE Yaw (rad/s)",
+        "gyro_pitch_raw": " GYROSCOPE Pitch (rad/s)",
+        "gyro_roll_raw": " GYROSCOPE Roll (rad/s)"
+      },
+      "trials": [
+        {
+          "site": "mid_route",
+          "deny_s": 19.900999999999954,
+          "requested_deny_s": 20,
+          "speed0_mps": 2.5861111111111112,
+          "phi_mean_deg": 3.8579750928689425,
+          "car_vs_lean_final_ratio": 0.9978785847991067,
+          "scores": {
+            "car_style": {
+              "ate_m": 41.42295981446235,
+              "final_error_m": 49.16501888411111,
+              "max_error_m": 54.389072185751736,
+              "drift_pct": 94.74456650220907,
+              "distance_m": 51.89217777777766,
+              "n": 200
+            },
+            "inekf_basic": {
+              "ate_m": 63.93250839307181,
+              "final_error_m": 91.37232088167288,
+              "max_error_m": 91.37232088167288,
+              "drift_pct": 176.08110662259045,
+              "distance_m": 51.89217777777766,
+              "n": 200
+            },
+            "idr_lean": {
+              "ate_m": 41.331140840298254,
+              "final_error_m": 49.060719465698156,
+              "max_error_m": 54.203121665497754,
+              "drift_pct": 94.54357393862925,
+              "distance_m": 51.89217777777766,
+              "n": 200
+            }
+          },
+          "gates": {
+            "car_style": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 947.4456650220907,
+              "verdict": "FAIL"
+            },
+            "inekf_basic": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 1760.8110662259046,
+              "verdict": "FAIL"
+            },
+            "idr_lean": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 945.4357393862924,
+              "verdict": "FAIL"
+            }
+          },
+          "map_aid_car_style": {
+            "scores": {
+              "ate_m": 42.479823170800785,
+              "final_error_m": 48.69978280502255,
+              "max_error_m": 54.34732422149306,
+              "drift_pct": 65.98550990276875,
+              "distance_m": 73.80375309182706,
+              "n": 200
+            },
+            "snap_frac": 1.0,
+            "mean_abs_cross_track_m": 13.273167780531944,
+            "map": {
+              "n_vertices": 6,
+              "length_m": 381.63945681566685,
+              "origin_lat": 52.36252,
+              "origin_lon": -1.433979
+            }
+          }
+        },
+        {
+          "site": "mid_route",
+          "deny_s": 39.89999999999998,
+          "requested_deny_s": 40,
+          "speed0_mps": 2.5861111111111112,
+          "phi_mean_deg": 3.446485117802256,
+          "car_vs_lean_final_ratio": 0.9999168390163381,
+          "scores": {
+            "car_style": {
+              "ate_m": 94.91561644015596,
+              "final_error_m": 167.81515490768146,
+              "max_error_m": 167.81515490768146,
+              "drift_pct": 166.1437305182534,
+              "distance_m": 101.00601111111108,
+              "n": 400
+            },
+            "inekf_basic": {
+              "ate_m": 146.10545572606298,
+              "final_error_m": 257.18143968835057,
+              "max_error_m": 257.18143968835057,
+              "drift_pct": 254.61993485262934,
+              "distance_m": 101.00601111111108,
+              "n": 400
+            },
+            "idr_lean": {
+              "ate_m": 94.81568815789977,
+              "final_error_m": 167.80119923432596,
+              "max_error_m": 167.80119923432596,
+              "drift_pct": 166.12991384219424,
+              "distance_m": 101.00601111111108,
+              "n": 400
+            }
+          },
+          "gates": {
+            "car_style": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 1626.3390960420752,
+              "verdict": "FAIL"
+            },
+            "inekf_basic": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2492.4103569290105,
+              "verdict": "FAIL"
+            },
+            "idr_lean": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 1626.2038480830804,
+              "verdict": "FAIL"
+            }
+          },
+          "map_aid_car_style": {
+            "scores": {
+              "ate_m": 122.65783473499437,
+              "final_error_m": 164.37403364299976,
+              "max_error_m": 164.37403364299976,
+              "drift_pct": 57.28315862640343,
+              "distance_m": 286.9500173952264,
+              "n": 400
+            },
+            "snap_frac": 1.0,
+            "mean_abs_cross_track_m": 64.07063381886422,
+            "map": {
+              "n_vertices": 5,
+              "length_m": 415.3130127471079,
+              "origin_lat": 52.36252,
+              "origin_lon": -1.433979
+            }
+          }
+        },
+        {
+          "site": "mid_route",
+          "deny_s": 59.96500000000003,
+          "requested_deny_s": 60,
+          "speed0_mps": 2.5861111111111112,
+          "phi_mean_deg": 3.2890323544433615,
+          "car_vs_lean_final_ratio": 1.002558492271304,
+          "scores": {
+            "car_style": {
+              "ate_m": 129.2538413903884,
+              "final_error_m": 188.73584575043685,
+              "max_error_m": 190.4488734383276,
+              "drift_pct": 136.09404800002903,
+              "distance_m": 138.68045555555565,
+              "n": 588
+            },
+            "inekf_basic": {
+              "ate_m": 195.08021830768857,
+              "final_error_m": 286.88906345348363,
+              "max_error_m": 286.88906345348363,
+              "drift_pct": 206.87058050408214,
+              "distance_m": 138.68045555555565,
+              "n": 588
+            },
+            "idr_lean": {
+              "ate_m": 129.23806094122708,
+              "final_error_m": 189.21872495310737,
+              "max_error_m": 190.46377376885414,
+              "drift_pct": 136.4422435700076,
+              "distance_m": 138.68045555555565,
+              "n": 588
+            }
+          },
+          "gates": {
+            "car_style": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 1217.0526697350617,
+              "verdict": "FAIL"
+            },
+            "inekf_basic": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 1849.9882690834609,
+              "verdict": "FAIL"
+            },
+            "idr_lean": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 1220.1664895843487,
+              "verdict": "FAIL"
+            }
+          },
+          "map_aid_car_style": {
+            "scores": {
+              "ate_m": 150.84810814521563,
+              "final_error_m": 187.8551442031823,
+              "max_error_m": 195.92222801034669,
+              "drift_pct": 46.77667100281932,
+              "distance_m": 401.60007152253297,
+              "n": 588
+            },
+            "snap_frac": 0.7891156462585034,
+            "mean_abs_cross_track_m": 62.85570500433087,
+            "map": {
+              "n_vertices": 6,
+              "length_m": 437.5100300456168,
+              "origin_lat": 52.36252,
+              "origin_lon": -1.433979
+            }
+          },
+          "figure": "C:\\Users\\Dhruva P Gowda\\Desktop\\New folder\\SIH 2026\\lab\\stress\\results\\figures\\S-M.csv_mid_route_deny60.png"
+        },
+        {
+          "site": "mid_route",
+          "deny_s": 89.96500000000003,
+          "requested_deny_s": 90,
+          "speed0_mps": 2.5861111111111112,
+          "phi_mean_deg": 3.592367827837845,
+          "car_vs_lean_final_ratio": 1.0542914242318036,
+          "scores": {
+            "car_style": {
+              "ate_m": 191.37269575062402,
+              "final_error_m": 326.12610003996537,
+              "max_error_m": 339.3008998091979,
+              "drift_pct": 143.36627595785697,
+              "distance_m": 227.47755555555565,
+              "n": 888
+            },
+            "inekf_basic": {
+              "ate_m": 272.9501972987471,
+              "final_error_m": 431.2613993930329,
+              "max_error_m": 450.7741467600241,
+              "drift_pct": 189.58415406732652,
+              "distance_m": 227.47755555555565,
+              "n": 888
+            },
+            "idr_lean": {
+              "ate_m": 194.6530094454299,
+              "final_error_m": 343.83195049029877,
+              "max_error_m": 349.94853445782746,
+              "drift_pct": 151.14983526641885,
+              "distance_m": 227.47755555555565,
+              "n": 888
+            }
+          },
+          "gates": {
+            "car_style": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 1401.731369269067,
+              "verdict": "FAIL"
+            },
+            "inekf_basic": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 1853.6162294585117,
+              "verdict": "FAIL"
+            },
+            "idr_lean": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 1477.8333616970808,
+              "verdict": "FAIL"
+            }
+          },
+          "map_aid_car_style": {
+            "scores": {
+              "ate_m": 200.22093596655733,
+              "final_error_m": 328.639689930821,
+              "max_error_m": 339.29397495007174,
+              "drift_pct": 53.81824555749895,
+              "distance_m": 610.647349289202,
+              "n": 888
+            },
+            "snap_frac": 0.8704954954954955,
+            "mean_abs_cross_track_m": 42.85855655990929,
+            "map": {
+              "n_vertices": 6,
+              "length_m": 724.8475009211097,
+              "origin_lat": 52.36252,
+              "origin_lon": -1.433979
+            }
+          }
+        },
+        {
+          "site": "high_speed",
+          "deny_s": 19.998999999999796,
+          "requested_deny_s": 20,
+          "speed0_mps": 5.361111111111112,
+          "phi_mean_deg": 1.0974697794770314,
+          "car_vs_lean_final_ratio": 1.0000982965362426,
+          "scores": {
+            "car_style": {
+              "ate_m": 185.29391102706109,
+              "final_error_m": 282.72562058238543,
+              "max_error_m": 293.3915053930928,
+              "drift_pct": 234.54867185855292,
+              "distance_m": 120.5402777777766,
+              "n": 201
+            },
+            "inekf_basic": {
+              "ate_m": 218.06432939523594,
+              "final_error_m": 350.4704408055874,
+              "max_error_m": 350.99317371433284,
+              "drift_pct": 290.7496541958375,
+              "distance_m": 120.5402777777766,
+              "n": 201
+            },
+            "idr_lean": {
+              "ate_m": 185.30315677178638,
+              "final_error_m": 282.7534115315957,
+              "max_error_m": 293.4108277992055,
+              "drift_pct": 234.57172718057691,
+              "distance_m": 120.5402777777766,
+              "n": 201
+            }
+          },
+          "gates": {
+            "car_style": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2345.4867185855296,
+              "verdict": "FAIL"
+            },
+            "inekf_basic": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2907.4965419583746,
+              "verdict": "FAIL"
+            },
+            "idr_lean": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2345.717271805769,
+              "verdict": "FAIL"
+            }
+          },
+          "map_aid_car_style": {
+            "scores": {
+              "ate_m": 185.27994183424596,
+              "final_error_m": 282.67302915071946,
+              "max_error_m": 293.3563242688144,
+              "drift_pct": 72.83081505081971,
+              "distance_m": 388.1228418952562,
+              "n": 201
+            },
+            "snap_frac": 1.0,
+            "mean_abs_cross_track_m": 2.4170244474591804,
+            "map": {
+              "n_vertices": 5,
+              "length_m": 884.2947811161141,
+              "origin_lat": 52.472767,
+              "origin_lon": -1.381605
+            }
+          }
+        },
+        {
+          "site": "high_speed",
+          "deny_s": 39.998999999999796,
+          "requested_deny_s": 40,
+          "speed0_mps": 5.361111111111112,
+          "phi_mean_deg": 1.0150720232413513,
+          "car_vs_lean_final_ratio": 1.0003258555224865,
+          "scores": {
+            "car_style": {
+              "ate_m": 368.9396185671029,
+              "final_error_m": 564.233352150144,
+              "max_error_m": 585.1989058658374,
+              "drift_pct": 234.98542160559114,
+              "distance_m": 240.11419444444329,
+              "n": 401
+            },
+            "inekf_basic": {
+              "ate_m": 439.8602904666431,
+              "final_error_m": 666.3713710493207,
+              "max_error_m": 686.5746959556385,
+              "drift_pct": 277.5226898147844,
+              "distance_m": 240.11419444444329,
+              "n": 401
+            },
+            "idr_lean": {
+              "ate_m": 369.00162613325307,
+              "final_error_m": 564.4172107039133,
+              "max_error_m": 585.321632479213,
+              "drift_pct": 235.0619929029252,
+              "distance_m": 240.11419444444329,
+              "n": 401
+            }
+          },
+          "gates": {
+            "car_style": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2349.8542160559114,
+              "verdict": "FAIL"
+            },
+            "inekf_basic": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2775.2268981478446,
+              "verdict": "FAIL"
+            },
+            "idr_lean": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2350.6199290292516,
+              "verdict": "FAIL"
+            }
+          },
+          "map_aid_car_style": {
+            "scores": {
+              "ate_m": 368.8513111691529,
+              "final_error_m": 563.9378968808572,
+              "max_error_m": 585.0212420210765,
+              "drift_pct": 72.6878766973459,
+              "distance_m": 775.8348744027196,
+              "n": 401
+            },
+            "snap_frac": 1.0,
+            "mean_abs_cross_track_m": 7.17876145167064,
+            "map": {
+              "n_vertices": 5,
+              "length_m": 1272.0025534453148,
+              "origin_lat": 52.472767,
+              "origin_lon": -1.381605
+            }
+          }
+        },
+        {
+          "site": "high_speed",
+          "deny_s": 59.89900000000034,
+          "requested_deny_s": 60,
+          "speed0_mps": 5.361111111111112,
+          "phi_mean_deg": 0.9788214436986998,
+          "car_vs_lean_final_ratio": 1.0007301020061936,
+          "scores": {
+            "car_style": {
+              "ate_m": 550.8952755968663,
+              "final_error_m": 844.803088464786,
+              "max_error_m": 874.128702925553,
+              "drift_pct": 235.69357362682592,
+              "distance_m": 358.4328055555576,
+              "n": 600
+            },
+            "inekf_basic": {
+              "ate_m": 646.9565155087912,
+              "final_error_m": 1016.0017159270144,
+              "max_error_m": 1021.3219720770437,
+              "drift_pct": 283.45667588998987,
+              "distance_m": 358.4328055555576,
+              "n": 600
+            },
+            "idr_lean": {
+              "ate_m": 551.090708472304,
+              "final_error_m": 845.4198808945126,
+              "max_error_m": 874.5344333140945,
+              "drift_pct": 235.8656539777778,
+              "distance_m": 358.4328055555576,
+              "n": 600
+            }
+          },
+          "gates": {
+            "car_style": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2356.9357362682595,
+              "verdict": "FAIL"
+            },
+            "inekf_basic": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2834.5667588998986,
+              "verdict": "FAIL"
+            },
+            "idr_lean": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2358.656539777778,
+              "verdict": "FAIL"
+            }
+          },
+          "map_aid_car_style": {
+            "scores": {
+              "ate_m": 550.789590115882,
+              "final_error_m": 844.1399988290427,
+              "max_error_m": 873.8365395970692,
+              "drift_pct": 72.70727146149176,
+              "distance_m": 1161.0117968408813,
+              "n": 600
+            },
+            "snap_frac": 1.0,
+            "mean_abs_cross_track_m": 8.486981641807734,
+            "map": {
+              "n_vertices": 6,
+              "length_m": 1848.44187483129,
+              "origin_lat": 52.472767,
+              "origin_lon": -1.381605
+            }
+          },
+          "figure": "C:\\Users\\Dhruva P Gowda\\Desktop\\New folder\\SIH 2026\\lab\\stress\\results\\figures\\S-M.csv_high_speed_deny60.png"
+        },
+        {
+          "site": "high_speed",
+          "deny_s": 89.89900000000034,
+          "requested_deny_s": 90,
+          "speed0_mps": 5.361111111111112,
+          "phi_mean_deg": 1.0537511327004523,
+          "car_vs_lean_final_ratio": 1.001751366295408,
+          "scores": {
+            "car_style": {
+              "ate_m": 827.3868073183919,
+              "final_error_m": 1286.5565185509413,
+              "max_error_m": 1313.4027667526686,
+              "drift_pct": 239.25808862092978,
+              "distance_m": 537.7274916666688,
+              "n": 900
+            },
+            "inekf_basic": {
+              "ate_m": 985.6191305721875,
+              "final_error_m": 1589.6051965871732,
+              "max_error_m": 1589.6051965871732,
+              "drift_pct": 295.61538534327934,
+              "distance_m": 537.7274916666688,
+              "n": 900
+            },
+            "idr_lean": {
+              "ate_m": 828.0468983566718,
+              "final_error_m": 1288.8097502746689,
+              "max_error_m": 1314.7297134516186,
+              "drift_pct": 239.67711717324423,
+              "distance_m": 537.7274916666688,
+              "n": 900
+            }
+          },
+          "gates": {
+            "car_style": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2392.5808862092977,
+              "verdict": "FAIL"
+            },
+            "inekf_basic": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2956.1538534327933,
+              "verdict": "FAIL"
+            },
+            "idr_lean": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2396.7711717324423,
+              "verdict": "FAIL"
+            }
+          },
+          "map_aid_car_style": {
+            "scores": {
+              "ate_m": 829.2323790881177,
+              "final_error_m": 1281.1429492308664,
+              "max_error_m": 1311.7022039856283,
+              "drift_pct": 73.53800588624608,
+              "distance_m": 1742.1507882776032,
+              "n": 900
+            },
+            "snap_frac": 1.0,
+            "mean_abs_cross_track_m": 27.915563892692855,
+            "map": {
+              "n_vertices": 5,
+              "length_m": 2393.5370522078865,
+              "origin_lat": 52.472767,
+              "origin_lon": -1.381605
+            }
+          }
+        }
+      ]
+    },
+    {
+      "csv": "C:\\Users\\Dhruva P Gowda\\Desktop\\New folder\\SIH 2026\\data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\S (Driver A)\\S1\\S-S1.csv",
+      "name": "S-S1.csv",
+      "file_bytes": 9631499,
+      "n": 51746,
+      "hz_est": 10.000000000009095,
+      "header_map": {
+        "lat": "GPS LATITUDE (degrees)",
+        "lon": " GPS LONGITUDE (degrees)",
+        "speed": " GPS SPEED (Kmh)",
+        "acc_h": " GPS ACCURACY (m)",
+        "bearing": " GPS ORIENTATION (\u00b0)",
+        "t": " TIME SINCE START (ms)",
+        "ax": " ACCELEROMETER X (m/s) ",
+        "ay": " ACCELEROMETER Y (m/s)",
+        "az": " ACCELEROMETER Z (m/s)",
+        "gyro_yaw_raw": " GYROSCOPE Yaw (rad/s)",
+        "gyro_pitch_raw": " GYROSCOPE Pitch (rad/s)",
+        "gyro_roll_raw": " GYROSCOPE Roll (rad/s)"
+      },
+      "trials": [
+        {
+          "site": "mid_route",
+          "deny_s": 19.90000000000009,
+          "requested_deny_s": 20,
+          "speed0_mps": 2.433333333333333,
+          "phi_mean_deg": 0.8633607647575823,
+          "car_vs_lean_final_ratio": 0.9997478533593188,
+          "scores": {
+            "car_style": {
+              "ate_m": 41.04503374620461,
+              "final_error_m": 39.28279042198131,
+              "max_error_m": 53.39402618360531,
+              "drift_pct": 108.28665925383136,
+              "distance_m": 36.27666666666644,
+              "n": 200
+            },
+            "inekf_basic": {
+              "ate_m": 67.82895220435319,
+              "final_error_m": 98.48561217371832,
+              "max_error_m": 98.48561217371832,
+              "drift_pct": 271.48473446766224,
+              "distance_m": 36.27666666666644,
+              "n": 200
+            },
+            "idr_lean": {
+              "ate_m": 41.04334992969751,
+              "final_error_m": 39.272885398339824,
+              "max_error_m": 53.39361218856357,
+              "drift_pct": 108.25935513646989,
+              "distance_m": 36.27666666666644,
+              "n": 200
+            }
+          },
+          "gates": {
+            "car_style": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 811.2368091549762,
+              "verdict": "FAIL"
+            },
+            "inekf_basic": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2033.8461934408595,
+              "verdict": "FAIL"
+            },
+            "idr_lean": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 811.0322585187508,
+              "verdict": "FAIL"
+            }
+          },
+          "map_aid_car_style": {
+            "scores": {
+              "ate_m": 41.02342617546384,
+              "final_error_m": 39.06472023165894,
+              "max_error_m": 53.39625014878895,
+              "drift_pct": 45.210980188922136,
+              "distance_m": 86.40538220675607,
+              "n": 200
+            },
+            "snap_frac": 1.0,
+            "mean_abs_cross_track_m": 0.9951398848679038,
+            "map": {
+              "n_vertices": 6,
+              "length_m": 308.43930002145356,
+              "origin_lat": 52.415676,
+              "origin_lon": -1.591959
+            }
+          }
+        },
+        {
+          "site": "mid_route",
+          "deny_s": 39.90000000000009,
+          "requested_deny_s": 40,
+          "speed0_mps": 2.433333333333333,
+          "phi_mean_deg": 1.5278610071505412,
+          "car_vs_lean_final_ratio": 0.9969639503917511,
+          "scores": {
+            "car_style": {
+              "ate_m": 53.74046568634789,
+              "final_error_m": 74.42939807655758,
+              "max_error_m": 82.94544086364674,
+              "drift_pct": 107.46591201078344,
+              "distance_m": 69.25861111111132,
+              "n": 400
+            },
+            "inekf_basic": {
+              "ate_m": 106.50150156011456,
+              "final_error_m": 167.99461027150264,
+              "max_error_m": 167.99461027150264,
+              "drift_pct": 242.56133291785125,
+              "distance_m": 69.25861111111132,
+              "n": 400
+            },
+            "idr_lean": {
+              "ate_m": 53.54354492528342,
+              "final_error_m": 74.20342673168504,
+              "max_error_m": 82.54758831988671,
+              "drift_pct": 107.13964017072298,
+              "distance_m": 69.25861111111132,
+              "n": 400
+            }
+          },
+          "gates": {
+            "car_style": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 766.6021019317891,
+              "verdict": "FAIL"
+            },
+            "inekf_basic": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 1730.297767756744,
+              "verdict": "FAIL"
+            },
+            "idr_lean": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 764.2746599205364,
+              "verdict": "FAIL"
+            }
+          },
+          "map_aid_car_style": {
+            "scores": {
+              "ate_m": 59.94613665703718,
+              "final_error_m": 73.57130463647727,
+              "max_error_m": 82.67889588012488,
+              "drift_pct": 39.66530079134306,
+              "distance_m": 185.48026403100965,
+              "n": 400
+            },
+            "snap_frac": 1.0,
+            "mean_abs_cross_track_m": 13.529625323280765,
+            "map": {
+              "n_vertices": 7,
+              "length_m": 457.92217972085166,
+              "origin_lat": 52.415676,
+              "origin_lon": -1.591959
+            }
+          }
+        },
+        {
+          "site": "mid_route",
+          "deny_s": 59.901000000000295,
+          "requested_deny_s": 60,
+          "speed0_mps": 2.433333333333333,
+          "phi_mean_deg": 1.2406606317846836,
+          "car_vs_lean_final_ratio": 0.9974947032354603,
+          "scores": {
+            "car_style": {
+              "ate_m": 108.46912931272384,
+              "final_error_m": 190.2465221278832,
+              "max_error_m": 204.20425514264969,
+              "drift_pct": 147.78181241520554,
+              "distance_m": 128.7347333333343,
+              "n": 600
+            },
+            "inekf_basic": {
+              "ate_m": 208.17263652796362,
+              "final_error_m": 389.67814781699695,
+              "max_error_m": 389.67814781699695,
+              "drift_pct": 302.6985318779501,
+              "distance_m": 128.7347333333343,
+              "n": 600
+            },
+            "idr_lean": {
+              "ate_m": 108.11301022652108,
+              "final_error_m": 189.76989813153128,
+              "max_error_m": 203.58607243664022,
+              "drift_pct": 147.41157511870392,
+              "distance_m": 128.7347333333343,
+              "n": 600
+            }
+          },
+          "gates": {
+            "car_style": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 1305.2119704902286,
+              "verdict": "FAIL"
+            },
+            "inekf_basic": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2673.4395850207297,
+              "verdict": "FAIL"
+            },
+            "idr_lean": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 1301.9420271635208,
+              "verdict": "FAIL"
+            }
+          },
+          "map_aid_car_style": {
+            "scores": {
+              "ate_m": 111.20611272209761,
+              "final_error_m": 189.99081030852219,
+              "max_error_m": 203.53664403864786,
+              "drift_pct": 50.996984738672325,
+              "distance_m": 372.5530269722933,
+              "n": 600
+            },
+            "snap_frac": 1.0,
+            "mean_abs_cross_track_m": 12.420536828277402,
+            "map": {
+              "n_vertices": 7,
+              "length_m": 628.3730762067139,
+              "origin_lat": 52.415676,
+              "origin_lon": -1.591959
+            }
+          },
+          "figure": "C:\\Users\\Dhruva P Gowda\\Desktop\\New folder\\SIH 2026\\lab\\stress\\results\\figures\\S-S1.csv_mid_route_deny60.png"
+        },
+        {
+          "site": "mid_route",
+          "deny_s": 89.9010000000003,
+          "requested_deny_s": 90,
+          "speed0_mps": 2.433333333333333,
+          "phi_mean_deg": 1.4366438317251962,
+          "car_vs_lean_final_ratio": 0.9968768345278612,
+          "scores": {
+            "car_style": {
+              "ate_m": 215.26914495332704,
+              "final_error_m": 361.12957600238593,
+              "max_error_m": 372.2738692431631,
+              "drift_pct": 177.7816240837297,
+              "distance_m": 203.13099166666683,
+              "n": 900
+            },
+            "inekf_basic": {
+              "ate_m": 396.9610635339817,
+              "final_error_m": 706.9467143776567,
+              "max_error_m": 706.9467143776567,
+              "drift_pct": 348.02503969347015,
+              "distance_m": 203.13099166666683,
+              "n": 900
+            },
+            "idr_lean": {
+              "ate_m": 214.67304505895578,
+              "final_error_m": 360.0017085796472,
+              "max_error_m": 371.33362191762035,
+              "drift_pct": 177.22638265381065,
+              "distance_m": 203.13099166666683,
+              "n": 900
+            }
+          },
+          "gates": {
+            "car_style": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 1650.8093880546444,
+              "verdict": "FAIL"
+            },
+            "inekf_basic": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 3231.621973109482,
+              "verdict": "FAIL"
+            },
+            "idr_lean": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 1645.6536371727898,
+              "verdict": "FAIL"
+            }
+          },
+          "map_aid_car_style": {
+            "scores": {
+              "ate_m": 222.14172025588198,
+              "final_error_m": 358.3274514125579,
+              "max_error_m": 371.3419963728671,
+              "drift_pct": 55.905079521390675,
+              "distance_m": 640.9568763343818,
+              "n": 900
+            },
+            "snap_frac": 1.0,
+            "mean_abs_cross_track_m": 34.7874470108361,
+            "map": {
+              "n_vertices": 6,
+              "length_m": 753.6703980490859,
+              "origin_lat": 52.415676,
+              "origin_lon": -1.591959
+            }
+          }
+        },
+        {
+          "site": "high_speed",
+          "deny_s": 19.899999999999636,
+          "requested_deny_s": 20,
+          "speed0_mps": 4.444444444444445,
+          "phi_mean_deg": 0.7316924420686861,
+          "car_vs_lean_final_ratio": 0.9999001837373781,
+          "scores": {
+            "car_style": {
+              "ate_m": 120.17835637594212,
+              "final_error_m": 153.9533775207425,
+              "max_error_m": 175.62017186662078,
+              "drift_pct": 174.11163579878203,
+              "distance_m": 88.42222222222063,
+              "n": 200
+            },
+            "inekf_basic": {
+              "ate_m": 141.47544781548888,
+              "final_error_m": 210.04208373554798,
+              "max_error_m": 210.04208373554798,
+              "drift_pct": 237.54445257853303,
+              "distance_m": 88.42222222222063,
+              "n": 200
+            },
+            "idr_lean": {
+              "ate_m": 120.17488465094405,
+              "final_error_m": 153.93801046998036,
+              "max_error_m": 175.61717313775608,
+              "drift_pct": 174.09425662601762,
+              "distance_m": 88.42222222222063,
+              "n": 200
+            }
+          },
+          "gates": {
+            "car_style": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 1740.6788915662157,
+              "verdict": "FAIL"
+            },
+            "inekf_basic": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2374.847680427093,
+              "verdict": "FAIL"
+            },
+            "idr_lean": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 1740.5051435048347,
+              "verdict": "FAIL"
+            }
+          },
+          "map_aid_car_style": {
+            "scores": {
+              "ate_m": 120.19640473123431,
+              "final_error_m": 153.93886658897648,
+              "max_error_m": 175.62015185905105,
+              "drift_pct": 63.81731930121375,
+              "distance_m": 241.21800833155444,
+              "n": 200
+            },
+            "snap_frac": 1.0,
+            "mean_abs_cross_track_m": 1.2132087180327578,
+            "map": {
+              "n_vertices": 6,
+              "length_m": 754.2911110333907,
+              "origin_lat": 52.41369,
+              "origin_lon": -1.596962
+            }
+          }
+        },
+        {
+          "site": "high_speed",
+          "deny_s": 39.899999999999636,
+          "requested_deny_s": 40,
+          "speed0_mps": 4.444444444444445,
+          "phi_mean_deg": 0.8314361886558638,
+          "car_vs_lean_final_ratio": 0.999985183613305,
+          "scores": {
+            "car_style": {
+              "ate_m": 254.9838904032171,
+              "final_error_m": 358.010264326344,
+              "max_error_m": 388.59565177258935,
+              "drift_pct": 199.58786652291377,
+              "distance_m": 179.37476388888723,
+              "n": 400
+            },
+            "inekf_basic": {
+              "ate_m": 349.4989342083642,
+              "final_error_m": 557.4663158365508,
+              "max_error_m": 557.4663158365508,
+              "drift_pct": 310.7830241838648,
+              "distance_m": 179.37476388888723,
+              "n": 400
+            },
+            "idr_lean": {
+              "ate_m": 254.9824281605786,
+              "final_error_m": 358.00495990782696,
+              "max_error_m": 388.5976873501761,
+              "drift_pct": 199.58490935190372,
+              "distance_m": 179.37476388888723,
+              "n": 400
+            }
+          },
+          "gates": {
+            "car_style": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 1995.8786652291378,
+              "verdict": "FAIL"
+            },
+            "inekf_basic": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 3107.8302418386484,
+              "verdict": "FAIL"
+            },
+            "idr_lean": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 1995.8490935190373,
+              "verdict": "FAIL"
+            }
+          },
+          "map_aid_car_style": {
+            "scores": {
+              "ate_m": 255.26538619642116,
+              "final_error_m": 357.99771414088724,
+              "max_error_m": 388.55592918911066,
+              "drift_pct": 66.8414813496178,
+              "distance_m": 535.5921306835824,
+              "n": 400
+            },
+            "snap_frac": 1.0,
+            "mean_abs_cross_track_m": 7.188788682019456,
+            "map": {
+              "n_vertices": 6,
+              "length_m": 1056.272342314013,
+              "origin_lat": 52.41369,
+              "origin_lon": -1.596962
+            }
+          }
+        },
+        {
+          "site": "high_speed",
+          "deny_s": 59.899999999999636,
+          "requested_deny_s": 60,
+          "speed0_mps": 4.444444444444445,
+          "phi_mean_deg": 0.91755965134575,
+          "car_vs_lean_final_ratio": 1.0000679037507911,
+          "scores": {
+            "car_style": {
+              "ate_m": 398.8895852541917,
+              "final_error_m": 585.802997835002,
+              "max_error_m": 623.9766900227637,
+              "drift_pct": 211.86596138867094,
+              "distance_m": 276.49698611110944,
+              "n": 600
+            },
+            "inekf_basic": {
+              "ate_m": 548.5755834017928,
+              "final_error_m": 823.1684434437062,
+              "max_error_m": 846.3401348478837,
+              "drift_pct": 297.71335124532555,
+              "distance_m": 276.49698611110944,
+              "n": 600
+            },
+            "idr_lean": {
+              "ate_m": 398.9001200330529,
+              "final_error_m": 585.8427760557797,
+              "max_error_m": 624.0022213142299,
+              "drift_pct": 211.88034788211422,
+              "distance_m": 276.49698611110944,
+              "n": 600
+            }
+          },
+          "gates": {
+            "car_style": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2118.6596138867094,
+              "verdict": "FAIL"
+            },
+            "inekf_basic": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2977.1335124532557,
+              "verdict": "FAIL"
+            },
+            "idr_lean": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2118.803478821142,
+              "verdict": "FAIL"
+            }
+          },
+          "map_aid_car_style": {
+            "scores": {
+              "ate_m": 399.0128328948037,
+              "final_error_m": 585.103778125777,
+              "max_error_m": 623.71893611081,
+              "drift_pct": 68.68233587641323,
+              "distance_m": 851.8984840274081,
+              "n": 600
+            },
+            "snap_frac": 1.0,
+            "mean_abs_cross_track_m": 9.912375516293157,
+            "map": {
+              "n_vertices": 5,
+              "length_m": 1355.2377184618597,
+              "origin_lat": 52.41369,
+              "origin_lon": -1.596962
+            }
+          },
+          "figure": "C:\\Users\\Dhruva P Gowda\\Desktop\\New folder\\SIH 2026\\lab\\stress\\results\\figures\\S-S1.csv_high_speed_deny60.png"
+        },
+        {
+          "site": "high_speed",
+          "deny_s": 89.90099999999984,
+          "requested_deny_s": 90,
+          "speed0_mps": 4.444444444444445,
+          "phi_mean_deg": 1.6121935394818934,
+          "car_vs_lean_final_ratio": 1.0000768860472966,
+          "scores": {
+            "car_style": {
+              "ate_m": 549.2860005131048,
+              "final_error_m": 739.7126219236299,
+              "max_error_m": 758.80405672565,
+              "drift_pct": 221.51488626182413,
+              "distance_m": 333.93359444444343,
+              "n": 900
+            },
+            "inekf_basic": {
+              "ate_m": 734.5166746040233,
+              "final_error_m": 1029.1428463535965,
+              "max_error_m": 1029.1428463535965,
+              "drift_pct": 308.18787431847176,
+              "distance_m": 333.93359444444343,
+              "n": 900
+            },
+            "idr_lean": {
+              "ate_m": 549.4362938190762,
+              "final_error_m": 739.7694955032649,
+              "max_error_m": 758.9161438720371,
+              "drift_pct": 221.53191766584612,
+              "distance_m": 333.93359444444343,
+              "n": 900
+            }
+          },
+          "gates": {
+            "car_style": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 1851.3180046141533,
+              "verdict": "FAIL"
+            },
+            "inekf_basic": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2575.6903752968224,
+              "verdict": "FAIL"
+            },
+            "idr_lean": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 1851.460345137817,
+              "verdict": "FAIL"
+            }
+          },
+          "map_aid_car_style": {
+            "scores": {
+              "ate_m": 550.969325064295,
+              "final_error_m": 739.7038491137939,
+              "max_error_m": 760.7113408547407,
+              "drift_pct": 64.08204407431113,
+              "distance_m": 1154.307512812817,
+              "n": 900
+            },
+            "snap_frac": 1.0,
+            "mean_abs_cross_track_m": 23.10814192628533,
+            "map": {
+              "n_vertices": 5,
+              "length_m": 1467.903733731073,
+              "origin_lat": 52.41369,
+              "origin_lon": -1.596962
+            }
+          }
+        }
+      ]
+    },
+    {
+      "csv": "C:\\Users\\Dhruva P Gowda\\Desktop\\New folder\\SIH 2026\\data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\S (Driver A)\\S2\\S-S2.csv",
+      "name": "S-S2.csv",
+      "file_bytes": 17469302,
+      "n": 93876,
+      "hz_est": 9.999999999997726,
+      "header_map": {
+        "lat": "GPS LATITUDE (degrees)",
+        "lon": " GPS LONGITUDE (degrees)",
+        "speed": " GPS SPEED (Kmh)",
+        "acc_h": " GPS ACCURACY (m)",
+        "bearing": " GPS ORIENTATION (\u00b0)",
+        "t": " TIME SINCE START (ms)",
+        "ax": " ACCELEROMETER X (m/s) ",
+        "ay": " ACCELEROMETER Y (m/s)",
+        "az": " ACCELEROMETER Z (m/s)",
+        "gyro_yaw_raw": " GYROSCOPE Yaw (rad/s)",
+        "gyro_pitch_raw": " GYROSCOPE Pitch (rad/s)",
+        "gyro_roll_raw": " GYROSCOPE Roll (rad/s)"
+      },
+      "trials": [
+        {
+          "site": "mid_route",
+          "deny_s": 19.899999999999636,
+          "requested_deny_s": 20,
+          "speed0_mps": 3.344444444444444,
+          "phi_mean_deg": 0.5200953442782256,
+          "car_vs_lean_final_ratio": 0.999986788245703,
+          "scores": {
+            "car_style": {
+              "ate_m": 63.38429777297872,
+              "final_error_m": 65.8982808153684,
+              "max_error_m": 85.78685549699392,
+              "drift_pct": 131.11621416391046,
+              "distance_m": 50.2594444444437,
+              "n": 200
+            },
+            "inekf_basic": {
+              "ate_m": 90.73743105630551,
+              "final_error_m": 135.1874273929876,
+              "max_error_m": 135.1874273929876,
+              "drift_pct": 268.97915185358335,
+              "distance_m": 50.2594444444437,
+              "n": 200
+            },
+            "idr_lean": {
+              "ate_m": 63.38367864808959,
+              "final_error_m": 65.89741018347367,
+              "max_error_m": 85.7859723608973,
+              "drift_pct": 131.11448188870455,
+              "distance_m": 50.2594444444437,
+              "n": 200
+            }
+          },
+          "gates": {
+            "car_style": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 990.1409494955283,
+              "verdict": "FAIL"
+            },
+            "inekf_basic": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2031.2306491542608,
+              "verdict": "FAIL"
+            },
+            "idr_lean": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 990.1278679965842,
+              "verdict": "FAIL"
+            }
+          },
+          "map_aid_car_style": {
+            "scores": {
+              "ate_m": 63.323935244093526,
+              "final_error_m": 65.14840082577408,
+              "max_error_m": 85.76259050051463,
+              "drift_pct": 50.52698162757508,
+              "distance_m": 128.93784415220117,
+              "n": 200
+            },
+            "snap_frac": 1.0,
+            "mean_abs_cross_track_m": 3.278279481008343,
+            "map": {
+              "n_vertices": 6,
+              "length_m": 331.12196563884135,
+              "origin_lat": 52.420547,
+              "origin_lon": -1.452494
+            }
+          }
+        },
+        {
+          "site": "mid_route",
+          "deny_s": 39.899999999999636,
+          "requested_deny_s": 40,
+          "speed0_mps": 3.344444444444444,
+          "phi_mean_deg": 0.38209713122650146,
+          "car_vs_lean_final_ratio": 1.0007310684210726,
+          "scores": {
+            "car_style": {
+              "ate_m": 58.826243571963154,
+              "final_error_m": 39.25769972729456,
+              "max_error_m": 85.78685549699392,
+              "drift_pct": 75.53673423460542,
+              "distance_m": 51.97166666666606,
+              "n": 400
+            },
+            "inekf_basic": {
+              "ate_m": 135.6968780809384,
+              "final_error_m": 193.90109505408103,
+              "max_error_m": 193.90109505408103,
+              "drift_pct": 373.09000747987676,
+              "distance_m": 51.97166666666606,
+              "n": 400
+            },
+            "idr_lean": {
+              "ate_m": 58.829221703749845,
+              "final_error_m": 39.286399791849135,
+              "max_error_m": 85.7859723608973,
+              "drift_pct": 75.59195675563531,
+              "distance_m": 51.97166666666606,
+              "n": 400
+            }
+          },
+          "gates": {
+            "car_style": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 294.19004117074604,
+              "verdict": "FAIL"
+            },
+            "inekf_basic": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 1453.0594388685545,
+              "verdict": "FAIL"
+            },
+            "idr_lean": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 294.40511421964,
+              "verdict": "FAIL"
+            }
+          },
+          "map_aid_car_style": {
+            "scores": {
+              "ate_m": 56.45278133395711,
+              "final_error_m": 13.882662302945107,
+              "max_error_m": 85.76691222078985,
+              "drift_pct": 10.014357269311102,
+              "distance_m": 138.62759166270598,
+              "n": 400
+            },
+            "snap_frac": 1.0,
+            "mean_abs_cross_track_m": 12.609690940923066,
+            "map": {
+              "n_vertices": 6,
+              "length_m": 344.46614992806644,
+              "origin_lat": 52.420547,
+              "origin_lon": -1.452494
+            }
+          }
+        },
+        {
+          "site": "mid_route",
+          "deny_s": 59.899999999999636,
+          "requested_deny_s": 60,
+          "speed0_mps": 3.344444444444444,
+          "phi_mean_deg": 0.49751783832400087,
+          "car_vs_lean_final_ratio": 1.0008709929106774,
+          "scores": {
+            "car_style": {
+              "ate_m": 80.53842032216414,
+              "final_error_m": 182.17863718007837,
+              "max_error_m": 183.81010832543888,
+              "drift_pct": 177.60001024918432,
+              "distance_m": 102.57805555555427,
+              "n": 600
+            },
+            "inekf_basic": {
+              "ate_m": 222.76457350422538,
+              "final_error_m": 466.53921032901405,
+              "max_error_m": 466.53921032901405,
+              "drift_pct": 454.81385643574174,
+              "distance_m": 102.57805555555427,
+              "n": 600
+            },
+            "idr_lean": {
+              "ate_m": 80.58147574355797,
+              "final_error_m": 182.3373134815391,
+              "max_error_m": 183.95942324209977,
+              "drift_pct": 177.7546985990476,
+              "distance_m": 102.57805555555427,
+              "n": 600
+            }
+          },
+          "gates": {
+            "car_style": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 909.3826003586904,
+              "verdict": "FAIL"
+            },
+            "inekf_basic": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2328.827610225876,
+              "verdict": "FAIL"
+            },
+            "idr_lean": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 910.1746661566964,
+              "verdict": "FAIL"
+            }
+          },
+          "map_aid_car_style": {
+            "scores": {
+              "ate_m": 75.21896325516522,
+              "final_error_m": 171.38409444719412,
+              "max_error_m": 173.3133293105355,
+              "drift_pct": 47.636796179676615,
+              "distance_m": 359.7725040130051,
+              "n": 600
+            },
+            "snap_frac": 1.0,
+            "mean_abs_cross_track_m": 28.26203081354969,
+            "map": {
+              "n_vertices": 5,
+              "length_m": 551.0115709510856,
+              "origin_lat": 52.420547,
+              "origin_lon": -1.452494
+            }
+          },
+          "figure": "C:\\Users\\Dhruva P Gowda\\Desktop\\New folder\\SIH 2026\\lab\\stress\\results\\figures\\S-S2.csv_mid_route_deny60.png"
+        },
+        {
+          "site": "mid_route",
+          "deny_s": 89.89999999999964,
+          "requested_deny_s": 90,
+          "speed0_mps": 3.344444444444444,
+          "phi_mean_deg": 0.4428333088566094,
+          "car_vs_lean_final_ratio": 1.003737113718038,
+          "scores": {
+            "car_style": {
+              "ate_m": 169.54492779739056,
+              "final_error_m": 275.14617991987325,
+              "max_error_m": 294.6329953077841,
+              "drift_pct": 166.84443244633547,
+              "distance_m": 164.91181388888862,
+              "n": 900
+            },
+            "inekf_basic": {
+              "ate_m": 417.4635587656472,
+              "final_error_m": 736.1391313044239,
+              "max_error_m": 736.1391313044239,
+              "drift_pct": 446.38350276130416,
+              "distance_m": 164.91181388888862,
+              "n": 900
+            },
+            "idr_lean": {
+              "ate_m": 169.8434779516957,
+              "final_error_m": 276.17443248331756,
+              "max_error_m": 295.1911637228912,
+              "drift_pct": 167.46794906360896,
+              "distance_m": 164.91181388888862,
+              "n": 900
+            }
+          },
+          "gates": {
+            "car_style": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 915.1237141596494,
+              "verdict": "FAIL"
+            },
+            "inekf_basic": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2448.3653604558194,
+              "verdict": "FAIL"
+            },
+            "idr_lean": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 918.5436355455373,
+              "verdict": "FAIL"
+            }
+          },
+          "map_aid_car_style": {
+            "scores": {
+              "ate_m": 166.6584286442171,
+              "final_error_m": 275.14617991987325,
+              "max_error_m": 294.6329953077841,
+              "drift_pct": 51.766761382906196,
+              "distance_m": 531.5112874933079,
+              "n": 900
+            },
+            "snap_frac": 0.7833333333333333,
+            "mean_abs_cross_track_m": 49.97645570921814,
+            "map": {
+              "n_vertices": 5,
+              "length_m": 722.3606941662497,
+              "origin_lat": 52.420547,
+              "origin_lon": -1.452494
+            }
+          }
+        },
+        {
+          "site": "high_speed",
+          "deny_s": 19.998999999999796,
+          "requested_deny_s": 20,
+          "speed0_mps": 7.813888888888888,
+          "phi_mean_deg": 2.448410251378882,
+          "car_vs_lean_final_ratio": 0.9979759827670135,
+          "scores": {
+            "car_style": {
+              "ate_m": 185.15087679490046,
+              "final_error_m": 229.34895123576487,
+              "max_error_m": 264.8844909222751,
+              "drift_pct": 157.5796829586641,
+              "distance_m": 145.54474722222096,
+              "n": 201
+            },
+            "inekf_basic": {
+              "ate_m": 199.6443035008557,
+              "final_error_m": 290.7641126802779,
+              "max_error_m": 290.7641126802779,
+              "drift_pct": 199.7764386758203,
+              "distance_m": 145.54474722222096,
+              "n": 201
+            },
+            "idr_lean": {
+              "ate_m": 185.06748239021914,
+              "final_error_m": 228.8847450060963,
+              "max_error_m": 264.8235786889428,
+              "drift_pct": 157.2607389647872,
+              "distance_m": 145.54474722222096,
+              "n": 201
+            }
+          },
+          "gates": {
+            "car_style": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 1467.6457684397944,
+              "verdict": "FAIL"
+            },
+            "inekf_basic": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 1860.6525876400667,
+              "verdict": "FAIL"
+            },
+            "idr_lean": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 1464.6752281125523,
+              "verdict": "FAIL"
+            }
+          },
+          "map_aid_car_style": {
+            "scores": {
+              "ate_m": 185.23890423203784,
+              "final_error_m": 228.71355303041364,
+              "max_error_m": 264.884158212624,
+              "drift_pct": 60.25313126313297,
+              "distance_m": 379.58782927246205,
+              "n": 201
+            },
+            "snap_frac": 1.0,
+            "mean_abs_cross_track_m": 6.161182472354184,
+            "map": {
+              "n_vertices": 6,
+              "length_m": 1272.6344631120924,
+              "origin_lat": 52.46752,
+              "origin_lon": -1.390504
+            }
+          }
+        },
+        {
+          "site": "high_speed",
+          "deny_s": 39.900000000000546,
+          "requested_deny_s": 40,
+          "speed0_mps": 7.813888888888888,
+          "phi_mean_deg": 2.452981449685398,
+          "car_vs_lean_final_ratio": 1.0011976768702935,
+          "scores": {
+            "car_style": {
+              "ate_m": 389.89529913018976,
+              "final_error_m": 542.3316621731119,
+              "max_error_m": 596.9040031058033,
+              "drift_pct": 182.77640706396983,
+              "distance_m": 296.71863611111553,
+              "n": 400
+            },
+            "inekf_basic": {
+              "ate_m": 555.4923749403517,
+              "final_error_m": 929.7262433629085,
+              "max_error_m": 929.7262433629085,
+              "drift_pct": 313.33597900967146,
+              "distance_m": 296.71863611111553,
+              "n": 400
+            },
+            "idr_lean": {
+              "ate_m": 389.8902743920806,
+              "final_error_m": 542.9812002609244,
+              "max_error_m": 596.9740748828134,
+              "drift_pct": 182.9953141391457,
+              "distance_m": 296.71863611111553,
+              "n": 400
+            }
+          },
+          "gates": {
+            "car_style": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 1739.5016013399802,
+              "verdict": "FAIL"
+            },
+            "inekf_basic": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2982.0502875625116,
+              "verdict": "FAIL"
+            },
+            "idr_lean": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 1741.5849621737434,
+              "verdict": "FAIL"
+            }
+          },
+          "map_aid_car_style": {
+            "scores": {
+              "ate_m": 393.9883752378799,
+              "final_error_m": 541.4683299603115,
+              "max_error_m": 596.1242668375271,
+              "drift_pct": 62.103154365837035,
+              "distance_m": 871.8853905079151,
+              "n": 400
+            },
+            "snap_frac": 1.0,
+            "mean_abs_cross_track_m": 37.37112621933249,
+            "map": {
+              "n_vertices": 6,
+              "length_m": 1754.2888182120828,
+              "origin_lat": 52.46752,
+              "origin_lon": -1.390504
+            }
+          }
+        },
+        {
+          "site": "high_speed",
+          "deny_s": 59.900000000000546,
+          "requested_deny_s": 60,
+          "speed0_mps": 7.813888888888888,
+          "phi_mean_deg": 2.284099545537169,
+          "car_vs_lean_final_ratio": 1.0078596727517122,
+          "scores": {
+            "car_style": {
+              "ate_m": 648.6999680547244,
+              "final_error_m": 1154.1305924456653,
+              "max_error_m": 1154.1305924456653,
+              "drift_pct": 253.94854396751975,
+              "distance_m": 454.4741916666708,
+              "n": 600
+            },
+            "inekf_basic": {
+              "ate_m": 992.9178816618069,
+              "final_error_m": 1848.1361392664876,
+              "max_error_m": 1848.1361392664876,
+              "drift_pct": 406.65370512875745,
+              "distance_m": 454.4741916666708,
+              "n": 600
+            },
+            "idr_lean": {
+              "ate_m": 651.2652810564995,
+              "final_error_m": 1163.201681215028,
+              "max_error_m": 1163.201681215028,
+              "drift_pct": 255.94449641887823,
+              "distance_m": 454.4741916666708,
+              "n": 600
+            }
+          },
+          "gates": {
+            "car_style": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2465.817322510119,
+              "verdict": "FAIL"
+            },
+            "inekf_basic": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 3948.5705832503722,
+              "verdict": "FAIL"
+            },
+            "idr_lean": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2485.1978397305516,
+              "verdict": "FAIL"
+            }
+          },
+          "map_aid_car_style": {
+            "scores": {
+              "ate_m": 654.520597961177,
+              "final_error_m": 1154.1305924456653,
+              "max_error_m": 1154.1305924456653,
+              "drift_pct": 70.57022408568832,
+              "distance_m": 1635.4356350693856,
+              "n": 600
+            },
+            "snap_frac": 0.74,
+            "mean_abs_cross_track_m": 72.41736059041436,
+            "map": {
+              "n_vertices": 5,
+              "length_m": 2249.6192108170453,
+              "origin_lat": 52.46752,
+              "origin_lon": -1.390504
+            }
+          },
+          "figure": "C:\\Users\\Dhruva P Gowda\\Desktop\\New folder\\SIH 2026\\lab\\stress\\results\\figures\\S-S2.csv_high_speed_deny60.png"
+        },
+        {
+          "site": "high_speed",
+          "deny_s": 89.90000000000055,
+          "requested_deny_s": 90,
+          "speed0_mps": 7.813888888888888,
+          "phi_mean_deg": 2.373136066681155,
+          "car_vs_lean_final_ratio": 1.0180455380935953,
+          "scores": {
+            "car_style": {
+              "ate_m": 879.9711044262726,
+              "final_error_m": 1233.3037429755589,
+              "max_error_m": 1254.8525571070643,
+              "drift_pct": 216.28379844674186,
+              "distance_m": 570.2247472222243,
+              "n": 900
+            },
+            "inekf_basic": {
+              "ate_m": 1457.9075363349764,
+              "final_error_m": 2280.975230805571,
+              "max_error_m": 2280.975230805571,
+              "drift_pct": 400.01337050295433,
+              "distance_m": 570.2247472222243,
+              "n": 900
+            },
+            "idr_lean": {
+              "ate_m": 888.8245334375695,
+              "final_error_m": 1255.559372650398,
+              "max_error_m": 1276.3186084856452,
+              "drift_pct": 220.18675597064004,
+              "distance_m": 570.2247472222243,
+              "n": 900
+            }
+          },
+          "gates": {
+            "car_style": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 1755.6709630410473,
+              "verdict": "FAIL"
+            },
+            "inekf_basic": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 3247.084915577487,
+              "verdict": "FAIL"
+            },
+            "idr_lean": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 1787.3529902844239,
+              "verdict": "FAIL"
+            }
+          },
+          "map_aid_car_style": {
+            "scores": {
+              "ate_m": 882.0762112849748,
+              "final_error_m": 1233.3037429755589,
+              "max_error_m": 1254.8525571070643,
+              "drift_pct": 63.48126389897605,
+              "distance_m": 1942.7838502683812,
+              "n": 900
+            },
+            "snap_frac": 0.24333333333333335,
+            "mean_abs_cross_track_m": 122.87089060768588,
+            "map": {
+              "n_vertices": 5,
+              "length_m": 2528.50802698813,
+              "origin_lat": 52.46752,
+              "origin_lon": -1.390504
+            }
+          }
+        }
+      ]
+    },
+    {
+      "csv": "C:\\Users\\Dhruva P Gowda\\Desktop\\New folder\\SIH 2026\\data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\S (Driver A)\\S4\\S-S4.csv",
+      "name": "S-S4.csv",
+      "file_bytes": 17574514,
+      "n": 94600,
+      "hz_est": 10.000000000009095,
+      "header_map": {
+        "lat": "GPS LATITUDE (degrees)",
+        "lon": " GPS LONGITUDE (degrees)",
+        "speed": " GPS SPEED (Kmh)",
+        "acc_h": " GPS ACCURACY (m)",
+        "bearing": " GPS ORIENTATION (\u00b0)",
+        "t": " TIME SINCE START (ms)",
+        "ax": " ACCELEROMETER X (m/s) ",
+        "ay": " ACCELEROMETER Y (m/s)",
+        "az": " ACCELEROMETER Z (m/s)",
+        "gyro_yaw_raw": " GYROSCOPE Yaw (rad/s)",
+        "gyro_pitch_raw": " GYROSCOPE Pitch (rad/s)",
+        "gyro_roll_raw": " GYROSCOPE Roll (rad/s)"
+      },
+      "trials": [
+        {
+          "site": "mid_route",
+          "deny_s": 19.899000000000115,
+          "requested_deny_s": 20,
+          "speed0_mps": 1.4055555555555554,
+          "phi_mean_deg": 0.34932799619693206,
+          "car_vs_lean_final_ratio": 1.0001088924410653,
+          "scores": {
+            "car_style": {
+              "ate_m": 101.42750057305523,
+              "final_error_m": 175.52184007150402,
+              "max_error_m": 175.52184007150402,
+              "drift_pct": 447.76331804864105,
+              "distance_m": 39.19969166666682,
+              "n": 200
+            },
+            "inekf_basic": {
+              "ate_m": 102.79219726506052,
+              "final_error_m": 177.6750899545416,
+              "max_error_m": 177.6750899545416,
+              "drift_pct": 453.25634565035705,
+              "distance_m": 39.19969166666682,
+              "n": 200
+            },
+            "idr_lean": {
+              "ate_m": 101.42856153058608,
+              "final_error_m": 175.54095307312966,
+              "max_error_m": 175.54095307312966,
+              "drift_pct": 447.8120760893628,
+              "distance_m": 39.19969166666682,
+              "n": 200
+            }
+          },
+          "gates": {
+            "car_style": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 4477.63318048641,
+              "verdict": "FAIL"
+            },
+            "inekf_basic": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 4532.563456503571,
+              "verdict": "FAIL"
+            },
+            "idr_lean": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 4478.120760893628,
+              "verdict": "FAIL"
+            }
+          },
+          "map_aid_car_style": {
+            "scores": {
+              "ate_m": 96.47745332559914,
+              "final_error_m": 161.1005849130141,
+              "max_error_m": 161.1005849130141,
+              "drift_pct": 106.06024365207016,
+              "distance_m": 151.8953562293364,
+              "n": 200
+            },
+            "snap_frac": 1.0,
+            "mean_abs_cross_track_m": 18.165431725561902,
+            "map": {
+              "n_vertices": 5,
+              "length_m": 370.26146135928514,
+              "origin_lat": 52.430454,
+              "origin_lon": -1.538923
+            }
+          }
+        },
+        {
+          "site": "mid_route",
+          "deny_s": 39.90000000000009,
+          "requested_deny_s": 40,
+          "speed0_mps": 1.4055555555555554,
+          "phi_mean_deg": 0.8433830752843063,
+          "car_vs_lean_final_ratio": 1.0003990812247585,
+          "scores": {
+            "car_style": {
+              "ate_m": 208.04114742262902,
+              "final_error_m": 321.57951379793707,
+              "max_error_m": 325.4312756722438,
+              "drift_pct": 372.1003899603672,
+              "distance_m": 86.42278333333347,
+              "n": 400
+            },
+            "inekf_basic": {
+              "ate_m": 210.54726115716778,
+              "final_error_m": 325.2309141545515,
+              "max_error_m": 329.5523715917937,
+              "drift_pct": 376.3254336534533,
+              "distance_m": 86.42278333333347,
+              "n": 400
+            },
+            "idr_lean": {
+              "ate_m": 208.0940286685813,
+              "final_error_m": 321.7078501441608,
+              "max_error_m": 325.5617060927861,
+              "drift_pct": 372.24888823972566,
+              "distance_m": 86.42278333333347,
+              "n": 400
+            }
+          },
+          "gates": {
+            "car_style": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 3721.003899603672,
+              "verdict": "FAIL"
+            },
+            "inekf_basic": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 3763.2543365345327,
+              "verdict": "FAIL"
+            },
+            "idr_lean": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 3722.488882397257,
+              "verdict": "FAIL"
+            }
+          },
+          "map_aid_car_style": {
+            "scores": {
+              "ate_m": 188.32314214518124,
+              "final_error_m": 290.0639415698078,
+              "max_error_m": 290.0639415698078,
+              "drift_pct": 98.53649116248977,
+              "distance_m": 294.3721033170171,
+              "n": 400
+            },
+            "snap_frac": 1.0,
+            "mean_abs_cross_track_m": 25.477267084837052,
+            "map": {
+              "n_vertices": 5,
+              "length_m": 499.22481801607887,
+              "origin_lat": 52.430454,
+              "origin_lon": -1.538923
+            }
+          }
+        },
+        {
+          "site": "mid_route",
+          "deny_s": 59.999000000000024,
+          "requested_deny_s": 60,
+          "speed0_mps": 1.4055555555555554,
+          "phi_mean_deg": 0.637924163245744,
+          "car_vs_lean_final_ratio": 0.9994353940367078,
+          "scores": {
+            "car_style": {
+              "ate_m": 215.42445141654954,
+              "final_error_m": 170.30660325912234,
+              "max_error_m": 325.4312756722438,
+              "drift_pct": 139.0538773720273,
+              "distance_m": 122.47526388888886,
+              "n": 601
+            },
+            "inekf_basic": {
+              "ate_m": 219.0418605731457,
+              "final_error_m": 180.598704453809,
+              "max_error_m": 329.5523715917937,
+              "drift_pct": 147.45728951247696,
+              "distance_m": 122.47526388888886,
+              "n": 601
+            },
+            "idr_lean": {
+              "ate_m": 215.4685049848188,
+              "final_error_m": 170.2104471353342,
+              "max_error_m": 325.5617060927861,
+              "drift_pct": 138.97536672364413,
+              "distance_m": 122.47526388888886,
+              "n": 601
+            }
+          },
+          "gates": {
+            "car_style": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 1390.538773720273,
+              "verdict": "FAIL"
+            },
+            "inekf_basic": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 1474.5728951247697,
+              "verdict": "FAIL"
+            },
+            "idr_lean": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 1389.7536672364415,
+              "verdict": "FAIL"
+            }
+          },
+          "map_aid_car_style": {
+            "scores": {
+              "ate_m": 195.5286449926684,
+              "final_error_m": 163.64442193861112,
+              "max_error_m": 290.0639415698078,
+              "drift_pct": 38.88413037038431,
+              "distance_m": 420.85143831131984,
+              "n": 601
+            },
+            "snap_frac": 1.0,
+            "mean_abs_cross_track_m": 28.04772277631289,
+            "map": {
+              "n_vertices": 6,
+              "length_m": 397.6114840343607,
+              "origin_lat": 52.430454,
+              "origin_lon": -1.538923
+            }
+          },
+          "figure": "C:\\Users\\Dhruva P Gowda\\Desktop\\New folder\\SIH 2026\\lab\\stress\\results\\figures\\S-S4.csv_mid_route_deny60.png"
+        },
+        {
+          "site": "mid_route",
+          "deny_s": 89.99900000000002,
+          "requested_deny_s": 90,
+          "speed0_mps": 1.4055555555555554,
+          "phi_mean_deg": 0.5716159726094446,
+          "car_vs_lean_final_ratio": 1.1474419148364183,
+          "scores": {
+            "car_style": {
+              "ate_m": 183.4360836818146,
+              "final_error_m": 7.318755974220915,
+              "max_error_m": 325.4312756722438,
+              "drift_pct": 4.333892780031715,
+              "distance_m": 168.87256666666673,
+              "n": 901
+            },
+            "inekf_basic": {
+              "ate_m": 188.30883858180158,
+              "final_error_m": 44.03801014858377,
+              "max_error_m": 329.5523715917937,
+              "drift_pct": 26.07765785635821,
+              "distance_m": 168.87256666666673,
+              "n": 901
+            },
+            "idr_lean": {
+              "ate_m": 183.45885564119126,
+              "final_error_m": 8.397847369280523,
+              "max_error_m": 325.5617060927861,
+              "drift_pct": 4.97289023021532,
+              "distance_m": 168.87256666666673,
+              "n": 901
+            }
+          },
+          "gates": {
+            "car_style": {
+              "competitive": true,
+              "isro_bar": true,
+              "m_per_km": 43.33892780031716,
+              "verdict": "PASS_ISRO"
+            },
+            "inekf_basic": {
+              "competitive": true,
+              "isro_bar": false,
+              "m_per_km": 260.7765785635821,
+              "verdict": "PASS_COMPETITIVE"
+            },
+            "idr_lean": {
+              "competitive": true,
+              "isro_bar": true,
+              "m_per_km": 49.7289023021532,
+              "verdict": "PASS_ISRO"
+            }
+          },
+          "map_aid_car_style": {
+            "scores": {
+              "ate_m": 173.6692159577161,
+              "final_error_m": 3.444905865742184,
+              "max_error_m": 298.78477377920814,
+              "drift_pct": 0.6257227579440989,
+              "distance_m": 550.5482774928807,
+              "n": 901
+            },
+            "snap_frac": 1.0,
+            "mean_abs_cross_track_m": 18.92165970784488,
+            "map": {
+              "n_vertices": 6,
+              "length_m": 286.30934853893336,
+              "origin_lat": 52.430454,
+              "origin_lon": -1.538923
+            }
+          }
+        },
+        {
+          "site": "high_speed",
+          "deny_s": 19.898999999999887,
+          "requested_deny_s": 20,
+          "speed0_mps": 6.991666666666667,
+          "phi_mean_deg": 1.9843985141694822,
+          "car_vs_lean_final_ratio": 1.0000146039832059,
+          "scores": {
+            "car_style": {
+              "ate_m": 224.14574853830493,
+              "final_error_m": 338.4628211403752,
+              "max_error_m": 351.70419438116676,
+              "drift_pct": 226.70007894542215,
+              "distance_m": 149.29982499999915,
+              "n": 200
+            },
+            "inekf_basic": {
+              "ate_m": 258.3867106734411,
+              "final_error_m": 407.8639488595748,
+              "max_error_m": 414.58852765112204,
+              "drift_pct": 273.1844788562727,
+              "distance_m": 149.29982499999915,
+              "n": 200
+            },
+            "idr_lean": {
+              "ate_m": 224.15550128941865,
+              "final_error_m": 338.4677640457309,
+              "max_error_m": 351.7310879153264,
+              "drift_pct": 226.70338966956785,
+              "distance_m": 149.29982499999915,
+              "n": 200
+            }
+          },
+          "gates": {
+            "car_style": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2267.0007894542214,
+              "verdict": "FAIL"
+            },
+            "inekf_basic": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2731.844788562727,
+              "verdict": "FAIL"
+            },
+            "idr_lean": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2267.0338966956783,
+              "verdict": "FAIL"
+            }
+          },
+          "map_aid_car_style": {
+            "scores": {
+              "ate_m": 224.8339929430714,
+              "final_error_m": 338.20220379589193,
+              "max_error_m": 351.3933134548833,
+              "drift_pct": 70.80326376968966,
+              "distance_m": 477.6647089264177,
+              "n": 200
+            },
+            "snap_frac": 1.0,
+            "mean_abs_cross_track_m": 16.028116316114748,
+            "map": {
+              "n_vertices": 5,
+              "length_m": 1334.1042432381205,
+              "origin_lat": 52.378616,
+              "origin_lon": -1.465054
+            }
+          }
+        },
+        {
+          "site": "high_speed",
+          "deny_s": 39.998999999999796,
+          "requested_deny_s": 40,
+          "speed0_mps": 6.991666666666667,
+          "phi_mean_deg": 1.8480576459885407,
+          "car_vs_lean_final_ratio": 1.0004929141757308,
+          "scores": {
+            "car_style": {
+              "ate_m": 451.9276957183073,
+              "final_error_m": 701.0834034049699,
+              "max_error_m": 729.0395881213979,
+              "drift_pct": 229.821446560992,
+              "distance_m": 305.0556916666654,
+              "n": 401
+            },
+            "inekf_basic": {
+              "ate_m": 520.8920920765041,
+              "final_error_m": 804.778163377965,
+              "max_error_m": 829.477745034807,
+              "drift_pct": 263.8135217150273,
+              "distance_m": 305.0556916666654,
+              "n": 401
+            },
+            "idr_lean": {
+              "ate_m": 452.06945005907437,
+              "final_error_m": 701.4289773528778,
+              "max_error_m": 729.3716009321776,
+              "drift_pct": 229.9347288098889,
+              "distance_m": 305.0556916666654,
+              "n": 401
+            }
+          },
+          "gates": {
+            "car_style": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2298.21446560992,
+              "verdict": "FAIL"
+            },
+            "inekf_basic": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2638.135217150273,
+              "verdict": "FAIL"
+            },
+            "idr_lean": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2299.347288098889,
+              "verdict": "FAIL"
+            }
+          },
+          "map_aid_car_style": {
+            "scores": {
+              "ate_m": 455.9758474779791,
+              "final_error_m": 699.1244593119881,
+              "max_error_m": 727.0083807817643,
+              "drift_pct": 70.70452847476491,
+              "distance_m": 988.7972869538503,
+              "n": 401
+            },
+            "snap_frac": 1.0,
+            "mean_abs_cross_track_m": 56.58023337097073,
+            "map": {
+              "n_vertices": 5,
+              "length_m": 1830.2539250217733,
+              "origin_lat": 52.378616,
+              "origin_lon": -1.465054
+            }
+          }
+        },
+        {
+          "site": "high_speed",
+          "deny_s": 59.89899999999989,
+          "requested_deny_s": 60,
+          "speed0_mps": 6.991666666666667,
+          "phi_mean_deg": 1.8666049576337886,
+          "car_vs_lean_final_ratio": 1.0011595430330242,
+          "scores": {
+            "car_style": {
+              "ate_m": 681.5796886286881,
+              "final_error_m": 1040.750947944788,
+              "max_error_m": 1081.6183632135007,
+              "drift_pct": 229.64135293779756,
+              "distance_m": 453.2071138888883,
+              "n": 600
+            },
+            "inekf_basic": {
+              "ate_m": 771.6988930062753,
+              "final_error_m": 1189.1611308344313,
+              "max_error_m": 1210.3929839688928,
+              "drift_pct": 262.3880107773364,
+              "distance_m": 453.2071138888883,
+              "n": 600
+            },
+            "idr_lean": {
+              "ate_m": 682.056825416403,
+              "final_error_m": 1041.9577434555908,
+              "max_error_m": 1082.6306228355381,
+              "drift_pct": 229.90763196869085,
+              "distance_m": 453.2071138888883,
+              "n": 600
+            }
+          },
+          "gates": {
+            "car_style": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2296.4135293779755,
+              "verdict": "FAIL"
+            },
+            "inekf_basic": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2623.8801077733638,
+              "verdict": "FAIL"
+            },
+            "idr_lean": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2299.0763196869084,
+              "verdict": "FAIL"
+            }
+          },
+          "map_aid_car_style": {
+            "scores": {
+              "ate_m": 683.0550809325894,
+              "final_error_m": 1040.750947944788,
+              "max_error_m": 1081.6183632135007,
+              "drift_pct": 70.79266582180513,
+              "distance_m": 1470.1395064913945,
+              "n": 600
+            },
+            "snap_frac": 0.20833333333333334,
+            "mean_abs_cross_track_m": 83.60728647205964,
+            "map": {
+              "n_vertices": 6,
+              "length_m": 2534.743013847368,
+              "origin_lat": 52.378616,
+              "origin_lon": -1.465054
+            }
+          },
+          "figure": "C:\\Users\\Dhruva P Gowda\\Desktop\\New folder\\SIH 2026\\lab\\stress\\results\\figures\\S-S4.csv_high_speed_deny60.png"
+        },
+        {
+          "site": "high_speed",
+          "deny_s": 89.9989999999998,
+          "requested_deny_s": 90,
+          "speed0_mps": 6.991666666666667,
+          "phi_mean_deg": 1.7194603454271837,
+          "car_vs_lean_final_ratio": 1.0020281362131822,
+          "scores": {
+            "car_style": {
+              "ate_m": 983.3227743960226,
+              "final_error_m": 1436.7320386471142,
+              "max_error_m": 1477.6560801865091,
+              "drift_pct": 233.27261436552976,
+              "distance_m": 615.9025749999985,
+              "n": 901
+            },
+            "inekf_basic": {
+              "ate_m": 1114.2494942177625,
+              "final_error_m": 1655.7928234422072,
+              "max_error_m": 1679.8561935028647,
+              "drift_pct": 268.8400553354094,
+              "distance_m": 615.9025749999985,
+              "n": 901
+            },
+            "idr_lean": {
+              "ate_m": 984.6232984980593,
+              "final_error_m": 1439.6459269233335,
+              "max_error_m": 1480.300574337195,
+              "drift_pct": 233.7457230022682,
+              "distance_m": 615.9025749999985,
+              "n": 901
+            }
+          },
+          "gates": {
+            "car_style": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2283.270564185637,
+              "verdict": "FAIL"
+            },
+            "inekf_basic": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2631.4044042028922,
+              "verdict": "FAIL"
+            },
+            "idr_lean": {
+              "competitive": false,
+              "isro_bar": false,
+              "m_per_km": 2287.9013479013547,
+              "verdict": "FAIL"
+            }
+          },
+          "map_aid_car_style": {
+            "scores": {
+              "ate_m": 983.361686938309,
+              "final_error_m": 1436.7320386471142,
+              "max_error_m": 1477.6560801865091,
+              "drift_pct": 68.9005675300769,
+              "distance_m": 2085.225260328869,
+              "n": 901
+            },
+            "snap_frac": 0.011098779134295227,
+            "mean_abs_cross_track_m": 128.0197337980246,
+            "map": {
+              "n_vertices": 5,
+              "length_m": 2895.401963161657,
+              "origin_lat": 52.378616,
+              "origin_lon": -1.465054
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "adversarial_tw": {
+    "source_csv": "C:\\Users\\Dhruva P Gowda\\Desktop\\New folder\\SIH 2026\\data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\M (Driver B)\\S-M.csv",
+    "source_name": "S-M.csv",
+    "evidence_class": "INJECTED_LEAN",
+    "yaw_mapping": "vehicle_yaw_rate = -GYROSCOPE Pitch",
+    "field_proof": false,
+    "lean_deg": 26.0,
+    "speed_mps": 12.0,
+    "noise_gyro_rms": 0.10685829007053436,
+    "noise_accel_rms": 0.8585921958676126,
+    "imu_stats_from_csv": {
+      "gx_rms": 0.09359050327025123,
+      "gy_rms": 0.11025934175311419,
+      "gz_rms": 0.11672502518823767,
+      "ax_rms": 0.88888333756456,
+      "ay_rms": 0.8554879911763275,
+      "az_rms": 0.8314052588619505
+    },
+    "car_style": {
+      "ate_m": 15.91060516000199,
+      "final_error_m": 36.95512714362743,
+      "max_error_m": 36.95512714362743,
+      "drift_pct": 12.367847102954295,
+      "distance_m": 298.79999999999995,
+      "n": 250
+    },
+    "idr_lean": {
+      "ate_m": 15.883146308863948,
+      "final_error_m": 16.8143674901408,
+      "max_error_m": 22.50923239049367,
+      "drift_pct": 5.627298356807498,
+      "distance_m": 298.79999999999995,
+      "n": 250
+    },
+    "phi_hat_rmse_deg": 7.150681242362315,
+    "claim_pass": true,
+    "verdict": "PASS_CLAIM",
+    "figure": "C:\\Users\\Dhruva P Gowda\\Desktop\\New folder\\SIH 2026\\lab\\stress\\results\\figures\\adversarial_tw_S-M.csv.png",
+    "note": "Injected coordinated lean on top of real IO-VNBD noise scales. This is the two-wheeler claim test \u2014 not a car result."
+  },
+  "notes": [
+    "OK S-M.csv: lean~car on cars (ratio=1.003, phi~3.29 deg).",
+    "OK S-S1.csv: lean~car on cars (ratio=0.997, phi~1.24 deg).",
+    "OK S-S2.csv: lean~car on cars (ratio=1.001, phi~0.50 deg).",
+    "OK S-S4.csv: lean~car on cars (ratio=0.999, phi~0.64 deg).",
+    "Adversarial TW: car drift=12.4% vs lean drift=5.6% \u2192 PASS_CLAIM"
+  ],
+  "csv_paths": [
+    {
+      "path": "C:\\Users\\Dhruva P Gowda\\Desktop\\New folder\\SIH 2026\\data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\M (Driver B)\\S-M.csv",
+      "bytes": 19798721,
+      "name": "S-M.csv"
+    },
+    {
+      "path": "C:\\Users\\Dhruva P Gowda\\Desktop\\New folder\\SIH 2026\\data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\S (Driver A)\\S1\\S-S1.csv",
+      "bytes": 9631499,
+      "name": "S-S1.csv"
+    },
+    {
+      "path": "C:\\Users\\Dhruva P Gowda\\Desktop\\New folder\\SIH 2026\\data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\S (Driver A)\\S2\\S-S2.csv",
+      "bytes": 17469302,
+      "name": "S-S2.csv"
+    },
+    {
+      "path": "C:\\Users\\Dhruva P Gowda\\Desktop\\New folder\\SIH 2026\\data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\S (Driver A)\\S4\\S-S4.csv",
+      "bytes": 17574514,
+      "name": "S-S4.csv"
+    }
+  ]
+}

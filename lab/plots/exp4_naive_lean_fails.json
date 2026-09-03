@@ -1,0 +1,15 @@
+{
+  "finding": "F4",
+  "name": "exp4_naive_lean_fails",
+  "naive_bias_deg": 9.570869888304127,
+  "bible_naive_bias_deg": 8.0,
+  "naive_rmse_deg": 17.130513177473603,
+  "ekf_rmse_deg": 41.8815058325606,
+  "bible_ekf_rmse_deg": [
+    34.0,
+    49.0
+  ],
+  "ekf_in_bible_band": true,
+  "note": "arccos rectifies |f| noise because d|f|/d\u03c6 \u2192 0 at \u03c6=0. The EKF measurement Jacobian vanishes at the same point.",
+  "seed": 26168
+}

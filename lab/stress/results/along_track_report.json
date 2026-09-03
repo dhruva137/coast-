@@ -1,0 +1,158 @@
+[
+  {
+    "csv": "S-S1.csv",
+    "oracle_along": {
+      "ate_m": 120.39630715047298,
+      "final_error_m": 211.69593660643787,
+      "max_error_m": 216.41475543281598,
+      "drift_pct": 164.4435274964148,
+      "distance_m": 128.7347333333343,
+      "n": 600,
+      "m_per_km": 1644.435274964148
+    },
+    "hold_along": {
+      "ate_m": 110.28063694192856,
+      "final_error_m": 202.10372687256373,
+      "max_error_m": 210.51340604038793,
+      "drift_pct": 156.99238398176058,
+      "distance_m": 128.7347333333343,
+      "n": 600,
+      "m_per_km": 1569.9238398176058
+    },
+    "verdict_oracle": "FAIL",
+    "verdict_hold": "FAIL",
+    "map_len": 36434.31409789598,
+    "map_n": 1500,
+    "site": "mid"
+  },
+  {
+    "csv": "S-S1.csv",
+    "oracle_along": {
+      "ate_m": 49.408269509533774,
+      "final_error_m": 90.86633912935085,
+      "max_error_m": 93.18379790828199,
+      "drift_pct": 153.17291584120025,
+      "distance_m": 59.32271944444485,
+      "n": 600,
+      "m_per_km": 1531.7291584120026
+    },
+    "hold_along": {
+      "ate_m": 23.944555911237444,
+      "final_error_m": 41.975792675607806,
+      "max_error_m": 50.31299782481181,
+      "drift_pct": 70.7583756589543,
+      "distance_m": 59.32271944444485,
+      "n": 600,
+      "m_per_km": 707.5837565895429
+    },
+    "verdict_oracle": "FAIL",
+    "verdict_hold": "PASS_COMPETITIVE",
+    "map_len": 36434.31409789598,
+    "map_n": 1500,
+    "site": "late"
+  },
+  {
+    "csv": "S-S2.csv",
+    "oracle_along": {
+      "ate_m": 123.00368820286211,
+      "final_error_m": 257.013083632558,
+      "max_error_m": 259.3001648325685,
+      "drift_pct": 250.55367080278174,
+      "distance_m": 102.57805555555427,
+      "n": 600,
+      "m_per_km": 2505.536708027817
+    },
+    "hold_along": {
+      "ate_m": 69.65655965727744,
+      "final_error_m": 159.9930003531853,
+      "max_error_m": 161.99916854726837,
+      "drift_pct": 155.9719566594204,
+      "distance_m": 102.57805555555427,
+      "n": 600,
+      "m_per_km": 1559.719566594204
+    },
+    "verdict_oracle": "FAIL",
+    "verdict_hold": "FAIL",
+    "map_len": 73327.7185829644,
+    "map_n": 1500,
+    "site": "mid"
+  },
+  {
+    "csv": "S-S2.csv",
+    "oracle_along": {
+      "ate_m": 354.78473915910115,
+      "final_error_m": 410.4277934759092,
+      "max_error_m": 467.990547455532,
+      "drift_pct": 166.42548933126108,
+      "distance_m": 246.61354166667013,
+      "n": 600,
+      "m_per_km": 1664.2548933126109
+    },
+    "hold_along": {
+      "ate_m": 287.30134434874014,
+      "final_error_m": 239.61638884818845,
+      "max_error_m": 382.2423336154412,
+      "drift_pct": 97.16270535219057,
+      "distance_m": 246.61354166667013,
+      "n": 600,
+      "m_per_km": 971.6270535219059
+    },
+    "verdict_oracle": "FAIL",
+    "verdict_hold": "FAIL",
+    "map_len": 73327.7185829644,
+    "map_n": 1500,
+    "site": "late"
+  },
+  {
+    "csv": "S-S4.csv",
+    "oracle_along": {
+      "ate_m": 1291.0934337935726,
+      "final_error_m": 1350.4031743912374,
+      "max_error_m": 1350.4031743912374,
+      "drift_pct": 1102.592581973402,
+      "distance_m": 122.47526388888886,
+      "n": 601,
+      "m_per_km": 11025.92581973402
+    },
+    "hold_along": {
+      "ate_m": 1270.246355611585,
+      "final_error_m": 1309.5596653091286,
+      "max_error_m": 1309.5596653091286,
+      "drift_pct": 1069.2442079546593,
+      "distance_m": 122.47526388888886,
+      "n": 601,
+      "m_per_km": 10692.442079546594
+    },
+    "verdict_oracle": "FAIL",
+    "verdict_hold": "FAIL",
+    "map_len": 11736.92865021367,
+    "map_n": 398,
+    "site": "mid"
+  },
+  {
+    "csv": "S-S4.csv",
+    "oracle_along": {
+      "ate_m": 3707.1743484008466,
+      "final_error_m": 3492.1609852932725,
+      "max_error_m": 3905.6038113222457,
+      "drift_pct": 1297.4073654872195,
+      "distance_m": 269.1645722222218,
+      "n": 600,
+      "m_per_km": 12974.073654872196
+    },
+    "hold_along": {
+      "ate_m": 3708.4460812089437,
+      "final_error_m": 3493.0323757051383,
+      "max_error_m": 3905.6038113222457,
+      "drift_pct": 1297.7311043822278,
+      "distance_m": 269.1645722222218,
+      "n": 600,
+      "m_per_km": 12977.311043822277
+    },
+    "verdict_oracle": "FAIL",
+    "verdict_hold": "FAIL",
+    "map_len": 11736.92865021367,
+    "map_n": 398,
+    "site": "late"
+  }
+]

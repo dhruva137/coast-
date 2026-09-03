@@ -1,0 +1,311 @@
+{
+  "schema": "SIH26168-web-proof-summary-v2",
+  "generated_utc": "2026-09-03T22:11:01.476235Z",
+  "status": "CORRECTED_PROTOCOL_COMPLETE_PERFORMANCE_NOT_DEPLOYMENT_READY",
+  "honesty_note": "Measured real-car errors and covariance undercoverage are retained. Injected lean is synthetic evidence, not a two-wheeler field result.",
+  "supersedes": {
+    "status": "SUPERSEDES_STALE_FALLBACK",
+    "reason": "Corrected vehicle yaw=-GYROSCOPE Pitch and segmented sessions",
+    "prior_summary": {
+      "placements": 120,
+      "median_error_m": 212.2,
+      "p95_error_m": 578.5,
+      "coverage_95": 0.3,
+      "failure_rate_over_50m": 0.9
+    }
+  },
+  "provenance": {
+    "protocol": "SIH26168-monte-carlo-v2-corrected-axis-segmented",
+    "seed": 26168,
+    "data_class": "real-car/IO-VNBD",
+    "axis_mapping": {
+      "vehicle_gz_yaw": "-IO-VNBD GYROSCOPE Pitch",
+      "source": "lab/stress/load_iovnbd.py",
+      "audit": "lab/stress/results/alignment/ALIGNMENT_REPORT.md"
+    },
+    "segmentation": {
+      "dt_nonpositive": true,
+      "max_gap_s": 5.0,
+      "max_coord_speed_mps": 80.0,
+      "absolute_jump_m": 1000.0,
+      "min_duration_s": 55.0,
+      "min_distance_m": 100.0
+    },
+    "independent_source_files": 4,
+    "viable_sessions": 8,
+    "completed_placements": 120,
+    "source_logs": [
+      {
+        "path": "data/raw/IO-VNBD/Synchronised V abd S datasets/Categorised IOVNB Dataset/M (Driver B)/S-M.csv",
+        "sha256": "26a1ee080da4db98e175e15d6fec631e6f8c285c13817d9d74ecc90ed280d103",
+        "bytes": 19798721,
+        "samples": 105974
+      },
+      {
+        "path": "data/raw/IO-VNBD/Synchronised V abd S datasets/Categorised IOVNB Dataset/S (Driver A)/S1/S-S1.csv",
+        "sha256": "e79a2eea18143b825438f9a11c7d724a97c9e18329776defd4d9291d03d4aaca",
+        "bytes": 9631499,
+        "samples": 51746
+      },
+      {
+        "path": "data/raw/IO-VNBD/Synchronised V abd S datasets/Categorised IOVNB Dataset/S (Driver A)/S2/S-S2.csv",
+        "sha256": "8f48d68ef4ab225c8381af6fb8ec0f36fe6f6048977eeebecc74cfec50d13cb8",
+        "bytes": 17469302,
+        "samples": 93876
+      },
+      {
+        "path": "data/raw/IO-VNBD/Synchronised V abd S datasets/Categorised IOVNB Dataset/S (Driver A)/S4/S-S4.csv",
+        "sha256": "a2bb1e1eb28d111f84963240c54b790f32366f6c5b09dff1713770b52d3f5616",
+        "bytes": 17574514,
+        "samples": 94600
+      }
+    ],
+    "manifest_path": "lab/proof/results/manifest.json",
+    "manifest_verification_command": "python lab/proof/evidence_manifest.py verify lab/proof/results/manifest.json",
+    "artifacts": {
+      "reliability": {
+        "path": "lab/proof/results/reliability.json",
+        "sha256": "161b229fa15c04d4bf5d813b03e9a9df165a9834dc5258edc278bbf2a234f6e3"
+      },
+      "counterfactual": {
+        "path": "lab/proof/results/counterfactual_twin.json",
+        "sha256": "6a4b936e11e6e36a67d082af2f630b35b376b8a0404a5485d630e5ceedb4bee6"
+      },
+      "blind_commitment": {
+        "path": "lab/proof/results/blind/blind_commitment.json",
+        "sha256": "6ffbc1e38a181519522c3743b7018d673355108555905a0f7604833fdc754b7f"
+      },
+      "blind_reveal": {
+        "path": "lab/proof/results/blind/blind_reveal.json",
+        "sha256": "3b192ad966728e70783d28f6cd529a5ee36b3a350ced299ab3c884e8b4bc0580"
+      }
+    }
+  },
+  "primary_method": "idr_lean_bias",
+  "overall": {
+    "n": 120,
+    "final_error_m": {
+      "p50": 223.08985662861386,
+      "p90": 602.7669292015494,
+      "p95": 694.9501491588863,
+      "p99": 1494.6316885032875,
+      "max": 1676.4054045355258
+    },
+    "drift_pct": {
+      "p50": 222.06237341769008,
+      "p90": 321.4081555660922,
+      "p95": 369.26536854206483,
+      "p99": 420.602655874954,
+      "max": 460.71692911228376
+    },
+    "coverage_95_endpoint": 0.25,
+    "target_coverage": 0.95,
+    "coverage_gap_percentage_points": -70.0,
+    "normalized_error": {
+      "p50": 4.924109817132079,
+      "p90": 10.665925056791925,
+      "p95": 13.372194927184903,
+      "p99": 16.84046597885163,
+      "max": 26.651914221550452
+    },
+    "failure_rate_over_50m": 0.9083333333333333,
+    "by_duration_s": {
+      "20": {
+        "n": 30,
+        "final_error_m": {
+          "p50": 129.4941838939411,
+          "p90": 246.60669615433142,
+          "p95": 287.35174337877845,
+          "p99": 322.7541710678347,
+          "max": 335.10106344134385
+        },
+        "coverage_95_endpoint": 0.2,
+        "coverage_gap_percentage_points": -75.0,
+        "failure_rate_over_50m": 0.8,
+        "posthoc_sigma_scale_for_95pct": 5.1045236855785
+      },
+      "40": {
+        "n": 30,
+        "final_error_m": {
+          "p50": 262.8803767231757,
+          "p90": 512.3818825777201,
+          "p95": 580.403978203932,
+          "p99": 603.9149453275563,
+          "max": 611.6401679582486
+        },
+        "coverage_95_endpoint": 0.2,
+        "coverage_gap_percentage_points": -75.0,
+        "failure_rate_over_50m": 0.9,
+        "posthoc_sigma_scale_for_95pct": 5.521760889134021
+      },
+      "60": {
+        "n": 30,
+        "final_error_m": {
+          "p50": 264.1471919122787,
+          "p90": 607.0016425117092,
+          "p95": 761.7906524685947,
+          "p99": 1435.8280429790238,
+          "max": 1676.4054045355258
+        },
+        "coverage_95_endpoint": 0.26666666666666666,
+        "coverage_gap_percentage_points": -68.33333333333333,
+        "failure_rate_over_50m": 0.9666666666666667,
+        "posthoc_sigma_scale_for_95pct": 4.948112390593534
+      },
+      "90": {
+        "n": 30,
+        "final_error_m": {
+          "p50": 297.59479939078466,
+          "p90": 887.793993086106,
+          "p95": 969.3281381581264,
+          "p99": 1431.8323199127426,
+          "max": 1613.9504888253196
+        },
+        "coverage_95_endpoint": 0.3333333333333333,
+        "coverage_gap_percentage_points": -61.66666666666667,
+        "failure_rate_over_50m": 0.9666666666666667,
+        "posthoc_sigma_scale_for_95pct": 4.260964203175877
+      }
+    }
+  },
+  "by_outage_seconds": {
+    "20": {
+      "n": 30,
+      "final_error_m": {
+        "p50": 129.4941838939411,
+        "p90": 246.60669615433142,
+        "p95": 287.35174337877845,
+        "p99": 322.7541710678347,
+        "max": 335.10106344134385
+      },
+      "coverage_95_endpoint": 0.2,
+      "coverage_gap_percentage_points": -75.0,
+      "failure_rate_over_50m": 0.8,
+      "posthoc_sigma_scale_for_95pct": 5.1045236855785
+    },
+    "40": {
+      "n": 30,
+      "final_error_m": {
+        "p50": 262.8803767231757,
+        "p90": 512.3818825777201,
+        "p95": 580.403978203932,
+        "p99": 603.9149453275563,
+        "max": 611.6401679582486
+      },
+      "coverage_95_endpoint": 0.2,
+      "coverage_gap_percentage_points": -75.0,
+      "failure_rate_over_50m": 0.9,
+      "posthoc_sigma_scale_for_95pct": 5.521760889134021
+    },
+    "60": {
+      "n": 30,
+      "final_error_m": {
+        "p50": 264.1471919122787,
+        "p90": 607.0016425117092,
+        "p95": 761.7906524685947,
+        "p99": 1435.8280429790238,
+        "max": 1676.4054045355258
+      },
+      "coverage_95_endpoint": 0.26666666666666666,
+      "coverage_gap_percentage_points": -68.33333333333333,
+      "failure_rate_over_50m": 0.9666666666666667,
+      "posthoc_sigma_scale_for_95pct": 4.948112390593534
+    },
+    "90": {
+      "n": 30,
+      "final_error_m": {
+        "p50": 297.59479939078466,
+        "p90": 887.793993086106,
+        "p95": 969.3281381581264,
+        "p99": 1431.8323199127426,
+        "max": 1613.9504888253196
+      },
+      "coverage_95_endpoint": 0.3333333333333333,
+      "coverage_gap_percentage_points": -61.66666666666667,
+      "failure_rate_over_50m": 0.9666666666666667,
+      "posthoc_sigma_scale_for_95pct": 4.260964203175877
+    }
+  },
+  "blind_challenge": {
+    "selection": {
+      "protocol": "SIH26168-blind-outage-v2-corrected-axis-segmented",
+      "seed": 26168,
+      "data_class": "real-car/IO-VNBD",
+      "source_relpath": "data/raw/IO-VNBD/Synchronised V abd S datasets/Categorised IOVNB Dataset/S (Driver A)/S4/S-S4.csv",
+      "source_sha256": "a2bb1e1eb28d111f84963240c54b790f32366f6c5b09dff1713770b52d3f5616",
+      "source_session": "S-S4.csv#session-3",
+      "source_session_index": 2,
+      "source_session_sample_range": [
+        90967,
+        94600
+      ],
+      "start_index": 1720,
+      "end_index_exclusive": 2320,
+      "source_start_index": 92687,
+      "source_end_index_exclusive": 93287,
+      "start_time_s": 172.001,
+      "requested_duration_s": 60.0,
+      "estimator": "bias-calibrated constant-speed gyro/lean DR; no map",
+      "covariance_model": "isotropic sigma_m=3+1*t; chi2(2) 95% radius",
+      "axis_mapping": {
+        "vehicle_gx": "gyro_roll_raw",
+        "vehicle_gy": "gyro_yaw_raw",
+        "vehicle_gz_yaw": "-gyro_pitch_raw",
+        "yaw_validation": "ALIGNMENT_REPORT.md PASS_ALIGNMENT",
+        "horizontal_completion_observable": false
+      },
+      "segmentation": {
+        "dt_nonpositive": true,
+        "max_gap_s": 5.0,
+        "max_coord_speed_mps": 80.0,
+        "absolute_jump_m": 1000.0,
+        "min_duration_s": 55.0,
+        "min_distance_m": 100.0
+      }
+    },
+    "scores": {
+      "car_bias": {
+        "final_error_m": 593.9379650223534,
+        "ate_m": 302.7669999596876,
+        "max_error_m": 599.1036278827521,
+        "distance_m": 223.53173333333336,
+        "drift_pct": 265.70632999864296,
+        "inside_95_end": false
+      },
+      "idr_lean_bias": {
+        "final_error_m": 594.0211239691824,
+        "ate_m": 302.81846052831344,
+        "max_error_m": 599.187286442925,
+        "distance_m": 223.53173333333336,
+        "drift_pct": 265.7435322990005,
+        "inside_95_end": false
+      }
+    }
+  },
+  "counterfactual": {
+    "status": "LEAN_AWARE_BETTER_IN_INJECTED_FIXTURE",
+    "data_class": "fixture/synthetic-route+real-car-noise/injected-lean",
+    "injected_lean": {
+      "data_class": "fixture/synthetic-route+real-car-noise/injected-lean",
+      "actual_mean_abs_lean_deg": 6.274304513231674,
+      "inferred_mean_abs_lean_deg": 6.520513080334067,
+      "car_style": {
+        "final_error_m": 5.411230359530051,
+        "drift_pct": 0.5465889252050556
+      },
+      "lean_aware": {
+        "final_error_m": 1.1714736266771628,
+        "drift_pct": 0.11833066936132958
+      }
+    },
+    "noiseless_consistency_check": {
+      "status": "PASS",
+      "max_yaw_rate_error_rad_s": 2.7755575615628914e-17,
+      "max_lean_error_rad": 5.551115123125783e-17
+    },
+    "investigation": "No frame inconsistency detected; noiseless check passes."
+  },
+  "plots": [
+    "/evidence/proof_reliability.png"
+  ]
+}

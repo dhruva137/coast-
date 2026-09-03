@@ -1,0 +1,15 @@
+{
+  "name": "@sih26168/desktop",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Tauri 2 shell around the SIH26168 web console for the judges' table",
+  "type": "module",
+  "scripts": {
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "tauri build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}

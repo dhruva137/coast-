@@ -1,0 +1,892 @@
+{
+  "name": "SIH26168 Nodal Campus",
+  "origin": {
+    "lat": 12.9912,
+    "lon": 77.5523,
+    "alt": 920
+  },
+  "nodes": [
+    {
+      "id": "gate",
+      "lat": 12.9912,
+      "lon": 77.5523,
+      "alt": 920,
+      "kind": "outdoor"
+    },
+    {
+      "id": "quad",
+      "lat": 12.991923128505892,
+      "lon": 77.55266870269425,
+      "alt": 920,
+      "kind": "outdoor"
+    },
+    {
+      "id": "xmark",
+      "lat": 12.991380782126472,
+      "lon": 77.55266870269425,
+      "alt": 920,
+      "kind": "outdoor"
+    },
+    {
+      "id": "ramp_top",
+      "lat": 12.991923128505892,
+      "lon": 77.55312958106207,
+      "alt": 920,
+      "kind": "ramp"
+    },
+    {
+      "id": "ramp_bot",
+      "lat": 12.991923128505892,
+      "lon": 77.5533139324092,
+      "alt": 915.5,
+      "kind": "ramp"
+    },
+    {
+      "id": "g_sw",
+      "lat": 12.991561564252946,
+      "lon": 77.5533139324092,
+      "alt": 915.5,
+      "kind": "garage"
+    },
+    {
+      "id": "g_se",
+      "lat": 12.991561564252946,
+      "lon": 77.55386698645057,
+      "alt": 915.5,
+      "kind": "garage"
+    },
+    {
+      "id": "g_ne",
+      "lat": 12.992103910632364,
+      "lon": 77.55386698645057,
+      "alt": 915.5,
+      "kind": "garage"
+    },
+    {
+      "id": "g_nw",
+      "lat": 12.992103910632364,
+      "lon": 77.5533139324092,
+      "alt": 915.5,
+      "kind": "garage"
+    },
+    {
+      "id": "g_fork",
+      "lat": 12.991832737442655,
+      "lon": 77.55359045942988,
+      "alt": 915.5,
+      "kind": "junction"
+    },
+    {
+      "id": "portal_in",
+      "lat": 12.991923128505892,
+      "lon": 77.55414351347126,
+      "alt": 920,
+      "kind": "portal"
+    },
+    {
+      "id": "tun_mid",
+      "lat": 12.991923128505892,
+      "lon": 77.55709313502527,
+      "alt": 918,
+      "kind": "tunnel"
+    },
+    {
+      "id": "portal_out",
+      "lat": 12.991923128505892,
+      "lon": 77.56004275657929,
+      "alt": 920,
+      "kind": "portal"
+    },
+    {
+      "id": "exit_true",
+      "lat": 12.99246547488531,
+      "lon": 77.56004275657929,
+      "alt": 920,
+      "kind": "junction"
+    },
+    {
+      "id": "exit_wrong",
+      "lat": 12.991380782126472,
+      "lon": 77.56004275657929,
+      "alt": 920,
+      "kind": "junction"
+    },
+    {
+      "id": "round_n",
+      "lat": 12.992646257011785,
+      "lon": 77.55266870269425,
+      "alt": 920,
+      "kind": "outdoor"
+    },
+    {
+      "id": "round_e",
+      "lat": 12.992284692758838,
+      "lon": 77.55303740538851,
+      "alt": 920,
+      "kind": "outdoor"
+    },
+    {
+      "id": "round_s",
+      "lat": 12.991923128505892,
+      "lon": 77.55266870269425,
+      "alt": 920,
+      "kind": "outdoor"
+    },
+    {
+      "id": "round_w",
+      "lat": 12.992284692758838,
+      "lon": 77.5523,
+      "alt": 920,
+      "kind": "outdoor"
+    },
+    {
+      "id": "j25",
+      "lat": 12.993188603391204,
+      "lon": 77.55266870269425,
+      "alt": 920,
+      "kind": "junction"
+    },
+    {
+      "id": "j25a",
+      "lat": 12.993730949770624,
+      "lon": 77.55239217567356,
+      "alt": 920,
+      "kind": "outdoor"
+    },
+    {
+      "id": "j25b",
+      "lat": 12.993685754239005,
+      "lon": 77.55303740538851,
+      "alt": 920,
+      "kind": "outdoor"
+    },
+    {
+      "id": "j15",
+      "lat": 12.993188603391204,
+      "lon": 77.55340610808275,
+      "alt": 920,
+      "kind": "junction"
+    },
+    {
+      "id": "j15a",
+      "lat": 12.993776145302242,
+      "lon": 77.55368263510344,
+      "alt": 920,
+      "kind": "outdoor"
+    },
+    {
+      "id": "j15b",
+      "lat": 12.993640558707387,
+      "lon": 77.55391307428735,
+      "alt": 920,
+      "kind": "outdoor"
+    },
+    {
+      "id": "j8",
+      "lat": 12.993188603391204,
+      "lon": 77.55414351347126,
+      "alt": 920,
+      "kind": "junction"
+    },
+    {
+      "id": "j8a",
+      "lat": 12.99382134083386,
+      "lon": 77.55432786481839,
+      "alt": 920,
+      "kind": "outdoor"
+    },
+    {
+      "id": "j8b",
+      "lat": 12.993776145302242,
+      "lon": 77.55446612832873,
+      "alt": 920,
+      "kind": "outdoor"
+    },
+    {
+      "id": "loop_e",
+      "lat": 12.990838435747053,
+      "lon": 77.55266870269425,
+      "alt": 920,
+      "kind": "outdoor"
+    },
+    {
+      "id": "loop_s",
+      "lat": 12.990838435747053,
+      "lon": 77.55211564865287,
+      "alt": 920,
+      "kind": "outdoor"
+    },
+    {
+      "id": "loop_w",
+      "lat": 12.991380782126472,
+      "lon": 77.55211564865287,
+      "alt": 920,
+      "kind": "outdoor"
+    }
+  ],
+  "edges": [
+    {
+      "id": "gate_quad",
+      "from": "gate",
+      "to": "quad",
+      "heading_deg": 26.476638876089964,
+      "length_m": 89.77983089518159,
+      "tunnel": false,
+      "garage": false,
+      "light_spacing_m": null,
+      "grade": 0,
+      "lanes": 1,
+      "kind": "outdoor",
+      "kinds": [
+        "outdoor",
+        "outdoor"
+      ]
+    },
+    {
+      "id": "quad_x",
+      "from": "quad",
+      "to": "xmark",
+      "heading_deg": 180,
+      "length_m": 60.2725367964305,
+      "tunnel": false,
+      "garage": false,
+      "light_spacing_m": null,
+      "grade": 0,
+      "lanes": 1,
+      "kind": "outdoor",
+      "kinds": [
+        "outdoor",
+        "outdoor"
+      ]
+    },
+    {
+      "id": "x_gate",
+      "from": "xmark",
+      "to": "gate",
+      "heading_deg": 243.34631468401142,
+      "length_m": 44.78598608856884,
+      "tunnel": false,
+      "garage": false,
+      "light_spacing_m": null,
+      "grade": 0,
+      "lanes": 1,
+      "kind": "outdoor",
+      "kinds": [
+        "outdoor",
+        "outdoor"
+      ]
+    },
+    {
+      "id": "quad_ramp",
+      "from": "quad",
+      "to": "ramp_top",
+      "heading_deg": 90,
+      "length_m": 50.03335567649497,
+      "tunnel": false,
+      "garage": false,
+      "light_spacing_m": null,
+      "grade": 0,
+      "lanes": 1,
+      "kind": "outdoor",
+      "kinds": [
+        "outdoor",
+        "ramp"
+      ]
+    },
+    {
+      "id": "ramp_down",
+      "from": "ramp_top",
+      "to": "ramp_bot",
+      "heading_deg": 90,
+      "length_m": 20.013342270906534,
+      "tunnel": false,
+      "garage": true,
+      "light_spacing_m": null,
+      "grade": -0.22484999951965373,
+      "lanes": 1,
+      "kind": "garage",
+      "kinds": [
+        "ramp",
+        "ramp"
+      ]
+    },
+    {
+      "id": "bot_sw",
+      "from": "ramp_bot",
+      "to": "g_sw",
+      "heading_deg": 180,
+      "length_m": 40.181691197554535,
+      "tunnel": false,
+      "garage": true,
+      "light_spacing_m": null,
+      "grade": 0,
+      "lanes": 1,
+      "kind": "garage",
+      "kinds": [
+        "ramp",
+        "garage"
+      ]
+    },
+    {
+      "id": "sw_se",
+      "from": "g_sw",
+      "to": "g_se",
+      "heading_deg": 90,
+      "length_m": 60.04011422547951,
+      "tunnel": false,
+      "garage": true,
+      "light_spacing_m": null,
+      "grade": 0,
+      "lanes": 1,
+      "kind": "garage",
+      "kinds": [
+        "garage",
+        "garage"
+      ]
+    },
+    {
+      "id": "se_ne",
+      "from": "g_se",
+      "to": "g_ne",
+      "heading_deg": 0,
+      "length_m": 60.27253679623309,
+      "tunnel": false,
+      "garage": true,
+      "light_spacing_m": null,
+      "grade": 0,
+      "lanes": 1,
+      "kind": "garage",
+      "kinds": [
+        "garage",
+        "garage"
+      ]
+    },
+    {
+      "id": "ne_nw",
+      "from": "g_ne",
+      "to": "g_nw",
+      "heading_deg": 270,
+      "length_m": 60.03998310312894,
+      "tunnel": false,
+      "garage": true,
+      "light_spacing_m": null,
+      "grade": 0,
+      "lanes": 1,
+      "kind": "garage",
+      "kinds": [
+        "garage",
+        "garage"
+      ]
+    },
+    {
+      "id": "nw_bot",
+      "from": "g_nw",
+      "to": "ramp_bot",
+      "heading_deg": 180,
+      "length_m": 20.09084559867856,
+      "tunnel": false,
+      "garage": true,
+      "light_spacing_m": null,
+      "grade": 0,
+      "lanes": 1,
+      "kind": "garage",
+      "kinds": [
+        "garage",
+        "ramp"
+      ]
+    },
+    {
+      "id": "sw_fork",
+      "from": "g_sw",
+      "to": "g_fork",
+      "heading_deg": 44.889314916687,
+      "length_m": 42.537025072464516,
+      "tunnel": false,
+      "garage": true,
+      "light_spacing_m": null,
+      "grade": 0,
+      "lanes": 1,
+      "kind": "garage",
+      "kinds": [
+        "garage",
+        "junction"
+      ]
+    },
+    {
+      "id": "fork_se",
+      "from": "g_fork",
+      "to": "g_se",
+      "heading_deg": 135.11071636501669,
+      "length_m": 42.537001938153914,
+      "tunnel": false,
+      "garage": true,
+      "light_spacing_m": null,
+      "grade": 0,
+      "lanes": 1,
+      "kind": "garage",
+      "kinds": [
+        "junction",
+        "garage"
+      ]
+    },
+    {
+      "id": "fork_ne",
+      "from": "g_fork",
+      "to": "g_ne",
+      "heading_deg": 44.889283634983315,
+      "length_m": 42.537001938153914,
+      "tunnel": false,
+      "garage": true,
+      "light_spacing_m": null,
+      "grade": 0,
+      "lanes": 1,
+      "kind": "garage",
+      "kinds": [
+        "junction",
+        "garage"
+      ]
+    },
+    {
+      "id": "fork_nw",
+      "from": "g_fork",
+      "to": "g_nw",
+      "heading_deg": 315.1107163650167,
+      "length_m": 42.537001938153914,
+      "tunnel": false,
+      "garage": true,
+      "light_spacing_m": null,
+      "grade": 0,
+      "lanes": 1,
+      "kind": "garage",
+      "kinds": [
+        "junction",
+        "garage"
+      ]
+    },
+    {
+      "id": "quad_portal",
+      "from": "quad",
+      "to": "portal_in",
+      "heading_deg": 90,
+      "length_m": 160.1067381641668,
+      "tunnel": false,
+      "garage": false,
+      "light_spacing_m": null,
+      "grade": 0,
+      "lanes": 1,
+      "kind": "outdoor",
+      "kinds": [
+        "outdoor",
+        "portal"
+      ]
+    },
+    {
+      "id": "tun",
+      "from": "portal_in",
+      "to": "tun_mid",
+      "heading_deg": 90,
+      "length_m": 320.21347632679084,
+      "tunnel": true,
+      "garage": false,
+      "light_spacing_m": 20,
+      "grade": -0.006245833320140839,
+      "lanes": 1,
+      "kind": "tunnel",
+      "kinds": [
+        "portal",
+        "tunnel"
+      ]
+    },
+    {
+      "id": "tun2",
+      "from": "tun_mid",
+      "to": "portal_out",
+      "heading_deg": 90,
+      "length_m": 320.2134763283336,
+      "tunnel": true,
+      "garage": false,
+      "light_spacing_m": 20,
+      "grade": 0.006245833320110747,
+      "lanes": 1,
+      "kind": "tunnel",
+      "kinds": [
+        "tunnel",
+        "portal"
+      ]
+    },
+    {
+      "id": "out_true",
+      "from": "portal_out",
+      "to": "exit_true",
+      "heading_deg": 0,
+      "length_m": 60.27253679623309,
+      "tunnel": false,
+      "garage": false,
+      "light_spacing_m": null,
+      "grade": 0,
+      "lanes": 1,
+      "kind": "outdoor",
+      "kinds": [
+        "portal",
+        "junction"
+      ]
+    },
+    {
+      "id": "out_wrong",
+      "from": "portal_out",
+      "to": "exit_wrong",
+      "heading_deg": 180,
+      "length_m": 60.2725367964305,
+      "tunnel": false,
+      "garage": false,
+      "light_spacing_m": null,
+      "grade": 0,
+      "lanes": 1,
+      "kind": "outdoor",
+      "kinds": [
+        "portal",
+        "junction"
+      ]
+    },
+    {
+      "id": "quad_rn",
+      "from": "quad",
+      "to": "round_n",
+      "heading_deg": 0,
+      "length_m": 80.36338239510907,
+      "tunnel": false,
+      "garage": false,
+      "light_spacing_m": null,
+      "grade": 0,
+      "lanes": 1,
+      "kind": "outdoor",
+      "kinds": [
+        "outdoor",
+        "outdoor"
+      ]
+    },
+    {
+      "id": "rn_re",
+      "from": "round_n",
+      "to": "round_e",
+      "heading_deg": 135.11081021349287,
+      "length_m": 56.715910044040136,
+      "tunnel": false,
+      "garage": false,
+      "light_spacing_m": null,
+      "grade": 0,
+      "lanes": 1,
+      "kind": "outdoor",
+      "kinds": [
+        "outdoor",
+        "outdoor"
+      ]
+    },
+    {
+      "id": "re_rs",
+      "from": "round_e",
+      "to": "round_s",
+      "heading_deg": 224.8892314979981,
+      "length_m": 56.715951174029996,
+      "tunnel": false,
+      "garage": false,
+      "light_spacing_m": null,
+      "grade": 0,
+      "lanes": 1,
+      "kind": "outdoor",
+      "kinds": [
+        "outdoor",
+        "outdoor"
+      ]
+    },
+    {
+      "id": "rs_rw",
+      "from": "round_s",
+      "to": "round_w",
+      "heading_deg": 315.11072679281637,
+      "length_m": 56.715992301836245,
+      "tunnel": false,
+      "garage": false,
+      "light_spacing_m": null,
+      "grade": 0,
+      "lanes": 1,
+      "kind": "outdoor",
+      "kinds": [
+        "outdoor",
+        "outdoor"
+      ]
+    },
+    {
+      "id": "rw_rn",
+      "from": "round_w",
+      "to": "round_n",
+      "heading_deg": 44.889231496893956,
+      "length_m": 56.71595117294123,
+      "tunnel": false,
+      "garage": false,
+      "light_spacing_m": null,
+      "grade": 0,
+      "lanes": 1,
+      "kind": "outdoor",
+      "kinds": [
+        "outdoor",
+        "outdoor"
+      ]
+    },
+    {
+      "id": "rn_j25",
+      "from": "round_n",
+      "to": "j25",
+      "heading_deg": 0,
+      "length_m": 60.27253679623309,
+      "tunnel": false,
+      "garage": false,
+      "light_spacing_m": null,
+      "grade": 0,
+      "lanes": 1,
+      "kind": "outdoor",
+      "kinds": [
+        "outdoor",
+        "junction"
+      ]
+    },
+    {
+      "id": "j25_a",
+      "from": "j25",
+      "to": "j25a",
+      "heading_deg": 333.5235442255073,
+      "length_m": 67.33476599485638,
+      "tunnel": false,
+      "garage": false,
+      "light_spacing_m": null,
+      "grade": 0,
+      "lanes": 1,
+      "kind": "outdoor",
+      "kinds": [
+        "junction",
+        "outdoor"
+      ]
+    },
+    {
+      "id": "j25_b",
+      "from": "j25",
+      "to": "j25b",
+      "heading_deg": 35.921957251684375,
+      "length_m": 68.22508594777112,
+      "tunnel": false,
+      "garage": false,
+      "light_spacing_m": null,
+      "grade": 0,
+      "lanes": 1,
+      "kind": "outdoor",
+      "kinds": [
+        "junction",
+        "outdoor"
+      ]
+    },
+    {
+      "id": "j25_j15",
+      "from": "j25",
+      "to": "j15",
+      "heading_deg": 90,
+      "length_m": 80.05296112356632,
+      "tunnel": false,
+      "garage": false,
+      "light_spacing_m": null,
+      "grade": 0,
+      "lanes": 1,
+      "kind": "outdoor",
+      "kinds": [
+        "junction",
+        "junction"
+      ]
+    },
+    {
+      "id": "j15_a",
+      "from": "j15",
+      "to": "j15a",
+      "heading_deg": 24.69087483186479,
+      "length_m": 71.8655790812881,
+      "tunnel": false,
+      "garage": false,
+      "light_spacing_m": null,
+      "grade": 0,
+      "lanes": 1,
+      "kind": "outdoor",
+      "kinds": [
+        "junction",
+        "outdoor"
+      ]
+    },
+    {
+      "id": "j15_b",
+      "from": "j15",
+      "to": "j15b",
+      "heading_deg": 47.6159195973496,
+      "length_m": 74.51019722944184,
+      "tunnel": false,
+      "garage": false,
+      "light_spacing_m": null,
+      "grade": 0,
+      "lanes": 1,
+      "kind": "outdoor",
+      "kinds": [
+        "junction",
+        "outdoor"
+      ]
+    },
+    {
+      "id": "j15_j8",
+      "from": "j15",
+      "to": "j8",
+      "heading_deg": 90,
+      "length_m": 80.05296112356632,
+      "tunnel": false,
+      "garage": false,
+      "light_spacing_m": null,
+      "grade": 0,
+      "lanes": 1,
+      "kind": "outdoor",
+      "kinds": [
+        "junction",
+        "junction"
+      ]
+    },
+    {
+      "id": "j8_a",
+      "from": "j8",
+      "to": "j8a",
+      "heading_deg": 15.886917627948321,
+      "length_m": 73.11050012313258,
+      "tunnel": false,
+      "garage": false,
+      "light_spacing_m": null,
+      "grade": 0,
+      "lanes": 1,
+      "kind": "outdoor",
+      "kinds": [
+        "junction",
+        "outdoor"
+      ]
+    },
+    {
+      "id": "j8_b",
+      "from": "j8",
+      "to": "j8b",
+      "heading_deg": 28.208290706937476,
+      "length_m": 74.09515441802522,
+      "tunnel": false,
+      "garage": false,
+      "light_spacing_m": null,
+      "grade": 0,
+      "lanes": 1,
+      "kind": "outdoor",
+      "kinds": [
+        "junction",
+        "outdoor"
+      ]
+    },
+    {
+      "id": "x_loope",
+      "from": "xmark",
+      "to": "loop_e",
+      "heading_deg": 180,
+      "length_m": 60.27253679623309,
+      "tunnel": false,
+      "garage": false,
+      "light_spacing_m": null,
+      "grade": 0,
+      "lanes": 1,
+      "kind": "outdoor",
+      "kinds": [
+        "outdoor",
+        "outdoor"
+      ]
+    },
+    {
+      "id": "loope_s",
+      "from": "loop_e",
+      "to": "loop_s",
+      "heading_deg": 270,
+      "length_m": 60.040289046912015,
+      "tunnel": false,
+      "garage": false,
+      "light_spacing_m": null,
+      "grade": 0,
+      "lanes": 1,
+      "kind": "outdoor",
+      "kinds": [
+        "outdoor",
+        "outdoor"
+      ]
+    },
+    {
+      "id": "loops_w",
+      "from": "loop_s",
+      "to": "loop_w",
+      "heading_deg": 0,
+      "length_m": 60.27253679623309,
+      "tunnel": false,
+      "garage": false,
+      "light_spacing_m": null,
+      "grade": 0,
+      "lanes": 1,
+      "kind": "outdoor",
+      "kinds": [
+        "outdoor",
+        "outdoor"
+      ]
+    },
+    {
+      "id": "loopw_gate",
+      "from": "loop_w",
+      "to": "gate",
+      "heading_deg": 135.1106642283894,
+      "length_m": 28.358026997037403,
+      "tunnel": false,
+      "garage": false,
+      "light_spacing_m": null,
+      "grade": 0,
+      "lanes": 1,
+      "kind": "outdoor",
+      "kinds": [
+        "outdoor",
+        "outdoor"
+      ]
+    },
+    {
+      "id": "ramp_up",
+      "from": "ramp_bot",
+      "to": "ramp_top",
+      "heading_deg": 270,
+      "length_m": 20.013342270906534,
+      "tunnel": false,
+      "garage": true,
+      "light_spacing_m": null,
+      "grade": 0.22484999951965373,
+      "lanes": 1,
+      "kind": "garage",
+      "kinds": [
+        "ramp",
+        "ramp"
+      ]
+    },
+    {
+      "id": "ramp_quad",
+      "from": "ramp_top",
+      "to": "quad",
+      "heading_deg": 270,
+      "length_m": 50.03335567649497,
+      "tunnel": false,
+      "garage": false,
+      "light_spacing_m": null,
+      "grade": 0,
+      "lanes": 1,
+      "kind": "outdoor",
+      "kinds": [
+        "ramp",
+        "outdoor"
+      ]
+    }
+  ]
+}

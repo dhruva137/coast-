@@ -1,0 +1,573 @@
+{
+  "type": "FeatureCollection",
+  "name": "SIH26168 tunnel lights",
+  "crs": {
+    "type": "name",
+    "properties": {
+      "name": "urn:ogc:def:crs:OGC:1.3:CRS84"
+    }
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "light",
+        "edge_id": "tun",
+        "s_m": 0,
+        "spacing_m": 20
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55414351347126,
+          12.991923128505892,
+          920
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "light",
+        "edge_id": "tun",
+        "s_m": 20,
+        "spacing_m": 20
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55432786481839,
+          12.991923128505892,
+          919.875
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "light",
+        "edge_id": "tun",
+        "s_m": 40,
+        "spacing_m": 20
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.5545122161655,
+          12.991923128505892,
+          919.75
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "light",
+        "edge_id": "tun",
+        "s_m": 60,
+        "spacing_m": 20
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55469656751264,
+          12.991923128505892,
+          919.625
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "light",
+        "edge_id": "tun",
+        "s_m": 80,
+        "spacing_m": 20
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55488091885977,
+          12.991923128505892,
+          919.5
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "light",
+        "edge_id": "tun",
+        "s_m": 100,
+        "spacing_m": 20
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.5550652702069,
+          12.991923128505892,
+          919.375
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "light",
+        "edge_id": "tun",
+        "s_m": 120,
+        "spacing_m": 20
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55524962155401,
+          12.991923128505892,
+          919.25
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "light",
+        "edge_id": "tun",
+        "s_m": 140,
+        "spacing_m": 20
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55543397290114,
+          12.991923128505892,
+          919.125
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "light",
+        "edge_id": "tun",
+        "s_m": 160,
+        "spacing_m": 20
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55561832424827,
+          12.991923128505892,
+          919
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "light",
+        "edge_id": "tun",
+        "s_m": 180,
+        "spacing_m": 20
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55580267559539,
+          12.991923128505892,
+          918.875
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "light",
+        "edge_id": "tun",
+        "s_m": 200,
+        "spacing_m": 20
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55598702694252,
+          12.991923128505892,
+          918.75
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "light",
+        "edge_id": "tun",
+        "s_m": 220,
+        "spacing_m": 20
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55617137828965,
+          12.991923128505892,
+          918.625
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "light",
+        "edge_id": "tun",
+        "s_m": 240,
+        "spacing_m": 20
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55635572963678,
+          12.991923128505892,
+          918.5
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "light",
+        "edge_id": "tun",
+        "s_m": 260,
+        "spacing_m": 20
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.5565400809839,
+          12.991923128505892,
+          918.375
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "light",
+        "edge_id": "tun",
+        "s_m": 280,
+        "spacing_m": 20
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55672443233102,
+          12.991923128505892,
+          918.25
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "light",
+        "edge_id": "tun",
+        "s_m": 300,
+        "spacing_m": 20
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55690878367815,
+          12.991923128505892,
+          918.125
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "light",
+        "edge_id": "tun2",
+        "s_m": 0,
+        "spacing_m": 20
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55709313502527,
+          12.991923128505892,
+          918
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "light",
+        "edge_id": "tun2",
+        "s_m": 20,
+        "spacing_m": 20
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.5572774863724,
+          12.991923128505892,
+          918.125
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "light",
+        "edge_id": "tun2",
+        "s_m": 40,
+        "spacing_m": 20
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55746183771953,
+          12.991923128505892,
+          918.25
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "light",
+        "edge_id": "tun2",
+        "s_m": 60,
+        "spacing_m": 20
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55764618906665,
+          12.991923128505892,
+          918.375
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "light",
+        "edge_id": "tun2",
+        "s_m": 80,
+        "spacing_m": 20
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55783054041378,
+          12.991923128505892,
+          918.5
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "light",
+        "edge_id": "tun2",
+        "s_m": 100,
+        "spacing_m": 20
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.5580148917609,
+          12.991923128505892,
+          918.625
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "light",
+        "edge_id": "tun2",
+        "s_m": 120,
+        "spacing_m": 20
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55819924310804,
+          12.991923128505892,
+          918.75
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "light",
+        "edge_id": "tun2",
+        "s_m": 140,
+        "spacing_m": 20
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55838359445515,
+          12.991923128505892,
+          918.875
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "light",
+        "edge_id": "tun2",
+        "s_m": 160,
+        "spacing_m": 20
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55856794580228,
+          12.991923128505892,
+          919
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "light",
+        "edge_id": "tun2",
+        "s_m": 180,
+        "spacing_m": 20
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55875229714941,
+          12.991923128505892,
+          919.125
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "light",
+        "edge_id": "tun2",
+        "s_m": 200,
+        "spacing_m": 20
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55893664849653,
+          12.991923128505892,
+          919.25
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "light",
+        "edge_id": "tun2",
+        "s_m": 220,
+        "spacing_m": 20
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55912099984366,
+          12.991923128505892,
+          919.375
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "light",
+        "edge_id": "tun2",
+        "s_m": 240,
+        "spacing_m": 20
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55930535119079,
+          12.991923128505892,
+          919.5
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "light",
+        "edge_id": "tun2",
+        "s_m": 260,
+        "spacing_m": 20
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55948970253792,
+          12.991923128505892,
+          919.625
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "light",
+        "edge_id": "tun2",
+        "s_m": 280,
+        "spacing_m": 20
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55967405388503,
+          12.991923128505892,
+          919.75
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "light",
+        "edge_id": "tun2",
+        "s_m": 300,
+        "spacing_m": 20
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.55985840523216,
+          12.991923128505892,
+          919.875
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "feature": "light",
+        "edge_id": "tun2",
+        "s_m": 320,
+        "spacing_m": 20
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.56004275657929,
+          12.991923128505892,
+          920
+        ]
+      }
+    }
+  ]
+}

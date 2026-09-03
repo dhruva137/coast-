@@ -1,0 +1,20 @@
+[package]
+name = "idr"
+version = "0.1.0"
+description = "IDR · SIH 26168 · Intelligent Dead Reckoning"
+authors = ["SIH 26168"]
+edition = "2021"
+rust-version = "1.77"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true

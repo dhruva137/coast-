@@ -1,0 +1,59 @@
+{
+  "finding": "F3",
+  "name": "exp3_model_error",
+  "rows": [
+    {
+      "lean_deg": 11.0,
+      "car_drift_pct": 2.2123050754155265,
+      "car_heading_err_deg": -4.893215273281467,
+      "oracle_drift_pct": 0.0,
+      "oracle_noisy_drift_pct": 0.01665894532220793,
+      "bible_drift_pct": 2.2,
+      "analytic_heading_err_deg": -4.960660469130726,
+      "distance_m": 312.3599999999996
+    },
+    {
+      "lean_deg": 26.0,
+      "car_drift_pct": 12.780426761565733,
+      "car_heading_err_deg": -26.954987860931627,
+      "oracle_drift_pct": 0.0,
+      "oracle_noisy_drift_pct": 0.09570554783145707,
+      "bible_drift_pct": 23.0,
+      "analytic_heading_err_deg": -27.3256074992249,
+      "distance_m": 312.3599999999996
+    },
+    {
+      "lean_deg": 34.0,
+      "car_drift_pct": 22.312253897020515,
+      "car_heading_err_deg": -45.53511470357168,
+      "oracle_drift_pct": 0.0,
+      "oracle_noisy_drift_pct": 0.13193632742757622,
+      "bible_drift_pct": 38.0,
+      "analytic_heading_err_deg": -46.15985541013873,
+      "distance_m": 312.3599999999996
+    },
+    {
+      "lean_deg": 45.0,
+      "car_drift_pct": 39.88207378094828,
+      "car_heading_err_deg": -78.0150480289592,
+      "oracle_drift_pct": 0.0,
+      "oracle_noisy_drift_pct": 0.24392388485630467,
+      "bible_drift_pct": 51.0,
+      "analytic_heading_err_deg": -79.08116907963216,
+      "distance_m": 312.3599999999996
+    }
+  ],
+  "heading_err_45deg": -128.3104730416521,
+  "bible_heading_err_45deg": -135.0,
+  "oracle_noisy_drift_pct_mean": 0.12205617635938648,
+  "bible_oracle_drift_pct": 0.04,
+  "rel_err_drift": {
+    "11": 0.00559321609796649,
+    "26": 0.44432927123627247,
+    "34": 0.412835423762618,
+    "45": 0.21799855331473958
+  },
+  "rel_err_heading_45": 0.04955205154331776,
+  "note": "Car-style uses \u03c9z; roll-aware uses F2 with true lean. Drift: 3 same-R=60 m 90\u00b0 turns, L=10 m (search best). Heading: 5 turns = 450\u00b0.",
+  "seed": 26168
+}

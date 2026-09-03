@@ -1,0 +1,56 @@
+{
+  "finding": "F1-F2",
+  "name": "exp1_f1_f2_kinematics",
+  "bible": {
+    "omega_body": " [phidot, psidot*sin(phi), psidot*cos(phi)]",
+    "exact_psidot": "wy*sin(phi) + wz*cos(phi)",
+    "claim": "textbook kinematics \u2014 application, not discovery"
+  },
+  "max_F2_residual": 1.1102230246251565e-16,
+  "F2_holds": true,
+  "car_style_error_at_45deg": 0.2928932188134524,
+  "checks": {
+    "phi_0_deg": {
+      "wy": 0.0,
+      "wz": 0.6,
+      "F2_psidot": 0.6,
+      "true_psidot": 0.6,
+      "car_psidot": 0.6,
+      "car_rel_error": 0.0
+    },
+    "phi_11_deg": {
+      "wy": 0.11448539722592688,
+      "wz": 0.5889763100685984,
+      "F2_psidot": 0.6,
+      "true_psidot": 0.6,
+      "car_psidot": 0.5889763100685984,
+      "car_rel_error": 0.018372816552336024
+    },
+    "phi_26_deg": {
+      "wy": 0.2630226880734464,
+      "wz": 0.5392764277795002,
+      "F2_psidot": 0.6000000000000001,
+      "true_psidot": 0.6,
+      "car_psidot": 0.5392764277795002,
+      "car_rel_error": 0.10120595370083296
+    },
+    "phi_34_deg": {
+      "wy": 0.3355157420824481,
+      "wz": 0.497422543533025,
+      "F2_psidot": 0.6000000000000001,
+      "true_psidot": 0.6,
+      "car_psidot": 0.497422543533025,
+      "car_rel_error": 0.17096242744495826
+    },
+    "phi_45_deg": {
+      "wy": 0.4242640687119285,
+      "wz": 0.4242640687119285,
+      "F2_psidot": 0.6000000000000001,
+      "true_psidot": 0.6,
+      "car_psidot": 0.4242640687119285,
+      "car_rel_error": 0.2928932188134524
+    }
+  },
+  "note": "\u03c9_body and the F2 inversion are textbook. The contribution is applying them to two-wheeler smartphone DR.",
+  "seed": 26168
+}

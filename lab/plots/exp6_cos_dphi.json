@@ -1,0 +1,14 @@
+{
+  "finding": "F6",
+  "name": "exp6_cos_dphi",
+  "max_identity_residual": 3.3306690738754696e-16,
+  "median_identity_residual": 1.1102230246251565e-16,
+  "bible_identity_residual": 2.2e-16,
+  "identity_ok_1e15": true,
+  "car_40deg_pct": 23.3955556881022,
+  "bible_car_40deg_pct": 23.4,
+  "ours_10deg_err_pct": 1.519224698779198,
+  "bible_ours_10deg_err_pct": 1.5,
+  "closed_form_check": 0.984807753012208,
+  "seed": 26168
+}

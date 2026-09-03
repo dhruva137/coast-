@@ -1,0 +1,10 @@
+.gradle/
+local.properties
+**/build/
+*.iml
+.idea/
+.cxx/
+captures/
+*.apk
+*.ap_
+*.aab

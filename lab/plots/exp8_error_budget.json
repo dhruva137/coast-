@@ -1,0 +1,56 @@
+{
+  "finding": "F8",
+  "name": "exp8_error_budget",
+  "D_equal_m": 300.0,
+  "D_ref_m": 1327.3809999999999,
+  "V_mps": 10.619048,
+  "T_bias_s": 125.0,
+  "rows": [
+    {
+      "source": "AVNet velocity error (0.5 m/s \u2248 5%)",
+      "position_m": 14.994095775979133,
+      "drift_pct": 1.129599999998428,
+      "bible_m": 15.0,
+      "bible_pct": 1.13
+    },
+    {
+      "source": "AVNet attitude error (~10\u00b0)",
+      "position_m": 52.27286216747471,
+      "drift_pct": 3.9380450803103795,
+      "bible_m": 52.3,
+      "bible_pct": 3.94
+    },
+    {
+      "source": "cos(lean) error at 34\u00b0 lean",
+      "position_m": 83.24621077604081,
+      "drift_pct": 6.271463187738925,
+      "bible_m": 84.9,
+      "bible_pct": 6.4
+    },
+    {
+      "source": "Phone gyro bias 0.3\u00b0/s over 125 s",
+      "position_m": 192.78776515766805,
+      "drift_pct": 14.523920800257654,
+      "bible_m": 188.5,
+      "bible_pct": 14.2,
+      "ramp_integrated_m": 429.1383970221993
+    }
+  ],
+  "speed_1pct_m": 2.9988191552002945,
+  "heading_1pct_m": 18.83903720057282,
+  "heading_vs_speed": 6.282151815625087,
+  "bible": {
+    "vel_m": 15.0,
+    "vel_pct": 1.13,
+    "att_m": 52.3,
+    "att_pct": 3.94,
+    "lean_m": 84.9,
+    "lean_pct": 6.4,
+    "gyro_m": 188.5,
+    "gyro_pct": 14.2,
+    "speed_1pct_m": 3.0,
+    "heading_1pct_m": 18.9,
+    "heading_vs_speed": 6.3
+  },
+  "seed": 26168
+}

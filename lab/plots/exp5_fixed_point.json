@@ -1,0 +1,43 @@
+{
+  "finding": "F5",
+  "name": "exp5_fixed_point",
+  "convergence_deg": [
+    9.735610317245342,
+    0.41555594321142864,
+    0.0007534946613458928,
+    2.477289513626393e-09,
+    0.0,
+    6.3611093629270335e-15,
+    0.0,
+    6.3611093629270335e-15
+  ],
+  "iters_to_1e-3_deg": 3,
+  "lean_rmse_deg": 1.0923376557322428,
+  "bible": {
+    "iters": [
+      3,
+      5
+    ],
+    "lean_rmse_deg": [
+      0.5,
+      1.0
+    ],
+    "wobble_drift_pct": 3.0,
+    "bank_drift_pct": 3.2,
+    "vel_scale_drift_pct": 3.4,
+    "nominal_drift_pct": 3.0,
+    "brake_drift_pct": 9.6,
+    "car_drift_pct": 37.0
+  },
+  "nominal_drift_pct": 2.6553032246424566,
+  "wobble_drift_pct": 2.6553032246424566,
+  "bank_drift_pct": 2.3011676037162925,
+  "vel_scale_drift_pct": 3.9895961618503732,
+  "vel_plus40_drift_pct": 1.902363983199225,
+  "vel_minus40_drift_pct": 3.9895961618503732,
+  "brake_drift_pct": 11.761899708854642,
+  "car_drift_pct": 34.93939542427472,
+  "iters_mean": 3.283809523809524,
+  "iters_p95": 5.0,
+  "seed": 26168
+}

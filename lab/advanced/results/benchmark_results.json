@@ -1,0 +1,3050 @@
+{
+  "dataset": "real IO-VNBD smartphone S-*.csv (>1 MB)",
+  "seed": 26168,
+  "axis_mapping": {
+    "vehicle_yaw": "loader gz = -GYROSCOPE Pitch",
+    "advanced_remap": "none; fit scale+bias on loader gz only",
+    "alignment_evidence": "lab/stress/results/alignment/ALIGNMENT_REPORT.md",
+    "alignment_correlations": {
+      "S-S1_orientation": 0.992,
+      "S-S1_latlon": 0.93,
+      "S-S2_orientation": 0.983,
+      "S-S2_latlon": 0.956
+    }
+  },
+  "calibration_provenance": {
+    "feature_timing": "true GPS orientation changes; gyro averaged over identical intervals",
+    "lag_selection": "training portion of prefix only, -1.0..+1.0 s at 0.1 s",
+    "trust_correlation": ">=0.70 on final 25% of prefix updates",
+    "mapped_yaw_scale": "[0.85, 1.15], consistent with loader rad/s sensor contract",
+    "ood_radius": "empirical 99.5% Mahalanobis quantile on held-out prefix ticks",
+    "outage_gnss_used_for_calibration": false
+  },
+  "protocol": "prefix-only calibration; forced outage GNSS held out for scoring; same known-route prior for both methods",
+  "known_route_caveat": "route geometry is built from the full logged drive as a stand-in for an offline OSM/fleet map; no outage positions enter the calibrator",
+  "summary": {
+    "n_outages": 36,
+    "baseline": {
+      "median_final_m": 128.00271017461247,
+      "mean_final_m": 175.32547155714173,
+      "p90_final_m": 433.12177970441365
+    },
+    "candidate": {
+      "median_final_m": 129.97192235374993,
+      "mean_final_m": 185.30932895473572,
+      "p90_final_m": 433.12163960980206
+    },
+    "safe_abstaining": {
+      "median_final_m": 128.00249636452764,
+      "mean_final_m": 175.3252777168105,
+      "p90_final_m": 433.12177970441365
+    },
+    "candidate_median_delta_m": 1.9692121791374575,
+    "candidate_status": "worsened",
+    "safe_median_delta_m": -0.00021381008482990183,
+    "safe_paired_median_delta_m": 0.0,
+    "safe_median_relative_delta_pct": -0.00016703559208882128,
+    "safe_status": "neutral",
+    "accepted_count": 12,
+    "abstained_count": 24,
+    "safe_abstention_prevented_regression": true,
+    "candidate_win_rate": 0.4444444444444444,
+    "safe_win_rate": 0.2777777777777778,
+    "accepted_fraction": 0.3333333333333333,
+    "conformal_empirical_coverage": 0.75,
+    "target_coverage": 0.9,
+    "pass": false,
+    "pass_rule": "median final error improves and empirical coverage >= 85%",
+    "status_tolerance_m": 0.01
+  },
+  "rows": [
+    {
+      "calibration": {
+        "weights": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "bias_rps": 0.0,
+        "gps_gyro_lag_s": 0.0,
+        "n_fit": 0,
+        "validation_correlation": 0.0,
+        "validation_mae_rps": null,
+        "conformal_q90_rps": null,
+        "axis_norm": 1.0,
+        "excitation_rps": 0.0,
+        "trusted_prefix": false,
+        "reason": "fewer than 48 prefix turning updates",
+        "feature_mean": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "feature_precision": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "ood_d2_threshold": 12.84
+      },
+      "outage_ood_fraction": 0.0,
+      "decision": "abstain_baseline",
+      "status": "abstained",
+      "baseline_method": "car_bias_map",
+      "baseline": {
+        "ate_m": 4.116963955957509,
+        "final_error_m": 2.4619150650819583,
+        "max_error_m": 7.914155825761598,
+        "drift_pct": 6.924406605176021,
+        "distance_m": 35.554166666666674,
+        "n": 200,
+        "m_per_km": 69.24406605176021
+      },
+      "candidate": {
+        "ate_m": 19.08394265001994,
+        "final_error_m": 36.54417788139643,
+        "max_error_m": 36.54417788139643,
+        "drift_pct": 102.7845153115568,
+        "distance_m": 35.554166666666674,
+        "n": 200,
+        "m_per_km": 1027.8451531155679
+      },
+      "safe": {
+        "ate_m": 4.116963955957509,
+        "final_error_m": 2.4619150650819583,
+        "max_error_m": 7.914155825761598,
+        "drift_pct": 6.924406605176021,
+        "distance_m": 35.554166666666674,
+        "n": 200,
+        "m_per_km": 69.24406605176021
+      },
+      "uncertainty_radius_m": 1000000000.0,
+      "uncertainty_kind": "abstained_unbounded",
+      "uncertainty_covered": true,
+      "infer_us_per_tick_python": 6.196517393048575,
+      "candidate_verdict": "PASS_COMPETITIVE",
+      "safe_verdict": "PASS_ISRO",
+      "csv": "S-M.csv",
+      "site": "early",
+      "deny_s": 20.0,
+      "i0": 1200
+    },
+    {
+      "calibration": {
+        "weights": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "bias_rps": 0.0,
+        "gps_gyro_lag_s": 0.0,
+        "n_fit": 0,
+        "validation_correlation": 0.0,
+        "validation_mae_rps": null,
+        "conformal_q90_rps": null,
+        "axis_norm": 1.0,
+        "excitation_rps": 0.0,
+        "trusted_prefix": false,
+        "reason": "fewer than 48 prefix turning updates",
+        "feature_mean": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "feature_precision": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "ood_d2_threshold": 12.84
+      },
+      "outage_ood_fraction": 0.0,
+      "decision": "abstain_baseline",
+      "status": "abstained",
+      "baseline_method": "car_bias_map",
+      "baseline": {
+        "ate_m": 10.31022716016634,
+        "final_error_m": 17.170443562687975,
+        "max_error_m": 17.170443562687975,
+        "drift_pct": 24.004185916213643,
+        "distance_m": 71.5310388888889,
+        "n": 400,
+        "m_per_km": 240.04185916213643
+      },
+      "candidate": {
+        "ate_m": 48.05263054109329,
+        "final_error_m": 84.12613971625704,
+        "max_error_m": 84.12613971625704,
+        "drift_pct": 117.60788186920149,
+        "distance_m": 71.5310388888889,
+        "n": 400,
+        "m_per_km": 1176.078818692015
+      },
+      "safe": {
+        "ate_m": 10.31022716016634,
+        "final_error_m": 17.170443562687975,
+        "max_error_m": 17.170443562687975,
+        "drift_pct": 24.004185916213643,
+        "distance_m": 71.5310388888889,
+        "n": 400,
+        "m_per_km": 240.04185916213643
+      },
+      "uncertainty_radius_m": 1000000000.0,
+      "uncertainty_kind": "abstained_unbounded",
+      "uncertainty_covered": true,
+      "infer_us_per_tick_python": 4.500249386799901,
+      "candidate_verdict": "FAIL",
+      "safe_verdict": "PASS_COMPETITIVE",
+      "csv": "S-M.csv",
+      "site": "early",
+      "deny_s": 40.0,
+      "i0": 1200
+    },
+    {
+      "calibration": {
+        "weights": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "bias_rps": 0.0,
+        "gps_gyro_lag_s": 0.0,
+        "n_fit": 0,
+        "validation_correlation": 0.0,
+        "validation_mae_rps": null,
+        "conformal_q90_rps": null,
+        "axis_norm": 1.0,
+        "excitation_rps": 0.0,
+        "trusted_prefix": false,
+        "reason": "fewer than 48 prefix turning updates",
+        "feature_mean": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "feature_precision": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "ood_d2_threshold": 12.84
+      },
+      "outage_ood_fraction": 0.0,
+      "decision": "abstain_baseline",
+      "status": "abstained",
+      "baseline_method": "car_bias_map",
+      "baseline": {
+        "ate_m": 10.837790943678712,
+        "final_error_m": 15.517731723394512,
+        "max_error_m": 17.170443562687975,
+        "drift_pct": 14.330858023477864,
+        "distance_m": 108.28194444444445,
+        "n": 600,
+        "m_per_km": 143.30858023477867
+      },
+      "candidate": {
+        "ate_m": 70.4745047953867,
+        "final_error_m": 121.33330105566067,
+        "max_error_m": 121.33330105566067,
+        "drift_pct": 112.0531236100146,
+        "distance_m": 108.28194444444445,
+        "n": 600,
+        "m_per_km": 1120.531236100146
+      },
+      "safe": {
+        "ate_m": 10.837790943678712,
+        "final_error_m": 15.517731723394512,
+        "max_error_m": 17.170443562687975,
+        "drift_pct": 14.330858023477864,
+        "distance_m": 108.28194444444445,
+        "n": 600,
+        "m_per_km": 143.30858023477867
+      },
+      "uncertainty_radius_m": 1000000000.0,
+      "uncertainty_kind": "abstained_unbounded",
+      "uncertainty_covered": true,
+      "infer_us_per_tick_python": 2.199500836854252,
+      "candidate_verdict": "FAIL",
+      "safe_verdict": "PASS_COMPETITIVE",
+      "csv": "S-M.csv",
+      "site": "early",
+      "deny_s": 60.0,
+      "i0": 1200
+    },
+    {
+      "calibration": {
+        "weights": [
+          0.0,
+          0.0,
+          0.9080503017165379
+        ],
+        "bias_rps": -0.0042722087039312046,
+        "gps_gyro_lag_s": -0.40000000000000013,
+        "n_fit": 62,
+        "validation_correlation": 0.32795195546226225,
+        "validation_mae_rps": 0.09647251995333585,
+        "conformal_q90_rps": 0.2537500752447389,
+        "axis_norm": 0.9080503017165379,
+        "excitation_rps": 0.12559691398005055,
+        "trusted_prefix": false,
+        "reason": "held-out prefix correlation < 0.70",
+        "feature_mean": [
+          0.002908351652006361,
+          -0.0008499570288501573,
+          0.03307728284583421
+        ],
+        "feature_precision": [
+          [
+            1197.3504576017035,
+            -38.77176794026918,
+            -118.93886066098453
+          ],
+          [
+            -38.77176794027272,
+            444.285142425337,
+            24.839127113530665
+          ],
+          [
+            -118.93886066098487,
+            24.839127113530253,
+            36.79088933490983
+          ]
+        ],
+        "ood_d2_threshold": 87.16373704434972
+      },
+      "outage_ood_fraction": 0.0,
+      "decision": "abstain_baseline",
+      "status": "abstained",
+      "baseline_method": "car_bias_map",
+      "baseline": {
+        "ate_m": 105.64441032905094,
+        "final_error_m": 154.50526224225231,
+        "max_error_m": 154.50526224225231,
+        "drift_pct": 297.7428754366477,
+        "distance_m": 51.89217777777766,
+        "n": 200,
+        "m_per_km": 2977.428754366477
+      },
+      "candidate": {
+        "ate_m": 105.64712384099977,
+        "final_error_m": 154.50997457657547,
+        "max_error_m": 154.50997457657547,
+        "drift_pct": 297.7519564475533,
+        "distance_m": 51.89217777777766,
+        "n": 200,
+        "m_per_km": 2977.519564475533
+      },
+      "safe": {
+        "ate_m": 105.64441032905094,
+        "final_error_m": 154.50526224225231,
+        "max_error_m": 154.50526224225231,
+        "drift_pct": 297.7428754366477,
+        "distance_m": 51.89217777777766,
+        "n": 200,
+        "m_per_km": 2977.428754366477
+      },
+      "uncertainty_radius_m": 1000000000.0,
+      "uncertainty_kind": "abstained_unbounded",
+      "uncertainty_covered": true,
+      "infer_us_per_tick_python": 5.983582077216616,
+      "candidate_verdict": "FAIL",
+      "safe_verdict": "FAIL",
+      "csv": "S-M.csv",
+      "site": "mid",
+      "deny_s": 20.0,
+      "i0": 52987
+    },
+    {
+      "calibration": {
+        "weights": [
+          0.0,
+          0.0,
+          0.9080503017165379
+        ],
+        "bias_rps": -0.0042722087039312046,
+        "gps_gyro_lag_s": -0.40000000000000013,
+        "n_fit": 62,
+        "validation_correlation": 0.32795195546226225,
+        "validation_mae_rps": 0.09647251995333585,
+        "conformal_q90_rps": 0.2537500752447389,
+        "axis_norm": 0.9080503017165379,
+        "excitation_rps": 0.12559691398005055,
+        "trusted_prefix": false,
+        "reason": "held-out prefix correlation < 0.70",
+        "feature_mean": [
+          0.002908351652006361,
+          -0.0008499570288501573,
+          0.03307728284583421
+        ],
+        "feature_precision": [
+          [
+            1197.3504576017035,
+            -38.77176794026918,
+            -118.93886066098453
+          ],
+          [
+            -38.77176794027272,
+            444.285142425337,
+            24.839127113530665
+          ],
+          [
+            -118.93886066098487,
+            24.839127113530253,
+            36.79088933490983
+          ]
+        ],
+        "ood_d2_threshold": 87.16373704434972
+      },
+      "outage_ood_fraction": 0.0,
+      "decision": "abstain_baseline",
+      "status": "abstained",
+      "baseline_method": "car_bias_map",
+      "baseline": {
+        "ate_m": 187.0444462110713,
+        "final_error_m": 345.55101974754893,
+        "max_error_m": 345.55101974754893,
+        "drift_pct": 342.10936155812306,
+        "distance_m": 101.00601111111108,
+        "n": 400,
+        "m_per_km": 3421.0936155812306
+      },
+      "candidate": {
+        "ate_m": 187.04898687544767,
+        "final_error_m": 345.55772515776977,
+        "max_error_m": 345.55772515776977,
+        "drift_pct": 342.11600018303955,
+        "distance_m": 101.00601111111108,
+        "n": 400,
+        "m_per_km": 3421.1600018303957
+      },
+      "safe": {
+        "ate_m": 187.0444462110713,
+        "final_error_m": 345.55101974754893,
+        "max_error_m": 345.55101974754893,
+        "drift_pct": 342.10936155812306,
+        "distance_m": 101.00601111111108,
+        "n": 400,
+        "m_per_km": 3421.0936155812306
+      },
+      "uncertainty_radius_m": 1000000000.0,
+      "uncertainty_kind": "abstained_unbounded",
+      "uncertainty_covered": true,
+      "infer_us_per_tick_python": 4.094763081364027,
+      "candidate_verdict": "FAIL",
+      "safe_verdict": "FAIL",
+      "csv": "S-M.csv",
+      "site": "mid",
+      "deny_s": 40.0,
+      "i0": 52987
+    },
+    {
+      "calibration": {
+        "weights": [
+          0.0,
+          0.0,
+          0.9080503017165379
+        ],
+        "bias_rps": -0.0042722087039312046,
+        "gps_gyro_lag_s": -0.40000000000000013,
+        "n_fit": 62,
+        "validation_correlation": 0.32795195546226225,
+        "validation_mae_rps": 0.09647251995333585,
+        "conformal_q90_rps": 0.2537500752447389,
+        "axis_norm": 0.9080503017165379,
+        "excitation_rps": 0.12559691398005055,
+        "trusted_prefix": false,
+        "reason": "held-out prefix correlation < 0.70",
+        "feature_mean": [
+          0.002908351652006361,
+          -0.0008499570288501573,
+          0.03307728284583421
+        ],
+        "feature_precision": [
+          [
+            1197.3504576017035,
+            -38.77176794026918,
+            -118.93886066098453
+          ],
+          [
+            -38.77176794027272,
+            444.285142425337,
+            24.839127113530665
+          ],
+          [
+            -118.93886066098487,
+            24.839127113530253,
+            36.79088933490983
+          ]
+        ],
+        "ood_d2_threshold": 87.16373704434972
+      },
+      "outage_ood_fraction": 0.0,
+      "decision": "abstain_baseline",
+      "status": "abstained",
+      "baseline_method": "car_bias_map",
+      "baseline": {
+        "ate_m": 302.79852716364013,
+        "final_error_m": 551.1055123868575,
+        "max_error_m": 551.1055123868575,
+        "drift_pct": 397.39234355635904,
+        "distance_m": 138.68045555555565,
+        "n": 588,
+        "m_per_km": 3973.9234355635904
+      },
+      "candidate": {
+        "ate_m": 302.8041337051891,
+        "final_error_m": 551.1141811240655,
+        "max_error_m": 551.1141811240655,
+        "drift_pct": 397.39859442795677,
+        "distance_m": 138.68045555555565,
+        "n": 588,
+        "m_per_km": 3973.985944279568
+      },
+      "safe": {
+        "ate_m": 302.79852716364013,
+        "final_error_m": 551.1055123868575,
+        "max_error_m": 551.1055123868575,
+        "drift_pct": 397.39234355635904,
+        "distance_m": 138.68045555555565,
+        "n": 588,
+        "m_per_km": 3973.9234355635904
+      },
+      "uncertainty_radius_m": 1000000000.0,
+      "uncertainty_kind": "abstained_unbounded",
+      "uncertainty_covered": true,
+      "infer_us_per_tick_python": 3.6246179994780743,
+      "candidate_verdict": "FAIL",
+      "safe_verdict": "FAIL",
+      "csv": "S-M.csv",
+      "site": "mid",
+      "deny_s": 60.0,
+      "i0": 52987
+    },
+    {
+      "calibration": {
+        "weights": [
+          0.0,
+          0.0,
+          0.6531003760772299
+        ],
+        "bias_rps": 0.0015015078834137272,
+        "gps_gyro_lag_s": -0.20000000000000018,
+        "n_fit": 151,
+        "validation_correlation": 0.7550506128994663,
+        "validation_mae_rps": 0.021873681685872087,
+        "conformal_q90_rps": 0.07994826074497727,
+        "axis_norm": 0.6531003760772299,
+        "excitation_rps": 0.054376387772031645,
+        "trusted_prefix": false,
+        "reason": "mapped-yaw scale outside [0.85, 1.15]",
+        "feature_mean": [
+          0.003646453691555065,
+          -0.0019904131572638737,
+          0.03289638941147144
+        ],
+        "feature_precision": [
+          [
+            382.4835777208781,
+            150.2297047802048,
+            -33.885015281477514
+          ],
+          [
+            150.22970478020454,
+            235.21503238085813,
+            -3.1923956548212087
+          ],
+          [
+            -33.88501528147756,
+            -3.1923956548212225,
+            29.358604011107712
+          ]
+        ],
+        "ood_d2_threshold": 7.766300210344165
+      },
+      "outage_ood_fraction": 0.0,
+      "decision": "abstain_baseline",
+      "status": "abstained",
+      "baseline_method": "car_bias_map",
+      "baseline": {
+        "ate_m": 92.88546253625887,
+        "final_error_m": 133.93726998320855,
+        "max_error_m": 133.93726998320855,
+        "drift_pct": 286.0407665754819,
+        "distance_m": 46.824538888887545,
+        "n": 200,
+        "m_per_km": 2860.407665754819
+      },
+      "candidate": {
+        "ate_m": 92.88546253625887,
+        "final_error_m": 133.93726998320855,
+        "max_error_m": 133.93726998320855,
+        "drift_pct": 286.0407665754819,
+        "distance_m": 46.824538888887545,
+        "n": 200,
+        "m_per_km": 2860.407665754819
+      },
+      "safe": {
+        "ate_m": 92.88546253625887,
+        "final_error_m": 133.93726998320855,
+        "max_error_m": 133.93726998320855,
+        "drift_pct": 286.0407665754819,
+        "distance_m": 46.824538888887545,
+        "n": 200,
+        "m_per_km": 2860.407665754819
+      },
+      "uncertainty_radius_m": 1000000000.0,
+      "uncertainty_kind": "abstained_unbounded",
+      "uncertainty_covered": true,
+      "infer_us_per_tick_python": 5.965671637871613,
+      "candidate_verdict": "FAIL",
+      "safe_verdict": "FAIL",
+      "csv": "S-M.csv",
+      "site": "late",
+      "deny_s": 20.0,
+      "i0": 74181
+    },
+    {
+      "calibration": {
+        "weights": [
+          0.0,
+          0.0,
+          0.6531003760772299
+        ],
+        "bias_rps": 0.0015015078834137272,
+        "gps_gyro_lag_s": -0.20000000000000018,
+        "n_fit": 151,
+        "validation_correlation": 0.7550506128994663,
+        "validation_mae_rps": 0.021873681685872087,
+        "conformal_q90_rps": 0.07994826074497727,
+        "axis_norm": 0.6531003760772299,
+        "excitation_rps": 0.054376387772031645,
+        "trusted_prefix": false,
+        "reason": "mapped-yaw scale outside [0.85, 1.15]",
+        "feature_mean": [
+          0.003646453691555065,
+          -0.0019904131572638737,
+          0.03289638941147144
+        ],
+        "feature_precision": [
+          [
+            382.4835777208781,
+            150.2297047802048,
+            -33.885015281477514
+          ],
+          [
+            150.22970478020454,
+            235.21503238085813,
+            -3.1923956548212087
+          ],
+          [
+            -33.88501528147756,
+            -3.1923956548212225,
+            29.358604011107712
+          ]
+        ],
+        "ood_d2_threshold": 7.766300210344165
+      },
+      "outage_ood_fraction": 0.0,
+      "decision": "abstain_baseline",
+      "status": "abstained",
+      "baseline_method": "car_bias_map",
+      "baseline": {
+        "ate_m": 141.94661757806614,
+        "final_error_m": 249.4719620834334,
+        "max_error_m": 249.4719620834334,
+        "drift_pct": 183.4803905716209,
+        "distance_m": 135.9665527777765,
+        "n": 400,
+        "m_per_km": 1834.8039057162089
+      },
+      "candidate": {
+        "ate_m": 141.94661757806614,
+        "final_error_m": 249.4719620834334,
+        "max_error_m": 249.4719620834334,
+        "drift_pct": 183.4803905716209,
+        "distance_m": 135.9665527777765,
+        "n": 400,
+        "m_per_km": 1834.8039057162089
+      },
+      "safe": {
+        "ate_m": 141.94661757806614,
+        "final_error_m": 249.4719620834334,
+        "max_error_m": 249.4719620834334,
+        "drift_pct": 183.4803905716209,
+        "distance_m": 135.9665527777765,
+        "n": 400,
+        "m_per_km": 1834.8039057162089
+      },
+      "uncertainty_radius_m": 1000000000.0,
+      "uncertainty_kind": "abstained_unbounded",
+      "uncertainty_covered": true,
+      "infer_us_per_tick_python": 4.129925189845199,
+      "candidate_verdict": "FAIL",
+      "safe_verdict": "FAIL",
+      "csv": "S-M.csv",
+      "site": "late",
+      "deny_s": 40.0,
+      "i0": 74181
+    },
+    {
+      "calibration": {
+        "weights": [
+          0.0,
+          0.0,
+          0.6531003760772299
+        ],
+        "bias_rps": 0.0015015078834137272,
+        "gps_gyro_lag_s": -0.20000000000000018,
+        "n_fit": 151,
+        "validation_correlation": 0.7550506128994663,
+        "validation_mae_rps": 0.021873681685872087,
+        "conformal_q90_rps": 0.07994826074497727,
+        "axis_norm": 0.6531003760772299,
+        "excitation_rps": 0.054376387772031645,
+        "trusted_prefix": false,
+        "reason": "mapped-yaw scale outside [0.85, 1.15]",
+        "feature_mean": [
+          0.003646453691555065,
+          -0.0019904131572638737,
+          0.03289638941147144
+        ],
+        "feature_precision": [
+          [
+            382.4835777208781,
+            150.2297047802048,
+            -33.885015281477514
+          ],
+          [
+            150.22970478020454,
+            235.21503238085813,
+            -3.1923956548212087
+          ],
+          [
+            -33.88501528147756,
+            -3.1923956548212225,
+            29.358604011107712
+          ]
+        ],
+        "ood_d2_threshold": 7.766300210344165
+      },
+      "outage_ood_fraction": 0.0,
+      "decision": "abstain_baseline",
+      "status": "abstained",
+      "baseline_method": "car_bias_map",
+      "baseline": {
+        "ate_m": 238.07325705511096,
+        "final_error_m": 463.45751621985795,
+        "max_error_m": 463.45751621985795,
+        "drift_pct": 281.74935244843374,
+        "distance_m": 164.49284166666567,
+        "n": 600,
+        "m_per_km": 2817.4935244843377
+      },
+      "candidate": {
+        "ate_m": 238.07325705511096,
+        "final_error_m": 463.45751621985795,
+        "max_error_m": 463.45751621985795,
+        "drift_pct": 281.74935244843374,
+        "distance_m": 164.49284166666567,
+        "n": 600,
+        "m_per_km": 2817.4935244843377
+      },
+      "safe": {
+        "ate_m": 238.07325705511096,
+        "final_error_m": 463.45751621985795,
+        "max_error_m": 463.45751621985795,
+        "drift_pct": 281.74935244843374,
+        "distance_m": 164.49284166666567,
+        "n": 600,
+        "m_per_km": 2817.4935244843377
+      },
+      "uncertainty_radius_m": 1000000000.0,
+      "uncertainty_kind": "abstained_unbounded",
+      "uncertainty_covered": true,
+      "infer_us_per_tick_python": 3.6063227983045945,
+      "candidate_verdict": "FAIL",
+      "safe_verdict": "FAIL",
+      "csv": "S-M.csv",
+      "site": "late",
+      "deny_s": 60.0,
+      "i0": 74181
+    },
+    {
+      "calibration": {
+        "weights": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "bias_rps": 0.0,
+        "gps_gyro_lag_s": 0.0,
+        "n_fit": 0,
+        "validation_correlation": 0.0,
+        "validation_mae_rps": null,
+        "conformal_q90_rps": null,
+        "axis_norm": 1.0,
+        "excitation_rps": 0.0,
+        "trusted_prefix": false,
+        "reason": "fewer than 48 prefix turning updates",
+        "feature_mean": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "feature_precision": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "ood_d2_threshold": 12.84
+      },
+      "outage_ood_fraction": 0.0,
+      "decision": "abstain_baseline",
+      "status": "abstained",
+      "baseline_method": "car_bias_map",
+      "baseline": {
+        "ate_m": 174.2154263515622,
+        "final_error_m": 269.9961894029807,
+        "max_error_m": 275.4272274152381,
+        "drift_pct": 281.5866070220148,
+        "distance_m": 95.88388888888882,
+        "n": 201,
+        "m_per_km": 2815.8660702201482
+      },
+      "candidate": {
+        "ate_m": 174.2153745085094,
+        "final_error_m": 269.9960766858167,
+        "max_error_m": 275.4271221800785,
+        "drift_pct": 281.5864894661196,
+        "distance_m": 95.88388888888882,
+        "n": 201,
+        "m_per_km": 2815.8648946611956
+      },
+      "safe": {
+        "ate_m": 174.2154263515622,
+        "final_error_m": 269.9961894029807,
+        "max_error_m": 275.4272274152381,
+        "drift_pct": 281.5866070220148,
+        "distance_m": 95.88388888888882,
+        "n": 201,
+        "m_per_km": 2815.8660702201482
+      },
+      "uncertainty_radius_m": 1000000000.0,
+      "uncertainty_kind": "abstained_unbounded",
+      "uncertainty_covered": true,
+      "infer_us_per_tick_python": 8.874752479236536,
+      "candidate_verdict": "FAIL",
+      "safe_verdict": "FAIL",
+      "csv": "S-S1.csv",
+      "site": "early",
+      "deny_s": 20.0,
+      "i0": 1200
+    },
+    {
+      "calibration": {
+        "weights": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "bias_rps": 0.0,
+        "gps_gyro_lag_s": 0.0,
+        "n_fit": 0,
+        "validation_correlation": 0.0,
+        "validation_mae_rps": null,
+        "conformal_q90_rps": null,
+        "axis_norm": 1.0,
+        "excitation_rps": 0.0,
+        "trusted_prefix": false,
+        "reason": "fewer than 48 prefix turning updates",
+        "feature_mean": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "feature_precision": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "ood_d2_threshold": 12.84
+      },
+      "outage_ood_fraction": 0.0,
+      "decision": "abstain_baseline",
+      "status": "abstained",
+      "baseline_method": "car_bias_map",
+      "baseline": {
+        "ate_m": 313.9742256297587,
+        "final_error_m": 465.7416714116535,
+        "max_error_m": 474.7249104408258,
+        "drift_pct": 256.0501292844843,
+        "distance_m": 181.89472222222219,
+        "n": 400,
+        "m_per_km": 2560.5012928448427
+      },
+      "candidate": {
+        "ate_m": 313.97400604177943,
+        "final_error_m": 465.74123857540843,
+        "max_error_m": 474.7245198776635,
+        "drift_pct": 256.04989132472394,
+        "distance_m": 181.89472222222219,
+        "n": 400,
+        "m_per_km": 2560.4989132472397
+      },
+      "safe": {
+        "ate_m": 313.9742256297587,
+        "final_error_m": 465.7416714116535,
+        "max_error_m": 474.7249104408258,
+        "drift_pct": 256.0501292844843,
+        "distance_m": 181.89472222222219,
+        "n": 400,
+        "m_per_km": 2560.5012928448427
+      },
+      "uncertainty_radius_m": 1000000000.0,
+      "uncertainty_kind": "abstained_unbounded",
+      "uncertainty_covered": true,
+      "infer_us_per_tick_python": 4.824438913866989,
+      "candidate_verdict": "FAIL",
+      "safe_verdict": "FAIL",
+      "csv": "S-S1.csv",
+      "site": "early",
+      "deny_s": 40.0,
+      "i0": 1200
+    },
+    {
+      "calibration": {
+        "weights": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "bias_rps": 0.0,
+        "gps_gyro_lag_s": 0.0,
+        "n_fit": 0,
+        "validation_correlation": 0.0,
+        "validation_mae_rps": null,
+        "conformal_q90_rps": null,
+        "axis_norm": 1.0,
+        "excitation_rps": 0.0,
+        "trusted_prefix": false,
+        "reason": "fewer than 48 prefix turning updates",
+        "feature_mean": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "feature_precision": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "ood_d2_threshold": 12.84
+      },
+      "outage_ood_fraction": 0.0,
+      "decision": "abstain_baseline",
+      "status": "abstained",
+      "baseline_method": "car_bias_map",
+      "baseline": {
+        "ate_m": 417.9429975128799,
+        "final_error_m": 586.5167629188777,
+        "max_error_m": 600.3761883587589,
+        "drift_pct": 240.90475857249814,
+        "distance_m": 243.4641666666666,
+        "n": 601,
+        "m_per_km": 2409.0475857249817
+      },
+      "candidate": {
+        "ate_m": 417.94268348228496,
+        "final_error_m": 586.5162441108963,
+        "max_error_m": 600.3757418253304,
+        "drift_pct": 240.90454547831328,
+        "distance_m": 243.4641666666666,
+        "n": 601,
+        "m_per_km": 2409.0454547831328
+      },
+      "safe": {
+        "ate_m": 417.9429975128799,
+        "final_error_m": 586.5167629188777,
+        "max_error_m": 600.3761883587589,
+        "drift_pct": 240.90475857249814,
+        "distance_m": 243.4641666666666,
+        "n": 601,
+        "m_per_km": 2409.0475857249817
+      },
+      "uncertainty_radius_m": 1000000000.0,
+      "uncertainty_kind": "abstained_unbounded",
+      "uncertainty_covered": true,
+      "infer_us_per_tick_python": 2.703322260582547,
+      "candidate_verdict": "FAIL",
+      "safe_verdict": "FAIL",
+      "csv": "S-S1.csv",
+      "site": "early",
+      "deny_s": 60.0,
+      "i0": 1200
+    },
+    {
+      "calibration": {
+        "weights": [
+          0.0,
+          0.0,
+          0.934225528032047
+        ],
+        "bias_rps": -0.006537496337512722,
+        "gps_gyro_lag_s": -2.220446049250313e-16,
+        "n_fit": 53,
+        "validation_correlation": 0.9936449255811168,
+        "validation_mae_rps": 0.004251687770579232,
+        "conformal_q90_rps": 0.008973000758059665,
+        "axis_norm": 0.934225528032047,
+        "excitation_rps": 0.04144949290578056,
+        "trusted_prefix": true,
+        "reason": "ok",
+        "feature_mean": [
+          0.0025824843385728958,
+          0.003661636932120665,
+          0.003718071775039629
+        ],
+        "feature_precision": [
+          [
+            1434.6507921430107,
+            -90.19537743368582,
+            -197.04390588364993
+          ],
+          [
+            -90.1953774336868,
+            699.4687068725353,
+            49.645837733463146
+          ],
+          [
+            -197.04390588364961,
+            49.64583773346331,
+            81.68614730962737
+          ]
+        ],
+        "ood_d2_threshold": 20.339170668708967
+      },
+      "outage_ood_fraction": 0.005,
+      "decision": "calibrated",
+      "status": "neutral",
+      "baseline_method": "car_bias_map",
+      "baseline": {
+        "ate_m": 40.967348922759044,
+        "final_error_m": 38.601047787111725,
+        "max_error_m": 53.37932594509678,
+        "drift_pct": 106.40737238016713,
+        "distance_m": 36.27666666666644,
+        "n": 200,
+        "m_per_km": 1064.0737238016713
+      },
+      "candidate": {
+        "ate_m": 40.967306637246125,
+        "final_error_m": 38.600796574512636,
+        "max_error_m": 53.37928793355614,
+        "drift_pct": 106.40667988931234,
+        "distance_m": 36.27666666666644,
+        "n": 200,
+        "m_per_km": 1064.0667988931234
+      },
+      "safe": {
+        "ate_m": 40.967306637246125,
+        "final_error_m": 38.600796574512636,
+        "max_error_m": 53.37928793355614,
+        "drift_pct": 106.40667988931234,
+        "distance_m": 36.27666666666644,
+        "n": 200,
+        "m_per_km": 1064.0667988931234
+      },
+      "uncertainty_radius_m": 16.44329195066066,
+      "uncertainty_kind": "split_conformal_yaw_propagation",
+      "uncertainty_covered": false,
+      "infer_us_per_tick_python": 7.597014927119943,
+      "candidate_verdict": "PASS_COMPETITIVE",
+      "safe_verdict": "PASS_COMPETITIVE",
+      "csv": "S-S1.csv",
+      "site": "mid",
+      "deny_s": 20.0,
+      "i0": 25873
+    },
+    {
+      "calibration": {
+        "weights": [
+          0.0,
+          0.0,
+          0.934225528032047
+        ],
+        "bias_rps": -0.006537496337512722,
+        "gps_gyro_lag_s": -2.220446049250313e-16,
+        "n_fit": 53,
+        "validation_correlation": 0.9936449255811168,
+        "validation_mae_rps": 0.004251687770579232,
+        "conformal_q90_rps": 0.008973000758059665,
+        "axis_norm": 0.934225528032047,
+        "excitation_rps": 0.04144949290578056,
+        "trusted_prefix": true,
+        "reason": "ok",
+        "feature_mean": [
+          0.0025824843385728958,
+          0.003661636932120665,
+          0.003718071775039629
+        ],
+        "feature_precision": [
+          [
+            1434.6507921430107,
+            -90.19537743368582,
+            -197.04390588364993
+          ],
+          [
+            -90.1953774336868,
+            699.4687068725353,
+            49.645837733463146
+          ],
+          [
+            -197.04390588364961,
+            49.64583773346331,
+            81.68614730962737
+          ]
+        ],
+        "ood_d2_threshold": 20.339170668708967
+      },
+      "outage_ood_fraction": 0.02,
+      "decision": "calibrated",
+      "status": "neutral",
+      "baseline_method": "car_bias_map",
+      "baseline": {
+        "ate_m": 57.78645073433641,
+        "final_error_m": 86.24202102808171,
+        "max_error_m": 95.79695988601478,
+        "drift_pct": 124.52173043107084,
+        "distance_m": 69.25861111111132,
+        "n": 400,
+        "m_per_km": 1245.2173043107082
+      },
+      "candidate": {
+        "ate_m": 57.786301324739526,
+        "final_error_m": 86.24239869842809,
+        "max_error_m": 95.79654397154712,
+        "drift_pct": 124.52227573560457,
+        "distance_m": 69.25861111111132,
+        "n": 400,
+        "m_per_km": 1245.2227573560456
+      },
+      "safe": {
+        "ate_m": 57.786301324739526,
+        "final_error_m": 86.24239869842809,
+        "max_error_m": 95.79654397154712,
+        "drift_pct": 124.52227573560457,
+        "distance_m": 69.25861111111132,
+        "n": 400,
+        "m_per_km": 1245.2227573560456
+      },
+      "uncertainty_radius_m": 34.26981203878627,
+      "uncertainty_kind": "split_conformal_yaw_propagation",
+      "uncertainty_covered": false,
+      "infer_us_per_tick_python": 5.716957608986869,
+      "candidate_verdict": "FAIL",
+      "safe_verdict": "FAIL",
+      "csv": "S-S1.csv",
+      "site": "mid",
+      "deny_s": 40.0,
+      "i0": 25873
+    },
+    {
+      "calibration": {
+        "weights": [
+          0.0,
+          0.0,
+          0.934225528032047
+        ],
+        "bias_rps": -0.006537496337512722,
+        "gps_gyro_lag_s": -2.220446049250313e-16,
+        "n_fit": 53,
+        "validation_correlation": 0.9936449255811168,
+        "validation_mae_rps": 0.004251687770579232,
+        "conformal_q90_rps": 0.008973000758059665,
+        "axis_norm": 0.934225528032047,
+        "excitation_rps": 0.04144949290578056,
+        "trusted_prefix": true,
+        "reason": "ok",
+        "feature_mean": [
+          0.0025824843385728958,
+          0.003661636932120665,
+          0.003718071775039629
+        ],
+        "feature_precision": [
+          [
+            1434.6507921430107,
+            -90.19537743368582,
+            -197.04390588364993
+          ],
+          [
+            -90.1953774336868,
+            699.4687068725353,
+            49.645837733463146
+          ],
+          [
+            -197.04390588364961,
+            49.64583773346331,
+            81.68614730962737
+          ]
+        ],
+        "ood_d2_threshold": 20.339170668708967
+      },
+      "outage_ood_fraction": 0.013333333333333334,
+      "decision": "calibrated",
+      "status": "neutral",
+      "baseline_method": "car_bias_map",
+      "baseline": {
+        "ate_m": 112.28337802813923,
+        "final_error_m": 206.0585207903607,
+        "max_error_m": 212.6027657218109,
+        "drift_pct": 160.06443284953332,
+        "distance_m": 128.7347333333343,
+        "n": 600,
+        "m_per_km": 1600.6443284953334
+      },
+      "candidate": {
+        "ate_m": 112.28339363062257,
+        "final_error_m": 206.05859887483476,
+        "max_error_m": 212.60287158218733,
+        "drift_pct": 160.0644935048608,
+        "distance_m": 128.7347333333343,
+        "n": 600,
+        "m_per_km": 1600.644935048608
+      },
+      "safe": {
+        "ate_m": 112.28339363062257,
+        "final_error_m": 206.05859887483476,
+        "max_error_m": 212.60287158218733,
+        "drift_pct": 160.0644935048608,
+        "distance_m": 128.7347333333343,
+        "n": 600,
+        "m_per_km": 1600.644935048608
+      },
+      "uncertainty_radius_m": 75.90999519199563,
+      "uncertainty_kind": "split_conformal_yaw_propagation",
+      "uncertainty_covered": false,
+      "infer_us_per_tick_python": 2.932945088062671,
+      "candidate_verdict": "FAIL",
+      "safe_verdict": "FAIL",
+      "csv": "S-S1.csv",
+      "site": "mid",
+      "deny_s": 60.0,
+      "i0": 25873
+    },
+    {
+      "calibration": {
+        "weights": [
+          0.0,
+          0.0,
+          0.9377388752983223
+        ],
+        "bias_rps": -0.0059813873160104135,
+        "gps_gyro_lag_s": -2.220446049250313e-16,
+        "n_fit": 70,
+        "validation_correlation": 0.991719608155802,
+        "validation_mae_rps": 0.004023690456102047,
+        "conformal_q90_rps": 0.010174723113435027,
+        "axis_norm": 0.9377388752983223,
+        "excitation_rps": 0.03822731462929704,
+        "trusted_prefix": true,
+        "reason": "ok",
+        "feature_mean": [
+          0.0029530938067107286,
+          0.003384012739402409,
+          0.0055971851038155536
+        ],
+        "feature_precision": [
+          [
+            1512.9426934620174,
+            -86.66027045671785,
+            -210.42503051060075
+          ],
+          [
+            -86.66027045671959,
+            751.9832265420122,
+            51.24209647992858
+          ],
+          [
+            -210.425030510601,
+            51.242096479928456,
+            83.65366066641035
+          ]
+        ],
+        "ood_d2_threshold": 29.27960204631953
+      },
+      "outage_ood_fraction": 0.004975124378109453,
+      "decision": "calibrated",
+      "status": "neutral",
+      "baseline_method": "car_bias_map",
+      "baseline": {
+        "ate_m": 29.556765855151916,
+        "final_error_m": 19.324424744241036,
+        "max_error_m": 44.77626660463549,
+        "drift_pct": 57.198830664936814,
+        "distance_m": 33.784649999999054,
+        "n": 201,
+        "m_per_km": 571.9883066493682
+      },
+      "candidate": {
+        "ate_m": 29.556105448343672,
+        "final_error_m": 19.322552891789336,
+        "max_error_m": 44.77549781422618,
+        "drift_pct": 57.19329012373926,
+        "distance_m": 33.784649999999054,
+        "n": 201,
+        "m_per_km": 571.9329012373926
+      },
+      "safe": {
+        "ate_m": 29.556105448343672,
+        "final_error_m": 19.322552891789336,
+        "max_error_m": 44.77549781422618,
+        "drift_pct": 57.19329012373926,
+        "distance_m": 33.784649999999054,
+        "n": 201,
+        "m_per_km": 571.9329012373926
+      },
+      "uncertainty_radius_m": 16.827301794461082,
+      "uncertainty_kind": "split_conformal_yaw_propagation",
+      "uncertainty_covered": false,
+      "infer_us_per_tick_python": 5.484653481496682,
+      "candidate_verdict": "PASS_COMPETITIVE",
+      "safe_verdict": "PASS_COMPETITIVE",
+      "csv": "S-S1.csv",
+      "site": "late",
+      "deny_s": 20.0,
+      "i0": 36222
+    },
+    {
+      "calibration": {
+        "weights": [
+          0.0,
+          0.0,
+          0.9377388752983223
+        ],
+        "bias_rps": -0.0059813873160104135,
+        "gps_gyro_lag_s": -2.220446049250313e-16,
+        "n_fit": 70,
+        "validation_correlation": 0.991719608155802,
+        "validation_mae_rps": 0.004023690456102047,
+        "conformal_q90_rps": 0.010174723113435027,
+        "axis_norm": 0.9377388752983223,
+        "excitation_rps": 0.03822731462929704,
+        "trusted_prefix": true,
+        "reason": "ok",
+        "feature_mean": [
+          0.0029530938067107286,
+          0.003384012739402409,
+          0.0055971851038155536
+        ],
+        "feature_precision": [
+          [
+            1512.9426934620174,
+            -86.66027045671785,
+            -210.42503051060075
+          ],
+          [
+            -86.66027045671959,
+            751.9832265420122,
+            51.24209647992858
+          ],
+          [
+            -210.425030510601,
+            51.242096479928456,
+            83.65366066641035
+          ]
+        ],
+        "ood_d2_threshold": 29.27960204631953
+      },
+      "outage_ood_fraction": 0.0025,
+      "decision": "calibrated",
+      "status": "neutral",
+      "baseline_method": "car_bias_map",
+      "baseline": {
+        "ate_m": 42.36770198868197,
+        "final_error_m": 64.38511827692824,
+        "max_error_m": 64.73841963978131,
+        "drift_pct": 106.79015817937453,
+        "distance_m": 60.29124722222164,
+        "n": 400,
+        "m_per_km": 1067.9015817937452
+      },
+      "candidate": {
+        "ate_m": 42.36695904339296,
+        "final_error_m": 64.38439450615327,
+        "max_error_m": 64.7376958719129,
+        "drift_pct": 106.78895772191457,
+        "distance_m": 60.29124722222164,
+        "n": 400,
+        "m_per_km": 1067.8895772191458
+      },
+      "safe": {
+        "ate_m": 42.36695904339296,
+        "final_error_m": 64.38439450615327,
+        "max_error_m": 64.7376958719129,
+        "drift_pct": 106.78895772191457,
+        "distance_m": 60.29124722222164,
+        "n": 400,
+        "m_per_km": 1067.8895772191458
+      },
+      "uncertainty_radius_m": 33.80913957562757,
+      "uncertainty_kind": "split_conformal_yaw_propagation",
+      "uncertainty_covered": false,
+      "infer_us_per_tick_python": 3.609725683050792,
+      "candidate_verdict": "FAIL",
+      "safe_verdict": "FAIL",
+      "csv": "S-S1.csv",
+      "site": "late",
+      "deny_s": 40.0,
+      "i0": 36222
+    },
+    {
+      "calibration": {
+        "weights": [
+          0.0,
+          0.0,
+          0.9377388752983223
+        ],
+        "bias_rps": -0.0059813873160104135,
+        "gps_gyro_lag_s": -2.220446049250313e-16,
+        "n_fit": 70,
+        "validation_correlation": 0.991719608155802,
+        "validation_mae_rps": 0.004023690456102047,
+        "conformal_q90_rps": 0.010174723113435027,
+        "axis_norm": 0.9377388752983223,
+        "excitation_rps": 0.03822731462929704,
+        "trusted_prefix": true,
+        "reason": "ok",
+        "feature_mean": [
+          0.0029530938067107286,
+          0.003384012739402409,
+          0.0055971851038155536
+        ],
+        "feature_precision": [
+          [
+            1512.9426934620174,
+            -86.66027045671785,
+            -210.42503051060075
+          ],
+          [
+            -86.66027045671959,
+            751.9832265420122,
+            51.24209647992858
+          ],
+          [
+            -210.425030510601,
+            51.242096479928456,
+            83.65366066641035
+          ]
+        ],
+        "ood_d2_threshold": 29.27960204631953
+      },
+      "outage_ood_fraction": 0.0016666666666666668,
+      "decision": "calibrated",
+      "status": "neutral",
+      "baseline_method": "car_bias_map",
+      "baseline": {
+        "ate_m": 54.04982651153015,
+        "final_error_m": 54.359927101840945,
+        "max_error_m": 83.00462677950809,
+        "drift_pct": 65.43059032872311,
+        "distance_m": 83.08029444444384,
+        "n": 600,
+        "m_per_km": 654.305903287231
+      },
+      "candidate": {
+        "ate_m": 54.048892168247875,
+        "final_error_m": 54.35791805291957,
+        "max_error_m": 83.00386329178758,
+        "drift_pct": 65.42817212722923,
+        "distance_m": 83.08029444444384,
+        "n": 600,
+        "m_per_km": 654.2817212722922
+      },
+      "safe": {
+        "ate_m": 54.048892168247875,
+        "final_error_m": 54.35791805291957,
+        "max_error_m": 83.00386329178758,
+        "drift_pct": 65.42817212722923,
+        "distance_m": 83.08029444444384,
+        "n": 600,
+        "m_per_km": 654.2817212722922
+      },
+      "uncertainty_radius_m": 57.55692794515195,
+      "uncertainty_kind": "split_conformal_yaw_propagation",
+      "uncertainty_covered": true,
+      "infer_us_per_tick_python": 2.5091514162976485,
+      "candidate_verdict": "FAIL",
+      "safe_verdict": "FAIL",
+      "csv": "S-S1.csv",
+      "site": "late",
+      "deny_s": 60.0,
+      "i0": 36222
+    },
+    {
+      "calibration": {
+        "weights": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "bias_rps": 0.0,
+        "gps_gyro_lag_s": 0.0,
+        "n_fit": 0,
+        "validation_correlation": 0.0,
+        "validation_mae_rps": null,
+        "conformal_q90_rps": null,
+        "axis_norm": 1.0,
+        "excitation_rps": 0.0,
+        "trusted_prefix": false,
+        "reason": "fewer than 48 prefix turning updates",
+        "feature_mean": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "feature_precision": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "ood_d2_threshold": 12.84
+      },
+      "outage_ood_fraction": 0.0,
+      "decision": "abstain_baseline",
+      "status": "abstained",
+      "baseline_method": "car_bias_map",
+      "baseline": {
+        "ate_m": 34.87105978821983,
+        "final_error_m": 80.36277917919251,
+        "max_error_m": 80.36277917919251,
+        "drift_pct": 444.39277214704754,
+        "distance_m": 18.083727777777817,
+        "n": 200,
+        "m_per_km": 4443.927721470475
+      },
+      "candidate": {
+        "ate_m": 34.87105978821983,
+        "final_error_m": 80.36277917919251,
+        "max_error_m": 80.36277917919251,
+        "drift_pct": 444.39277214704754,
+        "distance_m": 18.083727777777817,
+        "n": 200,
+        "m_per_km": 4443.927721470475
+      },
+      "safe": {
+        "ate_m": 34.87105978821983,
+        "final_error_m": 80.36277917919251,
+        "max_error_m": 80.36277917919251,
+        "drift_pct": 444.39277214704754,
+        "distance_m": 18.083727777777817,
+        "n": 200,
+        "m_per_km": 4443.927721470475
+      },
+      "uncertainty_radius_m": 1000000000.0,
+      "uncertainty_kind": "abstained_unbounded",
+      "uncertainty_covered": true,
+      "infer_us_per_tick_python": 6.96467661816599,
+      "candidate_verdict": "FAIL",
+      "safe_verdict": "FAIL",
+      "csv": "S-S2.csv",
+      "site": "early",
+      "deny_s": 20.0,
+      "i0": 1199
+    },
+    {
+      "calibration": {
+        "weights": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "bias_rps": 0.0,
+        "gps_gyro_lag_s": 0.0,
+        "n_fit": 0,
+        "validation_correlation": 0.0,
+        "validation_mae_rps": null,
+        "conformal_q90_rps": null,
+        "axis_norm": 1.0,
+        "excitation_rps": 0.0,
+        "trusted_prefix": false,
+        "reason": "fewer than 48 prefix turning updates",
+        "feature_mean": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "feature_precision": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "ood_d2_threshold": 12.84
+      },
+      "outage_ood_fraction": 0.0,
+      "decision": "abstain_baseline",
+      "status": "abstained",
+      "baseline_method": "car_bias_map",
+      "baseline": {
+        "ate_m": 70.77884609191689,
+        "final_error_m": 96.79926416597706,
+        "max_error_m": 96.79926416597706,
+        "drift_pct": 294.36932531193133,
+        "distance_m": 32.88361111111111,
+        "n": 401,
+        "m_per_km": 2943.693253119314
+      },
+      "candidate": {
+        "ate_m": 70.77884609191689,
+        "final_error_m": 96.79926416597706,
+        "max_error_m": 96.79926416597706,
+        "drift_pct": 294.36932531193133,
+        "distance_m": 32.88361111111111,
+        "n": 401,
+        "m_per_km": 2943.693253119314
+      },
+      "safe": {
+        "ate_m": 70.77884609191689,
+        "final_error_m": 96.79926416597706,
+        "max_error_m": 96.79926416597706,
+        "drift_pct": 294.36932531193133,
+        "distance_m": 32.88361111111111,
+        "n": 401,
+        "m_per_km": 2943.693253119314
+      },
+      "uncertainty_radius_m": 1000000000.0,
+      "uncertainty_kind": "abstained_unbounded",
+      "uncertainty_covered": true,
+      "infer_us_per_tick_python": 3.869651740912663,
+      "candidate_verdict": "FAIL",
+      "safe_verdict": "FAIL",
+      "csv": "S-S2.csv",
+      "site": "early",
+      "deny_s": 40.0,
+      "i0": 1199
+    },
+    {
+      "calibration": {
+        "weights": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "bias_rps": 0.0,
+        "gps_gyro_lag_s": 0.0,
+        "n_fit": 0,
+        "validation_correlation": 0.0,
+        "validation_mae_rps": null,
+        "conformal_q90_rps": null,
+        "axis_norm": 1.0,
+        "excitation_rps": 0.0,
+        "trusted_prefix": false,
+        "reason": "fewer than 48 prefix turning updates",
+        "feature_mean": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "feature_precision": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "ood_d2_threshold": 12.84
+      },
+      "outage_ood_fraction": 0.008333333333333333,
+      "decision": "abstain_baseline",
+      "status": "abstained",
+      "baseline_method": "car_bias_map",
+      "baseline": {
+        "ate_m": 84.05899036250773,
+        "final_error_m": 105.864442677059,
+        "max_error_m": 105.864442677059,
+        "drift_pct": 230.01994346999447,
+        "distance_m": 46.024027777777775,
+        "n": 600,
+        "m_per_km": 2300.199434699945
+      },
+      "candidate": {
+        "ate_m": 84.05899036250773,
+        "final_error_m": 105.864442677059,
+        "max_error_m": 105.864442677059,
+        "drift_pct": 230.01994346999447,
+        "distance_m": 46.024027777777775,
+        "n": 600,
+        "m_per_km": 2300.199434699945
+      },
+      "safe": {
+        "ate_m": 84.05899036250773,
+        "final_error_m": 105.864442677059,
+        "max_error_m": 105.864442677059,
+        "drift_pct": 230.01994346999447,
+        "distance_m": 46.024027777777775,
+        "n": 600,
+        "m_per_km": 2300.199434699945
+      },
+      "uncertainty_radius_m": 1000000000.0,
+      "uncertainty_kind": "abstained_unbounded",
+      "uncertainty_covered": true,
+      "infer_us_per_tick_python": 2.236772044743884,
+      "candidate_verdict": "FAIL",
+      "safe_verdict": "FAIL",
+      "csv": "S-S2.csv",
+      "site": "early",
+      "deny_s": 60.0,
+      "i0": 1199
+    },
+    {
+      "calibration": {
+        "weights": [
+          0.0,
+          0.0,
+          0.9465940800138899
+        ],
+        "bias_rps": -0.007566429103528253,
+        "gps_gyro_lag_s": 0.09999999999999964,
+        "n_fit": 56,
+        "validation_correlation": 0.9955562319444475,
+        "validation_mae_rps": 0.006630373214302053,
+        "conformal_q90_rps": 0.019072794270453053,
+        "axis_norm": 0.9465940800138899,
+        "excitation_rps": 0.06428467077494854,
+        "trusted_prefix": true,
+        "reason": "ok",
+        "feature_mean": [
+          0.0016821557853357056,
+          0.0033120794810568,
+          0.007319637694274025
+        ],
+        "feature_precision": [
+          [
+            1003.1529061562129,
+            123.61328801540114,
+            -152.0339745207793
+          ],
+          [
+            123.6132880154014,
+            123.87276640870981,
+            -13.536813279075911
+          ],
+          [
+            -152.03397452077948,
+            -13.536813279075936,
+            81.74572962210766
+          ]
+        ],
+        "ood_d2_threshold": 17.09538542839685
+      },
+      "outage_ood_fraction": 0.0,
+      "decision": "calibrated",
+      "status": "neutral",
+      "baseline_method": "car_bias_map",
+      "baseline": {
+        "ate_m": 62.864158696326925,
+        "final_error_m": 63.4167000546752,
+        "max_error_m": 85.42023885806015,
+        "drift_pct": 126.17867299503361,
+        "distance_m": 50.2594444444437,
+        "n": 200,
+        "m_per_km": 1261.786729950336
+      },
+      "candidate": {
+        "ate_m": 62.86410990485465,
+        "final_error_m": 63.41666078017488,
+        "max_error_m": 85.42016288820042,
+        "drift_pct": 126.17859485151102,
+        "distance_m": 50.2594444444437,
+        "n": 200,
+        "m_per_km": 1261.7859485151102
+      },
+      "safe": {
+        "ate_m": 62.86410990485465,
+        "final_error_m": 63.41666078017488,
+        "max_error_m": 85.42016288820042,
+        "drift_pct": 126.17859485151102,
+        "distance_m": 50.2594444444437,
+        "n": 200,
+        "m_per_km": 1261.7859485151102
+      },
+      "uncertainty_radius_m": 28.62118638671573,
+      "uncertainty_kind": "split_conformal_yaw_propagation",
+      "uncertainty_covered": false,
+      "infer_us_per_tick_python": 7.7885572262228795,
+      "candidate_verdict": "FAIL",
+      "safe_verdict": "FAIL",
+      "csv": "S-S2.csv",
+      "site": "mid",
+      "deny_s": 20.0,
+      "i0": 46938
+    },
+    {
+      "calibration": {
+        "weights": [
+          0.0,
+          0.0,
+          0.9465940800138899
+        ],
+        "bias_rps": -0.007566429103528253,
+        "gps_gyro_lag_s": 0.09999999999999964,
+        "n_fit": 56,
+        "validation_correlation": 0.9955562319444475,
+        "validation_mae_rps": 0.006630373214302053,
+        "conformal_q90_rps": 0.019072794270453053,
+        "axis_norm": 0.9465940800138899,
+        "excitation_rps": 0.06428467077494854,
+        "trusted_prefix": true,
+        "reason": "ok",
+        "feature_mean": [
+          0.0016821557853357056,
+          0.0033120794810568,
+          0.007319637694274025
+        ],
+        "feature_precision": [
+          [
+            1003.1529061562129,
+            123.61328801540114,
+            -152.0339745207793
+          ],
+          [
+            123.6132880154014,
+            123.87276640870981,
+            -13.536813279075911
+          ],
+          [
+            -152.03397452077948,
+            -13.536813279075936,
+            81.74572962210766
+          ]
+        ],
+        "ood_d2_threshold": 17.09538542839685
+      },
+      "outage_ood_fraction": 0.0,
+      "decision": "calibrated",
+      "status": "neutral",
+      "baseline_method": "car_bias_map",
+      "baseline": {
+        "ate_m": 54.86154700926214,
+        "final_error_m": 6.077841281353094,
+        "max_error_m": 85.42023885806015,
+        "drift_pct": 11.694528328935315,
+        "distance_m": 51.97166666666606,
+        "n": 400,
+        "m_per_km": 116.94528328935314
+      },
+      "candidate": {
+        "ate_m": 54.86150477396034,
+        "final_error_m": 6.077836934627613,
+        "max_error_m": 85.42016288820042,
+        "drift_pct": 11.694519965290738,
+        "distance_m": 51.97166666666606,
+        "n": 400,
+        "m_per_km": 116.94519965290736
+      },
+      "safe": {
+        "ate_m": 54.86150477396034,
+        "final_error_m": 6.077836934627613,
+        "max_error_m": 85.42016288820042,
+        "drift_pct": 11.694519965290738,
+        "distance_m": 51.97166666666606,
+        "n": 400,
+        "m_per_km": 116.94519965290736
+      },
+      "uncertainty_radius_m": 45.842217765512665,
+      "uncertainty_kind": "split_conformal_yaw_propagation",
+      "uncertainty_covered": true,
+      "infer_us_per_tick_python": 3.5047381508113014,
+      "candidate_verdict": "PASS_COMPETITIVE",
+      "safe_verdict": "PASS_COMPETITIVE",
+      "csv": "S-S2.csv",
+      "site": "mid",
+      "deny_s": 40.0,
+      "i0": 46938
+    },
+    {
+      "calibration": {
+        "weights": [
+          0.0,
+          0.0,
+          0.9465940800138899
+        ],
+        "bias_rps": -0.007566429103528253,
+        "gps_gyro_lag_s": 0.09999999999999964,
+        "n_fit": 56,
+        "validation_correlation": 0.9955562319444475,
+        "validation_mae_rps": 0.006630373214302053,
+        "conformal_q90_rps": 0.019072794270453053,
+        "axis_norm": 0.9465940800138899,
+        "excitation_rps": 0.06428467077494854,
+        "trusted_prefix": true,
+        "reason": "ok",
+        "feature_mean": [
+          0.0016821557853357056,
+          0.0033120794810568,
+          0.007319637694274025
+        ],
+        "feature_precision": [
+          [
+            1003.1529061562129,
+            123.61328801540114,
+            -152.0339745207793
+          ],
+          [
+            123.6132880154014,
+            123.87276640870981,
+            -13.536813279075911
+          ],
+          [
+            -152.03397452077948,
+            -13.536813279075936,
+            81.74572962210766
+          ]
+        ],
+        "ood_d2_threshold": 17.09538542839685
+      },
+      "outage_ood_fraction": 0.0,
+      "decision": "calibrated",
+      "status": "neutral",
+      "baseline_method": "car_bias_map",
+      "baseline": {
+        "ate_m": 69.73596089497063,
+        "final_error_m": 160.20187300823213,
+        "max_error_m": 162.20803862623788,
+        "drift_pct": 156.17557979686006,
+        "distance_m": 102.57805555555427,
+        "n": 600,
+        "m_per_km": 1561.7557979686007
+      },
+      "candidate": {
+        "ate_m": 69.73590569901246,
+        "final_error_m": 160.20175779501562,
+        "max_error_m": 162.20792672242638,
+        "drift_pct": 156.17546747925385,
+        "distance_m": 102.57805555555427,
+        "n": 600,
+        "m_per_km": 1561.7546747925387
+      },
+      "safe": {
+        "ate_m": 69.73590569901246,
+        "final_error_m": 160.20175779501562,
+        "max_error_m": 162.20792672242638,
+        "drift_pct": 156.17546747925385,
+        "distance_m": 102.57805555555427,
+        "n": 600,
+        "m_per_km": 1561.7546747925387
+      },
+      "uncertainty_radius_m": 103.3109678092389,
+      "uncertainty_kind": "split_conformal_yaw_propagation",
+      "uncertainty_covered": false,
+      "infer_us_per_tick_python": 3.02046589941149,
+      "candidate_verdict": "FAIL",
+      "safe_verdict": "FAIL",
+      "csv": "S-S2.csv",
+      "site": "mid",
+      "deny_s": 60.0,
+      "i0": 46938
+    },
+    {
+      "calibration": {
+        "weights": [
+          0.0,
+          0.0,
+          0.9754751807749469
+        ],
+        "bias_rps": -0.007397943635235155,
+        "gps_gyro_lag_s": -2.220446049250313e-16,
+        "n_fit": 94,
+        "validation_correlation": 0.9944912220980262,
+        "validation_mae_rps": 0.007042369241318153,
+        "conformal_q90_rps": 0.025142313902059142,
+        "axis_norm": 0.9754751807749469,
+        "excitation_rps": 0.08484897754908466,
+        "trusted_prefix": true,
+        "reason": "ok",
+        "feature_mean": [
+          0.0020664835673497076,
+          0.002632394793257034,
+          0.008056180874331157
+        ],
+        "feature_precision": [
+          [
+            1128.617851637554,
+            123.49511930805635,
+            -173.50314983879636
+          ],
+          [
+            123.49511930805659,
+            156.52613394886282,
+            -13.508858608997837
+          ],
+          [
+            -173.5031498387965,
+            -13.508858608997837,
+            90.48220038819731
+          ]
+        ],
+        "ood_d2_threshold": 35.91941092799685
+      },
+      "outage_ood_fraction": 0.0,
+      "decision": "calibrated",
+      "status": "neutral",
+      "baseline_method": "car_bias_map",
+      "baseline": {
+        "ate_m": 54.559413512544786,
+        "final_error_m": 59.869721578971586,
+        "max_error_m": 74.78043065082703,
+        "drift_pct": 123.68357493647504,
+        "distance_m": 48.40555555555473,
+        "n": 200,
+        "m_per_km": 1236.8357493647504
+      },
+      "candidate": {
+        "ate_m": 54.55929423925812,
+        "final_error_m": 59.86953735673513,
+        "max_error_m": 74.78025570940592,
+        "drift_pct": 123.6831943557042,
+        "distance_m": 48.40555555555473,
+        "n": 200,
+        "m_per_km": 1236.831943557042
+      },
+      "safe": {
+        "ate_m": 54.55929423925812,
+        "final_error_m": 59.86953735673513,
+        "max_error_m": 74.78025570940592,
+        "drift_pct": 123.6831943557042,
+        "distance_m": 48.40555555555473,
+        "n": 200,
+        "m_per_km": 1236.831943557042
+      },
+      "uncertainty_radius_m": 33.220963563112306,
+      "uncertainty_kind": "split_conformal_yaw_propagation",
+      "uncertainty_covered": false,
+      "infer_us_per_tick_python": 8.198009967220141,
+      "candidate_verdict": "FAIL",
+      "safe_verdict": "FAIL",
+      "csv": "S-S2.csv",
+      "site": "late",
+      "deny_s": 20.0,
+      "i0": 65713
+    },
+    {
+      "calibration": {
+        "weights": [
+          0.0,
+          0.0,
+          0.9754751807749469
+        ],
+        "bias_rps": -0.007397943635235155,
+        "gps_gyro_lag_s": -2.220446049250313e-16,
+        "n_fit": 94,
+        "validation_correlation": 0.9944912220980262,
+        "validation_mae_rps": 0.007042369241318153,
+        "conformal_q90_rps": 0.025142313902059142,
+        "axis_norm": 0.9754751807749469,
+        "excitation_rps": 0.08484897754908466,
+        "trusted_prefix": true,
+        "reason": "ok",
+        "feature_mean": [
+          0.0020664835673497076,
+          0.002632394793257034,
+          0.008056180874331157
+        ],
+        "feature_precision": [
+          [
+            1128.617851637554,
+            123.49511930805635,
+            -173.50314983879636
+          ],
+          [
+            123.49511930805659,
+            156.52613394886282,
+            -13.508858608997837
+          ],
+          [
+            -173.5031498387965,
+            -13.508858608997837,
+            90.48220038819731
+          ]
+        ],
+        "ood_d2_threshold": 35.91941092799685
+      },
+      "outage_ood_fraction": 0.0,
+      "decision": "calibrated",
+      "status": "neutral",
+      "baseline_method": "car_bias_map",
+      "baseline": {
+        "ate_m": 105.00434313364852,
+        "final_error_m": 128.69513188088843,
+        "max_error_m": 148.3843110282444,
+        "drift_pct": 166.43524929992014,
+        "distance_m": 77.32444444444388,
+        "n": 400,
+        "m_per_km": 1664.3524929992013
+      },
+      "candidate": {
+        "ate_m": 105.00408162599022,
+        "final_error_m": 128.69470426071874,
+        "max_error_m": 148.38395402232214,
+        "drift_pct": 166.43469627923855,
+        "distance_m": 77.32444444444388,
+        "n": 400,
+        "m_per_km": 1664.3469627923857
+      },
+      "safe": {
+        "ate_m": 105.00408162599022,
+        "final_error_m": 128.69470426071874,
+        "max_error_m": 148.38395402232214,
+        "drift_pct": 166.43469627923855,
+        "distance_m": 77.32444444444388,
+        "n": 400,
+        "m_per_km": 1664.3469627923857
+      },
+      "uncertainty_radius_m": 75.19873343008418,
+      "uncertainty_kind": "split_conformal_yaw_propagation",
+      "uncertainty_covered": false,
+      "infer_us_per_tick_python": 3.893266848150288,
+      "candidate_verdict": "FAIL",
+      "safe_verdict": "FAIL",
+      "csv": "S-S2.csv",
+      "site": "late",
+      "deny_s": 40.0,
+      "i0": 65713
+    },
+    {
+      "calibration": {
+        "weights": [
+          0.0,
+          0.0,
+          0.9754751807749469
+        ],
+        "bias_rps": -0.007397943635235155,
+        "gps_gyro_lag_s": -2.220446049250313e-16,
+        "n_fit": 94,
+        "validation_correlation": 0.9944912220980262,
+        "validation_mae_rps": 0.007042369241318153,
+        "conformal_q90_rps": 0.025142313902059142,
+        "axis_norm": 0.9754751807749469,
+        "excitation_rps": 0.08484897754908466,
+        "trusted_prefix": true,
+        "reason": "ok",
+        "feature_mean": [
+          0.0020664835673497076,
+          0.002632394793257034,
+          0.008056180874331157
+        ],
+        "feature_precision": [
+          [
+            1128.617851637554,
+            123.49511930805635,
+            -173.50314983879636
+          ],
+          [
+            123.49511930805659,
+            156.52613394886282,
+            -13.508858608997837
+          ],
+          [
+            -173.5031498387965,
+            -13.508858608997837,
+            90.48220038819731
+          ]
+        ],
+        "ood_d2_threshold": 35.91941092799685
+      },
+      "outage_ood_fraction": 0.03666666666666667,
+      "decision": "calibrated",
+      "status": "neutral",
+      "baseline_method": "car_bias_map",
+      "baseline": {
+        "ate_m": 112.99762403011663,
+        "final_error_m": 90.7950899439802,
+        "max_error_m": 149.18262878153294,
+        "drift_pct": 79.61203203318586,
+        "distance_m": 114.04694444444371,
+        "n": 600,
+        "m_per_km": 796.1203203318586
+      },
+      "candidate": {
+        "ate_m": 112.99694102762945,
+        "final_error_m": 90.79328249883011,
+        "max_error_m": 149.18224888731217,
+        "drift_pct": 79.61044720760468,
+        "distance_m": 114.04694444444371,
+        "n": 600,
+        "m_per_km": 796.1044720760468
+      },
+      "safe": {
+        "ate_m": 112.99694102762945,
+        "final_error_m": 90.79328249883011,
+        "max_error_m": 149.18224888731217,
+        "drift_pct": 79.61044720760468,
+        "distance_m": 114.04694444444371,
+        "n": 600,
+        "m_per_km": 796.1044720760468
+      },
+      "uncertainty_radius_m": 123.80779315242548,
+      "uncertainty_kind": "split_conformal_yaw_propagation",
+      "uncertainty_covered": true,
+      "infer_us_per_tick_python": 3.900665549844962,
+      "candidate_verdict": "FAIL",
+      "safe_verdict": "FAIL",
+      "csv": "S-S2.csv",
+      "site": "late",
+      "deny_s": 60.0,
+      "i0": 65713
+    },
+    {
+      "calibration": {
+        "weights": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "bias_rps": 0.0,
+        "gps_gyro_lag_s": 0.0,
+        "n_fit": 0,
+        "validation_correlation": 0.0,
+        "validation_mae_rps": null,
+        "conformal_q90_rps": null,
+        "axis_norm": 1.0,
+        "excitation_rps": 0.0,
+        "trusted_prefix": false,
+        "reason": "fewer than 48 prefix turning updates",
+        "feature_mean": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "feature_precision": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "ood_d2_threshold": 12.84
+      },
+      "outage_ood_fraction": 0.0,
+      "decision": "abstain_baseline",
+      "status": "abstained",
+      "baseline_method": "car_bias_map",
+      "baseline": {
+        "ate_m": 66.9033685712457,
+        "final_error_m": 67.71399339579435,
+        "max_error_m": 93.64402874275471,
+        "drift_pct": 107.6101573134997,
+        "distance_m": 62.92528055555554,
+        "n": 201,
+        "m_per_km": 1076.101573134997
+      },
+      "candidate": {
+        "ate_m": 66.90329109394514,
+        "final_error_m": 67.71385432368864,
+        "max_error_m": 93.64394756393533,
+        "drift_pct": 107.60993630200085,
+        "distance_m": 62.92528055555554,
+        "n": 201,
+        "m_per_km": 1076.0993630200085
+      },
+      "safe": {
+        "ate_m": 66.9033685712457,
+        "final_error_m": 67.71399339579435,
+        "max_error_m": 93.64402874275471,
+        "drift_pct": 107.6101573134997,
+        "distance_m": 62.92528055555554,
+        "n": 201,
+        "m_per_km": 1076.101573134997
+      },
+      "uncertainty_radius_m": 1000000000.0,
+      "uncertainty_kind": "abstained_unbounded",
+      "uncertainty_covered": true,
+      "infer_us_per_tick_python": 9.729702964754738,
+      "candidate_verdict": "FAIL",
+      "safe_verdict": "FAIL",
+      "csv": "S-S4.csv",
+      "site": "early",
+      "deny_s": 20.0,
+      "i0": 1200
+    },
+    {
+      "calibration": {
+        "weights": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "bias_rps": 0.0,
+        "gps_gyro_lag_s": 0.0,
+        "n_fit": 0,
+        "validation_correlation": 0.0,
+        "validation_mae_rps": null,
+        "conformal_q90_rps": null,
+        "axis_norm": 1.0,
+        "excitation_rps": 0.0,
+        "trusted_prefix": false,
+        "reason": "fewer than 48 prefix turning updates",
+        "feature_mean": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "feature_precision": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "ood_d2_threshold": 12.84
+      },
+      "outage_ood_fraction": 0.0,
+      "decision": "abstain_baseline",
+      "status": "abstained",
+      "baseline_method": "car_bias_map",
+      "baseline": {
+        "ate_m": 180.03969959587562,
+        "final_error_m": 292.5637583394778,
+        "max_error_m": 295.782148847089,
+        "drift_pct": 241.75857631193682,
+        "distance_m": 121.01484166666664,
+        "n": 401,
+        "m_per_km": 2417.585763119368
+      },
+      "candidate": {
+        "ate_m": 180.03956806170254,
+        "final_error_m": 292.56356278513834,
+        "max_error_m": 295.7819556190288,
+        "drift_pct": 241.7584147166013,
+        "distance_m": 121.01484166666664,
+        "n": 401,
+        "m_per_km": 2417.584147166013
+      },
+      "safe": {
+        "ate_m": 180.03969959587562,
+        "final_error_m": 292.5637583394778,
+        "max_error_m": 295.782148847089,
+        "drift_pct": 241.75857631193682,
+        "distance_m": 121.01484166666664,
+        "n": 401,
+        "m_per_km": 2417.585763119368
+      },
+      "uncertainty_radius_m": 1000000000.0,
+      "uncertainty_kind": "abstained_unbounded",
+      "uncertainty_covered": true,
+      "infer_us_per_tick_python": 6.236318419646907,
+      "candidate_verdict": "FAIL",
+      "safe_verdict": "FAIL",
+      "csv": "S-S4.csv",
+      "site": "early",
+      "deny_s": 40.0,
+      "i0": 1200
+    },
+    {
+      "calibration": {
+        "weights": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "bias_rps": 0.0,
+        "gps_gyro_lag_s": 0.0,
+        "n_fit": 0,
+        "validation_correlation": 0.0,
+        "validation_mae_rps": null,
+        "conformal_q90_rps": null,
+        "axis_norm": 1.0,
+        "excitation_rps": 0.0,
+        "trusted_prefix": false,
+        "reason": "fewer than 48 prefix turning updates",
+        "feature_mean": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "feature_precision": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "ood_d2_threshold": 12.84
+      },
+      "outage_ood_fraction": 0.0,
+      "decision": "abstain_baseline",
+      "status": "abstained",
+      "baseline_method": "car_bias_map",
+      "baseline": {
+        "ate_m": 258.3751727784921,
+        "final_error_m": 402.78604318896936,
+        "max_error_m": 412.15076595215635,
+        "drift_pct": 225.00710472203718,
+        "distance_m": 179.01036666666664,
+        "n": 601,
+        "m_per_km": 2250.071047220372
+      },
+      "candidate": {
+        "ate_m": 258.3749950071753,
+        "final_error_m": 402.7857629997461,
+        "max_error_m": 412.15049690922865,
+        "drift_pct": 225.00694820080966,
+        "distance_m": 179.01036666666664,
+        "n": 601,
+        "m_per_km": 2250.0694820080967
+      },
+      "safe": {
+        "ate_m": 258.3751727784921,
+        "final_error_m": 402.78604318896936,
+        "max_error_m": 412.15076595215635,
+        "drift_pct": 225.00710472203718,
+        "distance_m": 179.01036666666664,
+        "n": 601,
+        "m_per_km": 2250.071047220372
+      },
+      "uncertainty_radius_m": 1000000000.0,
+      "uncertainty_kind": "abstained_unbounded",
+      "uncertainty_covered": true,
+      "infer_us_per_tick_python": 3.2710963433749196,
+      "candidate_verdict": "FAIL",
+      "safe_verdict": "FAIL",
+      "csv": "S-S4.csv",
+      "site": "early",
+      "deny_s": 60.0,
+      "i0": 1200
+    },
+    {
+      "calibration": {
+        "weights": [
+          0.0,
+          0.0,
+          0.8891947282486312
+        ],
+        "bias_rps": -0.012135753106288278,
+        "gps_gyro_lag_s": -1.0,
+        "n_fit": 53,
+        "validation_correlation": 0.3073458639345899,
+        "validation_mae_rps": 0.06692968534484237,
+        "conformal_q90_rps": 0.19473245676686957,
+        "axis_norm": 0.8891947282486312,
+        "excitation_rps": 0.0910605382654638,
+        "trusted_prefix": false,
+        "reason": "held-out prefix correlation < 0.70",
+        "feature_mean": [
+          0.0015911278704754935,
+          0.0011481253398135682,
+          0.0044972688317019205
+        ],
+        "feature_precision": [
+          [
+            2320.1410308116956,
+            -31.760977637944094,
+            -232.1528888010784
+          ],
+          [
+            -31.760977637948102,
+            492.5958580769371,
+            11.892008670953787
+          ],
+          [
+            -232.15288880107866,
+            11.89200867095337,
+            94.08636693263315
+          ]
+        ],
+        "ood_d2_threshold": 34.09029669650038
+      },
+      "outage_ood_fraction": 0.03,
+      "decision": "abstain_baseline",
+      "status": "abstained",
+      "baseline_method": "car_bias_map",
+      "baseline": {
+        "ate_m": 123.98885671596848,
+        "final_error_m": 182.61765765715032,
+        "max_error_m": 182.61765765715032,
+        "drift_pct": 465.8650359039378,
+        "distance_m": 39.19969166666682,
+        "n": 200,
+        "m_per_km": 4658.650359039379
+      },
+      "candidate": {
+        "ate_m": 124.75106098105675,
+        "final_error_m": 184.08894595173285,
+        "max_error_m": 184.08894595173285,
+        "drift_pct": 469.61835189196546,
+        "distance_m": 39.19969166666682,
+        "n": 200,
+        "m_per_km": 4696.1835189196545
+      },
+      "safe": {
+        "ate_m": 123.98885671596848,
+        "final_error_m": 182.61765765715032,
+        "max_error_m": 182.61765765715032,
+        "drift_pct": 465.8650359039378,
+        "distance_m": 39.19969166666682,
+        "n": 200,
+        "m_per_km": 4658.650359039379
+      },
+      "uncertainty_radius_m": 1000000000.0,
+      "uncertainty_kind": "abstained_unbounded",
+      "uncertainty_covered": true,
+      "infer_us_per_tick_python": 8.702487547230902,
+      "candidate_verdict": "FAIL",
+      "safe_verdict": "FAIL",
+      "csv": "S-S4.csv",
+      "site": "mid",
+      "deny_s": 20.0,
+      "i0": 47300
+    },
+    {
+      "calibration": {
+        "weights": [
+          0.0,
+          0.0,
+          0.8891947282486312
+        ],
+        "bias_rps": -0.012135753106288278,
+        "gps_gyro_lag_s": -1.0,
+        "n_fit": 53,
+        "validation_correlation": 0.3073458639345899,
+        "validation_mae_rps": 0.06692968534484237,
+        "conformal_q90_rps": 0.19473245676686957,
+        "axis_norm": 0.8891947282486312,
+        "excitation_rps": 0.0910605382654638,
+        "trusted_prefix": false,
+        "reason": "held-out prefix correlation < 0.70",
+        "feature_mean": [
+          0.0015911278704754935,
+          0.0011481253398135682,
+          0.0044972688317019205
+        ],
+        "feature_precision": [
+          [
+            2320.1410308116956,
+            -31.760977637944094,
+            -232.1528888010784
+          ],
+          [
+            -31.760977637948102,
+            492.5958580769371,
+            11.892008670953787
+          ],
+          [
+            -232.15288880107866,
+            11.89200867095337,
+            94.08636693263315
+          ]
+        ],
+        "ood_d2_threshold": 34.09029669650038
+      },
+      "outage_ood_fraction": 0.065,
+      "decision": "abstain_baseline",
+      "status": "abstained",
+      "baseline_method": "car_bias_map",
+      "baseline": {
+        "ate_m": 163.73146947114986,
+        "final_error_m": 198.64056996714558,
+        "max_error_m": 202.41473544962267,
+        "drift_pct": 229.84745723935674,
+        "distance_m": 86.42278333333347,
+        "n": 400,
+        "m_per_km": 2298.4745723935675
+      },
+      "candidate": {
+        "ate_m": 165.11029693923902,
+        "final_error_m": 200.06487643377994,
+        "max_error_m": 203.99486456964715,
+        "drift_pct": 231.49552550526852,
+        "distance_m": 86.42278333333347,
+        "n": 400,
+        "m_per_km": 2314.9552550526855
+      },
+      "safe": {
+        "ate_m": 163.73146947114986,
+        "final_error_m": 198.64056996714558,
+        "max_error_m": 202.41473544962267,
+        "drift_pct": 229.84745723935674,
+        "distance_m": 86.42278333333347,
+        "n": 400,
+        "m_per_km": 2298.4745723935675
+      },
+      "uncertainty_radius_m": 1000000000.0,
+      "uncertainty_kind": "abstained_unbounded",
+      "uncertainty_covered": true,
+      "infer_us_per_tick_python": 3.8359102383987547,
+      "candidate_verdict": "FAIL",
+      "safe_verdict": "FAIL",
+      "csv": "S-S4.csv",
+      "site": "mid",
+      "deny_s": 40.0,
+      "i0": 47300
+    },
+    {
+      "calibration": {
+        "weights": [
+          0.0,
+          0.0,
+          0.8891947282486312
+        ],
+        "bias_rps": -0.012135753106288278,
+        "gps_gyro_lag_s": -1.0,
+        "n_fit": 53,
+        "validation_correlation": 0.3073458639345899,
+        "validation_mae_rps": 0.06692968534484237,
+        "conformal_q90_rps": 0.19473245676686957,
+        "axis_norm": 0.8891947282486312,
+        "excitation_rps": 0.0910605382654638,
+        "trusted_prefix": false,
+        "reason": "held-out prefix correlation < 0.70",
+        "feature_mean": [
+          0.0015911278704754935,
+          0.0011481253398135682,
+          0.0044972688317019205
+        ],
+        "feature_precision": [
+          [
+            2320.1410308116956,
+            -31.760977637944094,
+            -232.1528888010784
+          ],
+          [
+            -31.760977637948102,
+            492.5958580769371,
+            11.892008670953787
+          ],
+          [
+            -232.15288880107866,
+            11.89200867095337,
+            94.08636693263315
+          ]
+        ],
+        "ood_d2_threshold": 34.09029669650038
+      },
+      "outage_ood_fraction": 0.04991680532445923,
+      "decision": "abstain_baseline",
+      "status": "abstained",
+      "baseline_method": "car_bias_map",
+      "baseline": {
+        "ate_m": 161.41565194945355,
+        "final_error_m": 94.30416811111151,
+        "max_error_m": 202.41473544962267,
+        "drift_pct": 76.99854249480569,
+        "distance_m": 122.47526388888886,
+        "n": 601,
+        "m_per_km": 769.985424948057
+      },
+      "candidate": {
+        "ate_m": 162.6689202159119,
+        "final_error_m": 94.51976795784522,
+        "max_error_m": 203.9948645691119,
+        "drift_pct": 77.17457791607191,
+        "distance_m": 122.47526388888886,
+        "n": 601,
+        "m_per_km": 771.745779160719
+      },
+      "safe": {
+        "ate_m": 161.41565194945355,
+        "final_error_m": 94.30416811111151,
+        "max_error_m": 202.41473544962267,
+        "drift_pct": 76.99854249480569,
+        "distance_m": 122.47526388888886,
+        "n": 601,
+        "m_per_km": 769.985424948057
+      },
+      "uncertainty_radius_m": 1000000000.0,
+      "uncertainty_kind": "abstained_unbounded",
+      "uncertainty_covered": true,
+      "infer_us_per_tick_python": 2.8928571371585936,
+      "candidate_verdict": "FAIL",
+      "safe_verdict": "FAIL",
+      "csv": "S-S4.csv",
+      "site": "mid",
+      "deny_s": 60.0,
+      "i0": 47300
+    },
+    {
+      "calibration": {
+        "weights": [
+          0.0,
+          0.0,
+          0.8038758848134376
+        ],
+        "bias_rps": -0.008601721490193039,
+        "gps_gyro_lag_s": -2.220446049250313e-16,
+        "n_fit": 154,
+        "validation_correlation": 0.9761129771953445,
+        "validation_mae_rps": 0.005701916893950627,
+        "conformal_q90_rps": 0.015353534177845414,
+        "axis_norm": 0.8038758848134376,
+        "excitation_rps": 0.02387894724269391,
+        "trusted_prefix": false,
+        "reason": "mapped-yaw scale outside [0.85, 1.15]",
+        "feature_mean": [
+          0.001481166609117041,
+          0.0005424157487146967,
+          0.006726117279920928
+        ],
+        "feature_precision": [
+          [
+            2422.748130429221,
+            -10.276721315543488,
+            -256.280929986629
+          ],
+          [
+            -10.276721315544519,
+            486.7469225861755,
+            5.768762660495504
+          ],
+          [
+            -256.2809299866291,
+            5.768762660495518,
+            88.01444131253214
+          ]
+        ],
+        "ood_d2_threshold": 24.981320916124382
+      },
+      "outage_ood_fraction": 0.005,
+      "decision": "abstain_baseline",
+      "status": "abstained",
+      "baseline_method": "car_bias_map",
+      "baseline": {
+        "ate_m": 71.73908759895065,
+        "final_error_m": 127.31028846833652,
+        "max_error_m": 127.31028846833652,
+        "drift_pct": 239.12919017421106,
+        "distance_m": 53.23912500000024,
+        "n": 200,
+        "m_per_km": 2391.2919017421104
+      },
+      "candidate": {
+        "ate_m": 75.74652827053046,
+        "final_error_m": 131.24914044678113,
+        "max_error_m": 131.24914044678113,
+        "drift_pct": 246.52760624217723,
+        "distance_m": 53.23912500000024,
+        "n": 200,
+        "m_per_km": 2465.276062421772
+      },
+      "safe": {
+        "ate_m": 71.73908759895065,
+        "final_error_m": 127.31028846833652,
+        "max_error_m": 127.31028846833652,
+        "drift_pct": 239.12919017421106,
+        "distance_m": 53.23912500000024,
+        "n": 200,
+        "m_per_km": 2391.2919017421104
+      },
+      "uncertainty_radius_m": 1000000000.0,
+      "uncertainty_kind": "abstained_unbounded",
+      "uncertainty_covered": true,
+      "infer_us_per_tick_python": 12.842786051819463,
+      "candidate_verdict": "FAIL",
+      "safe_verdict": "FAIL",
+      "csv": "S-S4.csv",
+      "site": "late",
+      "deny_s": 20.0,
+      "i0": 66220
+    },
+    {
+      "calibration": {
+        "weights": [
+          0.0,
+          0.0,
+          0.8038758848134376
+        ],
+        "bias_rps": -0.008601721490193039,
+        "gps_gyro_lag_s": -2.220446049250313e-16,
+        "n_fit": 154,
+        "validation_correlation": 0.9761129771953445,
+        "validation_mae_rps": 0.005701916893950627,
+        "conformal_q90_rps": 0.015353534177845414,
+        "axis_norm": 0.8038758848134376,
+        "excitation_rps": 0.02387894724269391,
+        "trusted_prefix": false,
+        "reason": "mapped-yaw scale outside [0.85, 1.15]",
+        "feature_mean": [
+          0.001481166609117041,
+          0.0005424157487146967,
+          0.006726117279920928
+        ],
+        "feature_precision": [
+          [
+            2422.748130429221,
+            -10.276721315543488,
+            -256.280929986629
+          ],
+          [
+            -10.276721315544519,
+            486.7469225861755,
+            5.768762660495504
+          ],
+          [
+            -256.2809299866291,
+            5.768762660495518,
+            88.01444131253214
+          ]
+        ],
+        "ood_d2_threshold": 24.981320916124382
+      },
+      "outage_ood_fraction": 0.0,
+      "decision": "abstain_baseline",
+      "status": "abstained",
+      "baseline_method": "car_bias_map",
+      "baseline": {
+        "ate_m": 133.71042859886253,
+        "final_error_m": 205.86734575369337,
+        "max_error_m": 205.86734575369337,
+        "drift_pct": 121.70997961937748,
+        "distance_m": 169.14582222222077,
+        "n": 400,
+        "m_per_km": 1217.0997961937749
+      },
+      "candidate": {
+        "ate_m": 144.19912845013184,
+        "final_error_m": 240.66850390016202,
+        "max_error_m": 240.66850390016202,
+        "drift_pct": 142.2846279844713,
+        "distance_m": 169.14582222222077,
+        "n": 400,
+        "m_per_km": 1422.846279844713
+      },
+      "safe": {
+        "ate_m": 133.71042859886253,
+        "final_error_m": 205.86734575369337,
+        "max_error_m": 205.86734575369337,
+        "drift_pct": 121.70997961937748,
+        "distance_m": 169.14582222222077,
+        "n": 400,
+        "m_per_km": 1217.0997961937749
+      },
+      "uncertainty_radius_m": 1000000000.0,
+      "uncertainty_kind": "abstained_unbounded",
+      "uncertainty_covered": true,
+      "infer_us_per_tick_python": 4.405236920281465,
+      "candidate_verdict": "FAIL",
+      "safe_verdict": "FAIL",
+      "csv": "S-S4.csv",
+      "site": "late",
+      "deny_s": 40.0,
+      "i0": 66220
+    },
+    {
+      "calibration": {
+        "weights": [
+          0.0,
+          0.0,
+          0.8038758848134376
+        ],
+        "bias_rps": -0.008601721490193039,
+        "gps_gyro_lag_s": -2.220446049250313e-16,
+        "n_fit": 154,
+        "validation_correlation": 0.9761129771953445,
+        "validation_mae_rps": 0.005701916893950627,
+        "conformal_q90_rps": 0.015353534177845414,
+        "axis_norm": 0.8038758848134376,
+        "excitation_rps": 0.02387894724269391,
+        "trusted_prefix": false,
+        "reason": "mapped-yaw scale outside [0.85, 1.15]",
+        "feature_mean": [
+          0.001481166609117041,
+          0.0005424157487146967,
+          0.006726117279920928
+        ],
+        "feature_precision": [
+          [
+            2422.748130429221,
+            -10.276721315543488,
+            -256.280929986629
+          ],
+          [
+            -10.276721315544519,
+            486.7469225861755,
+            5.768762660495504
+          ],
+          [
+            -256.2809299866291,
+            5.768762660495518,
+            88.01444131253214
+          ]
+        ],
+        "ood_d2_threshold": 24.981320916124382
+      },
+      "outage_ood_fraction": 0.0016666666666666668,
+      "decision": "abstain_baseline",
+      "status": "abstained",
+      "baseline_method": "car_bias_map",
+      "baseline": {
+        "ate_m": 163.3639700585919,
+        "final_error_m": 223.42599092869443,
+        "max_error_m": 223.42599092869443,
+        "drift_pct": 70.35503891869921,
+        "distance_m": 317.5692805555559,
+        "n": 600,
+        "m_per_km": 703.5503891869921
+      },
+      "candidate": {
+        "ate_m": 202.27675087333813,
+        "final_error_m": 334.1286951542971,
+        "max_error_m": 334.1286951542971,
+        "drift_pct": 105.21442583167116,
+        "distance_m": 317.5692805555559,
+        "n": 600,
+        "m_per_km": 1052.1442583167116
+      },
+      "safe": {
+        "ate_m": 163.3639700585919,
+        "final_error_m": 223.42599092869443,
+        "max_error_m": 223.42599092869443,
+        "drift_pct": 70.35503891869921,
+        "distance_m": 317.5692805555559,
+        "n": 600,
+        "m_per_km": 703.5503891869921
+      },
+      "uncertainty_radius_m": 1000000000.0,
+      "uncertainty_kind": "abstained_unbounded",
+      "uncertainty_covered": true,
+      "infer_us_per_tick_python": 1.8900166480289076,
+      "candidate_verdict": "FAIL",
+      "safe_verdict": "FAIL",
+      "csv": "S-S4.csv",
+      "site": "late",
+      "deny_s": 60.0,
+      "i0": 66220
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+<resources>
+    <style name="Theme.IDR" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">@color/idr_bg</item>
+        <item name="android:navigationBarColor">@color/idr_bg</item>
+        <item name="android:windowBackground">@color/idr_bg</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>

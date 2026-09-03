@@ -1,0 +1,15 @@
+{
+  "finding": "F7",
+  "name": "exp7_welch_psd",
+  "motion_power_below_2hz": 0.9999999483040675,
+  "bible_motion_power_below_2hz": 1.0,
+  "snr_below_2hz_db": 29.565977244897745,
+  "snr_above_10hz_db": -34.070329779057126,
+  "bible_snr_below_2hz_db": 29.0,
+  "bible_snr_above_10hz_db": -34.0,
+  "fs": 200.0,
+  "vib_accel_g": 0.15,
+  "vib_gyro": 0.08,
+  "gyro_arw_dps_sqrt_hz": 0.0038,
+  "seed": 26168
+}

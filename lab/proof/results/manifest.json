@@ -1,0 +1,122 @@
+{
+  "schema": "SIH26168-evidence-manifest-v2-corrected-axis",
+  "created_utc": "2026-09-03T22:12:16.149562Z",
+  "root": "repository root",
+  "code_version": {
+    "git_commit": null,
+    "proof_tree_dirty": null
+  },
+  "config": {
+    "default_seed": 26168,
+    "outage_durations_s": [
+      20,
+      40,
+      60,
+      90
+    ],
+    "held_out": "GNSS lat/lon/bearing/speed during each outage"
+  },
+  "files": [
+    {
+      "path": "data/raw/IO-VNBD/Synchronised V abd S datasets/Categorised IOVNB Dataset/M (Driver B)/S-M.csv",
+      "bytes": 19798721,
+      "sha256": "26a1ee080da4db98e175e15d6fec631e6f8c285c13817d9d74ecc90ed280d103"
+    },
+    {
+      "path": "data/raw/IO-VNBD/Synchronised V abd S datasets/Categorised IOVNB Dataset/S (Driver A)/S1/S-S1.csv",
+      "bytes": 9631499,
+      "sha256": "e79a2eea18143b825438f9a11c7d724a97c9e18329776defd4d9291d03d4aaca"
+    },
+    {
+      "path": "data/raw/IO-VNBD/Synchronised V abd S datasets/Categorised IOVNB Dataset/S (Driver A)/S2/S-S2.csv",
+      "bytes": 17469302,
+      "sha256": "8f48d68ef4ab225c8381af6fb8ec0f36fe6f6048977eeebecc74cfec50d13cb8"
+    },
+    {
+      "path": "data/raw/IO-VNBD/Synchronised V abd S datasets/Categorised IOVNB Dataset/S (Driver A)/S4/S-S4.csv",
+      "bytes": 17574514,
+      "sha256": "a2bb1e1eb28d111f84963240c54b790f32366f6c5b09dff1713770b52d3f5616"
+    },
+    {
+      "path": "docs/PROOF_PROTOCOL.md",
+      "bytes": 10026,
+      "sha256": "ac1cc99362ec4420c7662bbb30a8cef4cf7c96c40e4015e55f066ac6d27f8675"
+    },
+    {
+      "path": "lab/proof/blind_challenge.py",
+      "bytes": 13615,
+      "sha256": "5970a474aa048b5257fab66e126eabe0911d0ed6ea4b57cdfbf9452d18538cce"
+    },
+    {
+      "path": "lab/proof/counterfactual_twin.py",
+      "bytes": 8113,
+      "sha256": "7a969c882d05691218812d797bf3146d88f2b04b75cc401b70c77ec3039e6035"
+    },
+    {
+      "path": "lab/proof/evidence_manifest.py",
+      "bytes": 5789,
+      "sha256": "6458c701d2a8b5084ece73c7f4fdb8b06eb89a910953fdc605ccbb69dad11e51"
+    },
+    {
+      "path": "lab/proof/export_web_summary.py",
+      "bytes": 4730,
+      "sha256": "52c9bd2f9a179ee333c1d65f9e32f6809150d39f8dd419aaa3fab798d3ec9e95"
+    },
+    {
+      "path": "lab/proof/reliability_battery.py",
+      "bytes": 14384,
+      "sha256": "aa764baf8f565585c91cba52c50d9250b6cf8a5a2b1ee11e4970a7e17675c3fd"
+    },
+    {
+      "path": "lab/proof/results/blind/blind_commitment.json",
+      "bytes": 1530,
+      "sha256": "6ffbc1e38a181519522c3743b7018d673355108555905a0f7604833fdc754b7f"
+    },
+    {
+      "path": "lab/proof/results/blind/blind_prediction.json",
+      "bytes": 297724,
+      "sha256": "b9393b695367342a31291c3333fcd5f21fa4ac94bfa2f22064f3b8b7494913c2"
+    },
+    {
+      "path": "lab/proof/results/blind/blind_reveal.json",
+      "bytes": 41302,
+      "sha256": "3b192ad966728e70783d28f6cd529a5ee36b3a350ced299ab3c884e8b4bc0580"
+    },
+    {
+      "path": "lab/proof/results/counterfactual_twin.json",
+      "bytes": 362903,
+      "sha256": "6a4b936e11e6e36a67d082af2f630b35b376b8a0404a5485d630e5ceedb4bee6"
+    },
+    {
+      "path": "lab/proof/results/reliability.json",
+      "bytes": 246015,
+      "sha256": "161b229fa15c04d4bf5d813b03e9a9df165a9834dc5258edc278bbf2a234f6e3"
+    },
+    {
+      "path": "lab/proof/results/reliability.png",
+      "bytes": 224424,
+      "sha256": "bb995f33b1e3d1a7909d3638f1b0ba765f2e1dd73ddfb347815ab09a32334934"
+    },
+    {
+      "path": "lab/stress/load_iovnbd.py",
+      "bytes": 16235,
+      "sha256": "f94ab6d9c0a04cce65c1568fac8325229ed9177e8ed0d0a6dc4d168589a5946d"
+    },
+    {
+      "path": "lab/stress/results/alignment/ALIGNMENT_REPORT.md",
+      "bytes": 4712,
+      "sha256": "6e418697dd942cf499035311e82d104bdc21884aaa4c7094db0e02a6b1896eaf"
+    },
+    {
+      "path": "web/public/evidence/proof_reliability.png",
+      "bytes": 224424,
+      "sha256": "bb995f33b1e3d1a7909d3638f1b0ba765f2e1dd73ddfb347815ab09a32334934"
+    },
+    {
+      "path": "web/public/evidence/proof_summary.json",
+      "bytes": 10955,
+      "sha256": "d0fabefb4ab1662629f5af64d040b84337cff51df8422479085d7f3962ace941"
+    }
+  ],
+  "verification": "python lab/proof/evidence_manifest.py verify lab/proof/results/manifest.json"
+}

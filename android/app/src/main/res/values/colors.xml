@@ -1,0 +1,8 @@
+<resources>
+    <color name="idr_bg">#07090D</color>
+    <color name="idr_bg2">#0C1016</color>
+    <color name="idr_accent">#FF6B2D</color>
+    <color name="idr_telem">#00D4AA</color>
+    <color name="idr_text">#E8EDF2</color>
+    <color name="ic_launcher_bg">#07090D</color>
+</resources>

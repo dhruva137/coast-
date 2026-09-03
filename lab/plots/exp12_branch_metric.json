@@ -1,0 +1,12 @@
+{
+  "finding": "F12",
+  "name": "exp12_branch_metric",
+  "wrong_ramp_drift_pct": 7.35699501894897,
+  "wrong_ramp_err_m": 24.984355084350803,
+  "distance_m": 339.6000000000014,
+  "branch_accuracy_true": 1.0,
+  "branch_accuracy_wrong": 0.0,
+  "fork_half_deg": 8.0,
+  "note": "Report branch-decision accuracy. Drift % is not what the rider feels at a ramp.",
+  "seed": 26168
+}
