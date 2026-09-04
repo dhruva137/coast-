@@ -180,6 +180,20 @@ fun RecordScreen(bus: IdrBus, permsOk: Boolean, requestPerms: () -> Unit) {
             color = Mute,
             fontSize = 10.sp,
         )
+        stats.qualitySummary?.let { q ->
+            Text(
+                q,
+                fontFamily = IdrMono,
+                color = if (q.startsWith("KEEP")) Telem else if (q.startsWith("RETRY")) Accent else Danger,
+                fontSize = 12.sp,
+            )
+            Text(
+                "Open SESSIONS tab to rename / zip / delete this log.",
+                fontFamily = IdrMono,
+                color = Mute,
+                fontSize = 10.sp,
+            )
+        }
         Text(
             "Columns frozen: t_ns,ax,ay,az,gx,gy,gz,mx,my,mz,pressure_hpa,lux",
             fontFamily = IdrMono,

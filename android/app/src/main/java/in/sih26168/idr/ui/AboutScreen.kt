@@ -33,6 +33,12 @@ fun AboutScreen() {
         Text("IDR", fontFamily = IdrSans, color = Fg, fontSize = 28.sp)
         Text("INTELLIGENT DEAD RECKONING  ·  SIH 26168", fontFamily = IdrMono, color = Accent, fontSize = 11.sp, letterSpacing = 1.4.sp)
         Text(
+            "v0.3.0 · RECORD + quality gate + session zip/share for teammates.",
+            color = Telem,
+            fontFamily = IdrMono,
+            fontSize = 11.sp,
+        )
+        Text(
             "Smartphone dead reckoning for two-wheelers when GNSS dies. ISRO problem statement 26168.",
             color = Mute,
             fontFamily = IdrSans,

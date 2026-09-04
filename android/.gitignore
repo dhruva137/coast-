@@ -8,3 +8,4 @@ captures/
 *.apk
 *.ap_
 *.aab
+.tools/

@@ -98,6 +98,7 @@ data class RecordStats(
     val gnssRows: Long = 0,
     val startedAtNs: Long = 0,
     val imuHz: Double = 0.0,
+    val qualitySummary: String? = null,
 )
 
 enum class AppMode { IDLE, RECORD, NAVIGATE }

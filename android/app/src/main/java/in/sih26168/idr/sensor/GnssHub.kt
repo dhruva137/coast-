@@ -16,7 +16,7 @@ import `in`.sih26168.idr.data.GnssFix
 import java.util.concurrent.atomic.AtomicInteger
 
 class GnssHub(
-    context: Context,
+    private val context: Context,
     private val onFix: (GnssFix) -> Unit,
 ) : LocationListener {
     private val lm = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager

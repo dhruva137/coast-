@@ -183,10 +183,30 @@ class RecordService : LifecycleService() {
     }
 
     private fun stopEverything() {
-        val dir = logger?.dir?.absolutePath
+        val log = logger
+        try {
+            log?.close()
+        } catch (_: Exception) {
+        }
+        val dir = log?.dir
+        logger = null
         tearDown()
         bus.setMode(AppMode.IDLE)
-        bus.publishRecord(RecordStats(running = false, sessionDir = dir))
+        var qualitySummary: String? = null
+        if (dir != null) {
+            try {
+                val report = QualityGate.writeReport(dir)
+                qualitySummary = report.summary
+            } catch (_: Exception) {
+            }
+        }
+        bus.publishRecord(
+            RecordStats(
+                running = false,
+                sessionDir = dir?.absolutePath,
+                qualitySummary = qualitySummary,
+            ),
+        )
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }

@@ -2,6 +2,8 @@
 
 Smartphone SDK for ride-hailing / delivery / ambulance when GNSS dies. Lean-aware dead reckoning for two-wheelers. Framed for ISRO / fleet buyers (SIH problem 26168).
 
+**Current progress:** see [`PROGRESS.md`](PROGRESS.md) (updated 4 Sep 2026). Android field logger **v0.3.0** — RECORD + quality gate + session zip; deployment gate still red until real scooter logs.
+
 ## Product quickstart
 
 ```bash
@@ -36,7 +38,7 @@ Published vehicle DR assumes a car that cannot lean. India runs on ~200 million 
 | `core/ts` | Lean solver, InEKF, graph particle filter, simulator (the maths) |
 | `core/cpp` | C++17 port + golden-vector tests |
 | `web` | MapLibre research console / judge demo |
-| `android` | Kotlin RECORD + NAVIGATE |
+| `android` | Kotlin RECORD + SESSIONS + NAVIGATE (v0.3.0 field logger) |
 | `lab` | Python experiments F1–F12, training, eval |
 | `maps` | Offline campus graph |
 | `SIH26168_PROJECT_BIBLE.md` | Problem, claims, execution |

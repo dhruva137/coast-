@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FiberManualRecord
+import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Navigation
 import androidx.compose.material3.Icon
@@ -31,7 +32,7 @@ import `in`.sih26168.idr.ui.theme.Bg2
 import `in`.sih26168.idr.ui.theme.IdrMono
 import `in`.sih26168.idr.ui.theme.Mute
 
-private val Tabs = listOf("RECORD", "NAVIGATE", "ABOUT")
+private val Tabs = listOf("RECORD", "SESSIONS", "NAVIGATE", "ABOUT")
 
 @Composable
 fun IdrApp(bus: IdrBus) {
@@ -54,7 +55,8 @@ fun IdrApp(bus: IdrBus) {
                             Icon(
                                 when (i) {
                                     0 -> Icons.Filled.FiberManualRecord
-                                    1 -> Icons.Outlined.Navigation
+                                    1 -> Icons.Outlined.Folder
+                                    2 -> Icons.Outlined.Navigation
                                     else -> Icons.Outlined.Info
                                 },
                                 contentDescription = label,
@@ -84,7 +86,8 @@ fun IdrApp(bus: IdrBus) {
         ) {
             when (tab) {
                 0 -> RecordScreen(bus, permsOk, request)
-                1 -> NavigateScreen(bus, permsOk, request)
+                1 -> SessionsScreen()
+                2 -> NavigateScreen(bus, permsOk, request)
                 else -> AboutScreen()
             }
         }
