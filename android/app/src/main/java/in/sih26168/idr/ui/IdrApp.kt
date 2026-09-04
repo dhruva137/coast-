@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FiberManualRecord
 import androidx.compose.material.icons.outlined.Folder
-import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.Navigation
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -19,25 +19,64 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.sp
 import `in`.sih26168.idr.IdrBus
+import `in`.sih26168.idr.data.Prefs
+import `in`.sih26168.idr.sensor.DeviceProbe
+import `in`.sih26168.idr.sensor.LocationGate
 import `in`.sih26168.idr.ui.theme.Accent
 import `in`.sih26168.idr.ui.theme.Bg
 import `in`.sih26168.idr.ui.theme.Bg2
 import `in`.sih26168.idr.ui.theme.IdrMono
 import `in`.sih26168.idr.ui.theme.Mute
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
-private val Tabs = listOf("RECORD", "SESSIONS", "NAVIGATE", "ABOUT")
+private val Tabs = listOf("DRIVE", "RECORD", "SESSIONS", "HELP")
 
+/**
+ * Shell. DRIVE is the default tab and the screen a stranger lands on; RECORD
+ * and SESSIONS are the research field-logging tools, kept intact.
+ *
+ * Onboarding takes the whole window on first run and can be reopened from Help.
+ */
 @Composable
 fun IdrApp(bus: IdrBus) {
+    val ctx = LocalContext.current
+    val prefs = remember { Prefs(ctx) }
     var tab by rememberSaveable { mutableIntStateOf(0) }
-    val (permsOk, request) = rememberPermissionGate()
+    var onboarding by remember { mutableStateOf(!prefs.onboardingDone) }
+    val (permsOk, request) = rememberPermissionGate(autoRequest = prefs.onboardingDone)
+
+    // Run the hardware self-check once per process, whether or not the user
+    // opens a screen that shows it, so Diagnostics has real numbers to quote.
+    LaunchedEffect(Unit) {
+        val quick = withContext(Dispatchers.Default) { DeviceProbe.inventory(ctx) }
+        bus.publishDevice(quick)
+        bus.publishLocation(LocationGate.status(ctx))
+    }
+
+    if (onboarding) {
+        OnboardingScreen(
+            bus = bus,
+            permsOk = permsOk,
+            requestPerms = request,
+            onFinish = {
+                prefs.onboardingDone = true
+                onboarding = false
+            },
+        )
+        return
+    }
 
     Scaffold(
         containerColor = Bg,
@@ -54,10 +93,10 @@ fun IdrApp(bus: IdrBus) {
                         icon = {
                             Icon(
                                 when (i) {
-                                    0 -> Icons.Filled.FiberManualRecord
-                                    1 -> Icons.Outlined.Folder
-                                    2 -> Icons.Outlined.Navigation
-                                    else -> Icons.Outlined.Info
+                                    0 -> Icons.Outlined.Navigation
+                                    1 -> Icons.Filled.FiberManualRecord
+                                    2 -> Icons.Outlined.Folder
+                                    else -> Icons.AutoMirrored.Outlined.HelpOutline
                                 },
                                 contentDescription = label,
                             )
@@ -85,10 +124,15 @@ fun IdrApp(bus: IdrBus) {
                 .padding(pad),
         ) {
             when (tab) {
-                0 -> RecordScreen(bus, permsOk, request)
-                1 -> SessionsScreen()
-                2 -> NavigateScreen(bus, permsOk, request)
-                else -> AboutScreen()
+                0 -> DriveScreen(
+                    bus = bus,
+                    permsOk = permsOk,
+                    requestPerms = request,
+                    onOpenHelp = { tab = 3 },
+                )
+                1 -> RecordScreen(bus, permsOk, request)
+                2 -> SessionsScreen()
+                else -> HelpScreen(bus = bus, onReplayOnboarding = { onboarding = true })
             }
         }
     }

@@ -16,10 +16,14 @@ import `in`.sih26168.idr.IdrBus
 import `in`.sih26168.idr.MainActivity
 import `in`.sih26168.idr.R
 import `in`.sih26168.idr.data.AppMode
+import `in`.sih26168.idr.data.LocationStatus
+import `in`.sih26168.idr.data.OriginSource
+import `in`.sih26168.idr.data.Prefs
 import `in`.sih26168.idr.data.RecordStats
 import `in`.sih26168.idr.nav.OnnxSpeedModel
 import `in`.sih26168.idr.nav.SimpleIns
 import `in`.sih26168.idr.sensor.GnssHub
+import `in`.sih26168.idr.sensor.LocationGate
 import `in`.sih26168.idr.sensor.SensorHub
 import java.io.File
 import java.text.SimpleDateFormat
@@ -29,6 +33,10 @@ import java.util.Locale
 /**
  * Foreground service: RECORD writes frozen CSV; NAVIGATE runs [SimpleIns].
  * Survives screen-off via FGS + partial wake lock.
+ *
+ * NAVIGATE does not require location. It arms on the IMU alone and runs in
+ * relative mode; GNSS, when and if it appears, upgrades the same session to an
+ * absolute one. Nothing here blocks on a fix.
  */
 class RecordService : LifecycleService() {
     private lateinit var bus: IdrBus
@@ -41,6 +49,7 @@ class RecordService : LifecycleService() {
     private var speedModel: OnnxSpeedModel? = null
     private var lastHudNs = 0L
     private var lastStatsNs = 0L
+    private var lastLocationCheckNs = 0L
     private var startedAt = 0L
     @Volatile private var lastFixLat = Double.NaN
     @Volatile private var lastFixLon = Double.NaN
@@ -87,8 +96,15 @@ class RecordService : LifecycleService() {
         startedAt = SystemClock.elapsedRealtimeNanos()
         lastHudNs = 0L
         lastStatsNs = 0L
+        lastLocationCheckNs = 0L
         lastFixLat = Double.NaN
         lastFixLon = Double.NaN
+
+        // Read the location gate up front so the first HUD frame already carries
+        // the true state instead of a hopeful default.
+        val gate = LocationGate.status(this)
+        bus.publishLocation(gate)
+        synchronized(insLock) { ins.setLocationStatus(gate) }
 
         if (mode == AppMode.RECORD) {
             val cfg = bus.config.value
@@ -107,20 +123,28 @@ class RecordService : LifecycleService() {
             hub.start()
             created.setSensorNotes(hub.sensorNotes())
             bus.publishSensors(hub.report)
-            gnss = GnssHub(this) { fix ->
-                lastFixLat = fix.lat
-                lastFixLon = fix.lon
-                drainMarks()
-                created.logGnss(fix)
-                publishRecord(fix.tNs, force = true)
-            }.also { it.start() }
+            gnss = GnssHub(
+                context = this,
+                onFix = { fix ->
+                    lastFixLat = fix.lat
+                    lastFixLon = fix.lon
+                    drainMarks()
+                    created.logGnss(fix)
+                    publishRecord(fix.tNs, force = true)
+                },
+                onStatus = { status -> bus.publishLocation(status) },
+            ).also { it.start() }
             publishRecord(startedAt, force = true)
         } else {
             // Load AVNet-tiny once per arm. A failure here is reported on the
-            // HUD, never papered over — the estimator just stays in FALLBACK.
+            // HUD, never papered over -- the estimator just stays in FALLBACK.
             val model = OnnxSpeedModel(this)
             speedModel = model
-            synchronized(insLock) { ins.setModelStatus(model.ready, model.error) }
+            val prefs = Prefs(this)
+            synchronized(insLock) {
+                ins.setModelStatus(model.ready, model.error)
+                applyMountLocked(prefs)
+            }
             val hub = SensorHub(this) { frame ->
                 // Inference runs on the IMU handler thread, off the main thread,
                 // and only fires on the ~10 Hz ticks where a window closes.
@@ -129,26 +153,66 @@ class RecordService : LifecycleService() {
                     if (est != null) ins.onModel(est, model.hz)
                     ins.setModelStatus(model.ready, model.error)
                     drainMarksLocked()
+                    drainOriginLocked()
                     ins.onImu(frame)
+                    maybeRecheckLocationLocked(frame.tNs)
                     maybePublishHudLocked(frame.tNs)
                 }
             }
             sensors = hub
             hub.start()
             bus.publishSensors(hub.report)
-            gnss = GnssHub(this) { fix ->
-                lastFixLat = fix.lat
-                lastFixLon = fix.lon
-                synchronized(insLock) {
-                    ins.onGnss(fix)
-                    maybePublishHudLocked(fix.tNs, force = true)
-                }
-            }.also { it.start() }
+            gnss = GnssHub(
+                context = this,
+                onFix = { fix ->
+                    lastFixLat = fix.lat
+                    lastFixLon = fix.lon
+                    synchronized(insLock) {
+                        ins.onGnss(fix)
+                        maybePublishHudLocked(fix.tNs, force = true)
+                    }
+                },
+                onStatus = { status ->
+                    bus.publishLocation(status)
+                    synchronized(insLock) { ins.setLocationStatus(status) }
+                },
+            ).also { it.start() }
             synchronized(insLock) {
                 bus.publishHud(ins.snapshot(SystemClock.elapsedRealtimeNanos(), AppMode.NAVIGATE))
             }
         }
         startInForeground()
+    }
+
+    /** Load the calibrated mount from prefs, or fall back to raw device axes. */
+    private fun applyMountLocked(prefs: Prefs) {
+        val rotation = prefs.mount
+        val note = prefs.mountNote
+        ins.setMount(
+            rotation,
+            if (rotation != null && note.isNotBlank()) {
+                "mount calibrated: $note"
+            } else if (rotation != null) {
+                "mount calibrated"
+            } else {
+                "raw device axes -- not calibrated"
+            },
+        )
+    }
+
+    /**
+     * The broadcast receiver in [GnssHub] covers the common toggles, but a
+     * permission revoked from Settings while we run produces no broadcast, so
+     * re-read the gate roughly once a second. Cheap: two boolean lookups.
+     */
+    private fun maybeRecheckLocationLocked(tNs: Long) {
+        if (lastLocationCheckNs != 0L && tNs - lastLocationCheckNs < 1_000_000_000L) return
+        lastLocationCheckNs = tNs
+        val blocking = LocationGate.blockingStatus(this)
+        val status = blocking ?: LocationStatus.WAITING_FOR_FIX
+        ins.setLocationStatus(status)
+        if (bus.location.value != status) bus.publishLocation(status)
+        gnss?.refreshStatus()
     }
 
     private fun drainMarks() {
@@ -166,9 +230,28 @@ class RecordService : LifecycleService() {
             bus.clearMarkRequested = false
             ins.clearMark()
         }
-        if (bus.markRequested && ins.seeded) {
+        if (bus.markRequested && ins.armed) {
             bus.markRequested = false
             bus.publishHud(ins.mark())
+        }
+    }
+
+    /** Apply a start point the user set by hand, or a request to drop it. */
+    private fun drainOriginLocked() {
+        if (bus.clearOriginRequested) {
+            bus.clearOriginRequested = false
+            ins.clearUserOrigin()
+        }
+        val lat = bus.pendingOriginLat
+        val lon = bus.pendingOriginLon
+        if (lat != null && lon != null) {
+            bus.pendingOriginLat = null
+            bus.pendingOriginLon = null
+            ins.setUserOrigin(lat, lon, bus.pendingOriginSource)
+        }
+        if (bus.mountDirty) {
+            bus.mountDirty = false
+            applyMountLocked(Prefs(this))
         }
     }
 
@@ -269,13 +352,18 @@ class RecordService : LifecycleService() {
             .setOnlyAlertOnce(true)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .build()
+        // FOREGROUND_SERVICE_TYPE_LOCATION requires the location permission to
+        // be held. Without it the start throws and kills the app, so fall back
+        // to the special-use type only and keep running sensors-only.
+        val canUseLocationType = LocationGate.hasPermission(this)
         if (Build.VERSION.SDK_INT >= 34) {
-            startForeground(
-                IdrApplication.NOTIF_ID,
-                notif,
+            val type = if (canUseLocationType) {
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION or
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE,
-            )
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+            } else {
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+            }
+            startForeground(IdrApplication.NOTIF_ID, notif, type)
         } else {
             startForeground(IdrApplication.NOTIF_ID, notif)
         }
@@ -306,6 +394,9 @@ class RecordService : LifecycleService() {
         fun mark(context: Context) {
             context.startService(Intent(context, RecordService::class.java).setAction(ACTION_MARK))
         }
+
+        /** Convenience for the Drive screen setting a start point by hand. */
+        fun originSourceForMap(): OriginSource = OriginSource.USER_MAP
     }
 }
 

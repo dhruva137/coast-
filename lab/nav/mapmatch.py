@@ -112,6 +112,11 @@ class MapGraph:
         self.edge_bearing_deg = graph["edge_bearing_deg"]
         self.adj_ptr = graph["adj_ptr"]
         self.adj_edge = graph["adj_edge"]
+        # Per-segment geometry. `mapfilter.RoadParticleFilter` needs these to
+        # turn road curvature into an expected yaw rate.
+        self.seg_ptr = graph["seg_ptr"]
+        self.seg_len_m = graph["seg_len_m"]
+        self.seg_bearing_deg = graph["seg_bearing_deg"]
         self.grid_ptr = graph["grid_ptr"]
         self.grid_edge = graph["grid_edge"]
         self.grid_lat0 = float(graph["grid_lat0"])

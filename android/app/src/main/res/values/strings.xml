@@ -2,5 +2,5 @@
     <string name="app_name">IDR · SIH26168</string>
     <string name="channel_record">IDR logging</string>
     <string name="notif_record">RECORD · raw IMU/GNSS to disk</string>
-    <string name="notif_navigate">NAVIGATE · live lean-aware INS</string>
+    <string name="notif_navigate">Navigating · tracking from motion sensors</string>
 </resources>

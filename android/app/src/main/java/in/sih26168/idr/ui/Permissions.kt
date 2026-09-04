@@ -1,6 +1,7 @@
 package `in`.sih26168.idr.ui
 
 import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -12,8 +13,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
-import android.content.pm.PackageManager
 
+/**
+ * Permissions the app asks for. None of them gate tracking: the estimator arms
+ * on the motion sensors, which need no runtime grant, and every refusal is
+ * handled as a named mode rather than an error.
+ */
 fun requiredPermissions(): Array<String> = buildList {
     add(Manifest.permission.ACCESS_FINE_LOCATION)
     add(Manifest.permission.ACCESS_COARSE_LOCATION)
@@ -21,8 +26,13 @@ fun requiredPermissions(): Array<String> = buildList {
     if (Build.VERSION.SDK_INT >= 33) add(Manifest.permission.POST_NOTIFICATIONS)
 }.toTypedArray()
 
+/**
+ * @param autoRequest fire the system dialog on first composition. False during
+ * onboarding, where the permission page explains what each grant is for before
+ * asking -- a cold prompt on launch is exactly what a first-time user refuses.
+ */
 @Composable
-fun rememberPermissionGate(): Pair<Boolean, () -> Unit> {
+fun rememberPermissionGate(autoRequest: Boolean = true): Pair<Boolean, () -> Unit> {
     val ctx = LocalContext.current
     fun granted(): Boolean = requiredPermissions().all {
         ContextCompat.checkSelfPermission(ctx, it) == PackageManager.PERMISSION_GRANTED
@@ -32,8 +42,8 @@ fun rememberPermissionGate(): Pair<Boolean, () -> Unit> {
         ActivityResultContracts.RequestMultiplePermissions(),
     ) { ok = granted() }
     val request: () -> Unit = { launcher.launch(requiredPermissions()) }
-    LaunchedEffect(Unit) {
-        if (!ok) request()
+    LaunchedEffect(autoRequest) {
+        if (autoRequest && !ok) request()
     }
     return ok to request
 }

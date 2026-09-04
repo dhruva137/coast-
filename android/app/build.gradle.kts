@@ -15,6 +15,16 @@ android {
         versionCode = 2
         versionName = "0.3.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // ONNX Runtime ships four ABIs, which made the debug APK 91 MB: 42 MB of
+        // that was x86/x86_64, used only by emulators. An emulator has no usable
+        // IMU, so this app cannot be meaningfully tested on one anyway. Shipping
+        // the two real-device ABIs halves the install a judge has to sideload at
+        // the venue. Override with -PallAbis=true if an x86 emulator is ever
+        // genuinely needed.
+        if (!project.hasProperty("allAbis")) {
+            ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
+        }
     }
 
     buildTypes {

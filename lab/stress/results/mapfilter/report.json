@@ -1,0 +1,112 @@
+{
+  "graph": "maps/graphs/iovnbd_midlands.graph.npz",
+  "graph_meta": {
+    "name": "iovnbd_midlands",
+    "source": "openstreetmap",
+    "built_from_drive_data": false,
+    "guarantee": "Built from OpenStreetMap only. No IO-VNBD trajectory, GNSS fix or CSV column was read while building this graph.",
+    "bbox_lat_min": 52.35,
+    "bbox_lon_min": -1.62,
+    "bbox_lat_max": 52.57,
+    "bbox_lon_max": -1.22,
+    "highway_classes": [
+      "motorway",
+      "trunk",
+      "primary",
+      "secondary",
+      "tertiary",
+      "unclassified",
+      "residential",
+      "living_street",
+      "motorway_link",
+      "trunk_link",
+      "primary_link",
+      "secondary_link",
+      "tertiary_link"
+    ],
+    "n_nodes": 139078,
+    "n_edges": 35631,
+    "n_segments": 143360,
+    "total_edge_length_km": 3271.336340182188,
+    "median_edge_len_m": 51.13852036848023,
+    "oneway_frac": 0.1497291684207572,
+    "grid_deg": 0.002,
+    "grid_n_lat": 140,
+    "grid_n_lon": 244,
+    "tile_deg": 0.05,
+    "built_utc": "2026-09-04T12:01:43Z",
+    "attribution": "(c) OpenStreetMap contributors, ODbL 1.0",
+    "provenance": {
+      "region": "iovnbd_midlands",
+      "region_note": "UK Midlands: Coventry, east Birmingham, Nuneaton, Rugby.",
+      "bbox": [
+        52.35,
+        -1.62,
+        52.57,
+        -1.22
+      ],
+      "n_sources": 41,
+      "sources": [
+        "overpass_json:tile_+01047_-00033.json",
+        "overpass_json:tile_+01047_-00032.json",
+        "overpass_json:tile_+01047_-00030.json",
+        "overpass_json:tile_+01047_-00029.json",
+        "overpass_json:tile_+01047_-00028.json",
+        "overpass_json:tile_+01047_-00027.json",
+        "overpass_json:tile_+01047_-00026.json",
+        "overpass_json:tile_+01047_-00025.json",
+        "overpass_json:tile_+01048_-00033.json",
+        "overpass_json:tile_+01048_-00032.json",
+        "overpass_json:tile_+01048_-00031.json",
+        "overpass_json:tile_+01048_-00030.json",
+        "overpass_json:tile_+01048_-00029.json",
+        "overpass_json:tile_+01048_-00028.json",
+        "overpass_json:tile_+01048_-00027.json",
+        "overpass_json:tile_+01048_-00026.json",
+        "overpass_json:tile_+01048_-00025.json",
+        "overpass_json:tile_+01049_-00033.json",
+        "overpass_json:tile_+01049_-00032.json",
+        "overpass_json:tile_+01049_-00031.json",
+        "overpass_json:tile_+01049_-00030.json",
+        "overpass_json:tile_+01049_-00029.json",
+        "overpass_json:tile_+01049_-00028.json",
+        "overpass_json:tile_+01049_-00027.json",
+        "overpass_json:tile_+01049_-00026.json",
+        "overpass_json:tile_+01049_-00025.json",
+        "overpass_json:tile_+01050_-00033.json",
+        "overpass_json:tile_+01050_-00031.json",
+        "overpass_json:tile_+01050_-00030.json",
+        "overpass_json:tile_+01050_-00029.json",
+        "overpass_json:tile_+01050_-00028.json",
+        "overpass_json:tile_+01050_-00027.json",
+        "overpass_json:tile_+01050_-00026.json",
+        "overpass_json:tile_+01050_-00025.json",
+        "overpass_json:tile_+01051_-00032.json",
+        "overpass_json:tile_+01051_-00031.json",
+        "overpass_json:tile_+01051_-00030.json",
+        "overpass_json:tile_+01051_-00029.json",
+        "overpass_json:tile_+01051_-00027.json",
+        "overpass_json:tile_+01051_-00026.json",
+        "overpass_json:tile_+01051_-00025.json"
+      ],
+      "sources_truncated": false,
+      "offline": false,
+      "overpass_endpoints": [
+        "https://overpass-api.de/api/interpreter",
+        "https://overpass.kumi.systems/api/interpreter"
+      ]
+    }
+  },
+  "particles": 300,
+  "yaw_sigma": 0.3,
+  "deny_s": 60.0,
+  "scenarios": {
+    "junctions": {
+      "n": 0
+    },
+    "corridor": {
+      "n": 0
+    }
+  },
+  "files": []
+}
