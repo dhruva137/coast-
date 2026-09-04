@@ -38,8 +38,13 @@ def build_onepager(dest: Path | None = None) -> Path:
     figures.mkdir(parents=True, exist_ok=True)
     out = Path(dest) if dest is not None else figures / "proposal_onepager.png"
 
-    path, source = resolve_csv()
-    result = infer(load_trace(path))
+    # Prefer the robust runner (tries real CSV, falls back to fixture).
+    from iovnbd_plots import run as run_iovnbd_plots
+
+    pack = run_iovnbd_plots(figures)
+    path = Path(pack["csv_path"])
+    source = str(pack["source"])
+    result = pack
 
     fig, (ax_traj, ax_tab) = plt.subplots(
         1,

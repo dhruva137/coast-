@@ -1,0 +1,484 @@
+{
+  "rows": [
+    {
+      "file": "S-S1.csv",
+      "method": "car_bias",
+      "final_error_m": 185.51,
+      "drift_pct": 127.08,
+      "m_per_km": 1270.77,
+      "distance_m": 145.98,
+      "speed0_mps": 2.98,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-S1.csv",
+      "method": "idr_bias",
+      "final_error_m": 185.28,
+      "drift_pct": 126.92,
+      "m_per_km": 1269.22,
+      "distance_m": 145.98,
+      "speed0_mps": 2.98,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-S1.csv",
+      "method": "inekf_bias",
+      "final_error_m": 343.03,
+      "drift_pct": 234.98,
+      "m_per_km": 2349.83,
+      "distance_m": 145.98,
+      "speed0_mps": 2.98,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-S1.csv",
+      "method": "avnet_speed",
+      "final_error_m": 208.66,
+      "drift_pct": 142.94,
+      "m_per_km": 1429.36,
+      "distance_m": 145.98,
+      "speed0_mps": 2.98,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-S1.csv",
+      "method": "avnet_full",
+      "final_error_m": 246.28,
+      "drift_pct": 168.71,
+      "m_per_km": 1687.07,
+      "distance_m": 145.98,
+      "speed0_mps": 2.98,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-S1.csv",
+      "method": "car_bias_map",
+      "final_error_m": 197.58,
+      "drift_pct": 135.35,
+      "m_per_km": 1353.48,
+      "distance_m": 145.98,
+      "speed0_mps": 2.98,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-S1.csv",
+      "method": "idr_bias_map",
+      "final_error_m": 197.58,
+      "drift_pct": 135.35,
+      "m_per_km": 1353.48,
+      "distance_m": 145.98,
+      "speed0_mps": 2.98,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-S1.csv",
+      "method": "inekf_bias_map",
+      "final_error_m": 197.58,
+      "drift_pct": 135.35,
+      "m_per_km": 1353.48,
+      "distance_m": 145.98,
+      "speed0_mps": 2.98,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-S1.csv",
+      "method": "avnet_speed_map",
+      "final_error_m": 234.82,
+      "drift_pct": 160.86,
+      "m_per_km": 1608.56,
+      "distance_m": 145.98,
+      "speed0_mps": 2.98,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-S1.csv",
+      "method": "avnet_full_map",
+      "final_error_m": 234.82,
+      "drift_pct": 160.85,
+      "m_per_km": 1608.54,
+      "distance_m": 145.98,
+      "speed0_mps": 2.98,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-S1.csv",
+      "method": "hold_arclength",
+      "final_error_m": 197.54,
+      "drift_pct": 135.32,
+      "m_per_km": 1353.19,
+      "distance_m": 145.98,
+      "speed0_mps": 2.98,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-S1.csv",
+      "method": "avnet_arclength",
+      "final_error_m": 234.74,
+      "drift_pct": 160.8,
+      "m_per_km": 1607.99,
+      "distance_m": 145.98,
+      "speed0_mps": 2.98,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-S2.csv",
+      "method": "car_bias",
+      "final_error_m": 336.82,
+      "drift_pct": 222.99,
+      "m_per_km": 2229.93,
+      "distance_m": 151.05,
+      "speed0_mps": 2.91,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-S2.csv",
+      "method": "idr_bias",
+      "final_error_m": 338.03,
+      "drift_pct": 223.79,
+      "m_per_km": 2237.95,
+      "distance_m": 151.05,
+      "speed0_mps": 2.91,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-S2.csv",
+      "method": "inekf_bias",
+      "final_error_m": 330.94,
+      "drift_pct": 219.1,
+      "m_per_km": 2191.0,
+      "distance_m": 151.05,
+      "speed0_mps": 2.91,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-S2.csv",
+      "method": "avnet_speed",
+      "final_error_m": 365.39,
+      "drift_pct": 241.91,
+      "m_per_km": 2419.06,
+      "distance_m": 151.05,
+      "speed0_mps": 2.91,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-S2.csv",
+      "method": "avnet_full",
+      "final_error_m": 374.25,
+      "drift_pct": 247.77,
+      "m_per_km": 2477.75,
+      "distance_m": 151.05,
+      "speed0_mps": 2.91,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-S2.csv",
+      "method": "car_bias_map",
+      "final_error_m": 326.6,
+      "drift_pct": 216.23,
+      "m_per_km": 2162.27,
+      "distance_m": 151.05,
+      "speed0_mps": 2.91,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-S2.csv",
+      "method": "idr_bias_map",
+      "final_error_m": 326.6,
+      "drift_pct": 216.23,
+      "m_per_km": 2162.27,
+      "distance_m": 151.05,
+      "speed0_mps": 2.91,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-S2.csv",
+      "method": "inekf_bias_map",
+      "final_error_m": 326.6,
+      "drift_pct": 216.23,
+      "m_per_km": 2162.27,
+      "distance_m": 151.05,
+      "speed0_mps": 2.91,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-S2.csv",
+      "method": "avnet_speed_map",
+      "final_error_m": 358.44,
+      "drift_pct": 237.3,
+      "m_per_km": 2373.05,
+      "distance_m": 151.05,
+      "speed0_mps": 2.91,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-S2.csv",
+      "method": "avnet_full_map",
+      "final_error_m": 358.44,
+      "drift_pct": 237.3,
+      "m_per_km": 2373.04,
+      "distance_m": 151.05,
+      "speed0_mps": 2.91,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-S2.csv",
+      "method": "hold_arclength",
+      "final_error_m": 326.59,
+      "drift_pct": 216.22,
+      "m_per_km": 2162.21,
+      "distance_m": 151.05,
+      "speed0_mps": 2.91,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-S2.csv",
+      "method": "avnet_arclength",
+      "final_error_m": 358.43,
+      "drift_pct": 237.3,
+      "m_per_km": 2372.99,
+      "distance_m": 151.05,
+      "speed0_mps": 2.91,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-S4.csv",
+      "method": "car_bias",
+      "final_error_m": 202.38,
+      "drift_pct": 149.37,
+      "m_per_km": 1493.73,
+      "distance_m": 135.49,
+      "speed0_mps": 2.57,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-S4.csv",
+      "method": "idr_bias",
+      "final_error_m": 201.4,
+      "drift_pct": 148.65,
+      "m_per_km": 1486.51,
+      "distance_m": 135.49,
+      "speed0_mps": 2.57,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-S4.csv",
+      "method": "inekf_bias",
+      "final_error_m": 335.68,
+      "drift_pct": 247.76,
+      "m_per_km": 2477.61,
+      "distance_m": 135.49,
+      "speed0_mps": 2.57,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-S4.csv",
+      "method": "avnet_speed",
+      "final_error_m": 199.58,
+      "drift_pct": 147.31,
+      "m_per_km": 1473.06,
+      "distance_m": 135.49,
+      "speed0_mps": 2.57,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-S4.csv",
+      "method": "avnet_full",
+      "final_error_m": 174.09,
+      "drift_pct": 128.49,
+      "m_per_km": 1284.94,
+      "distance_m": 135.49,
+      "speed0_mps": 2.57,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-S4.csv",
+      "method": "car_bias_map",
+      "final_error_m": 197.49,
+      "drift_pct": 145.76,
+      "m_per_km": 1457.65,
+      "distance_m": 135.49,
+      "speed0_mps": 2.57,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-S4.csv",
+      "method": "idr_bias_map",
+      "final_error_m": 197.49,
+      "drift_pct": 145.76,
+      "m_per_km": 1457.64,
+      "distance_m": 135.49,
+      "speed0_mps": 2.57,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-S4.csv",
+      "method": "inekf_bias_map",
+      "final_error_m": 197.49,
+      "drift_pct": 145.76,
+      "m_per_km": 1457.65,
+      "distance_m": 135.49,
+      "speed0_mps": 2.57,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-S4.csv",
+      "method": "avnet_speed_map",
+      "final_error_m": 194.64,
+      "drift_pct": 143.66,
+      "m_per_km": 1436.58,
+      "distance_m": 135.49,
+      "speed0_mps": 2.57,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-S4.csv",
+      "method": "avnet_full_map",
+      "final_error_m": 194.64,
+      "drift_pct": 143.66,
+      "m_per_km": 1436.57,
+      "distance_m": 135.49,
+      "speed0_mps": 2.57,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-S4.csv",
+      "method": "hold_arclength",
+      "final_error_m": 197.49,
+      "drift_pct": 145.76,
+      "m_per_km": 1457.62,
+      "distance_m": 135.49,
+      "speed0_mps": 2.57,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-S4.csv",
+      "method": "avnet_arclength",
+      "final_error_m": 194.64,
+      "drift_pct": 143.66,
+      "m_per_km": 1436.57,
+      "distance_m": 135.49,
+      "speed0_mps": 2.57,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-M.csv",
+      "method": "car_bias",
+      "final_error_m": 497.37,
+      "drift_pct": 972.07,
+      "m_per_km": 9720.68,
+      "distance_m": 51.17,
+      "speed0_mps": 0.0,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-M.csv",
+      "method": "idr_bias",
+      "final_error_m": 497.37,
+      "drift_pct": 972.07,
+      "m_per_km": 9720.68,
+      "distance_m": 51.17,
+      "speed0_mps": 0.0,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-M.csv",
+      "method": "inekf_bias",
+      "final_error_m": 990.9,
+      "drift_pct": 1936.64,
+      "m_per_km": 19366.36,
+      "distance_m": 51.17,
+      "speed0_mps": 0.0,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-M.csv",
+      "method": "avnet_speed",
+      "final_error_m": 528.67,
+      "drift_pct": 1033.24,
+      "m_per_km": 10332.43,
+      "distance_m": 51.17,
+      "speed0_mps": 0.0,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-M.csv",
+      "method": "avnet_full",
+      "final_error_m": 522.28,
+      "drift_pct": 1020.75,
+      "m_per_km": 10207.54,
+      "distance_m": 51.17,
+      "speed0_mps": 0.0,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-M.csv",
+      "method": "car_bias_map",
+      "final_error_m": 497.37,
+      "drift_pct": 972.07,
+      "m_per_km": 9720.68,
+      "distance_m": 51.17,
+      "speed0_mps": 0.0,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-M.csv",
+      "method": "idr_bias_map",
+      "final_error_m": 497.37,
+      "drift_pct": 972.07,
+      "m_per_km": 9720.68,
+      "distance_m": 51.17,
+      "speed0_mps": 0.0,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-M.csv",
+      "method": "inekf_bias_map",
+      "final_error_m": 497.37,
+      "drift_pct": 972.07,
+      "m_per_km": 9720.68,
+      "distance_m": 51.17,
+      "speed0_mps": 0.0,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-M.csv",
+      "method": "avnet_speed_map",
+      "final_error_m": 562.64,
+      "drift_pct": 1099.63,
+      "m_per_km": 10996.3,
+      "distance_m": 51.17,
+      "speed0_mps": 0.0,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-M.csv",
+      "method": "avnet_full_map",
+      "final_error_m": 562.64,
+      "drift_pct": 1099.63,
+      "m_per_km": 10996.3,
+      "distance_m": 51.17,
+      "speed0_mps": 0.0,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-M.csv",
+      "method": "hold_arclength",
+      "final_error_m": 497.37,
+      "drift_pct": 972.07,
+      "m_per_km": 9720.68,
+      "distance_m": 51.17,
+      "speed0_mps": 0.0,
+      "verdict": "FAIL"
+    },
+    {
+      "file": "S-M.csv",
+      "method": "avnet_arclength",
+      "final_error_m": 547.72,
+      "drift_pct": 1070.48,
+      "m_per_km": 10704.76,
+      "distance_m": 51.17,
+      "speed0_mps": 0.0,
+      "verdict": "FAIL"
+    }
+  ]
+}

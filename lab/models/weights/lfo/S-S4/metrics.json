@@ -1,0 +1,134 @@
+{
+  "rmse_speed_mps": 1.1629167795181274,
+  "rmse_yaw_rate_rps": 0.0009352637571282685,
+  "rmse_yaw_rate_dps": 0.053586666014998244,
+  "rmse_roll_res_rad": 0.01193519588559866,
+  "rmse_pitch_res_rad": 0.0068775261752307415,
+  "n_params": 96086,
+  "epochs": 12,
+  "device": "cuda",
+  "window_samples": 20,
+  "hz": 10.0,
+  "window_s": 2.0,
+  "cutoff_hz": 2.0,
+  "train_seconds": 19.211241499999232,
+  "infer_ms": 3.3810387500125216,
+  "n_train": 10200,
+  "n_val": 1800,
+  "seed": 7,
+  "source": "io-vnbd",
+  "exclude_names": [
+    "S-S4.csv"
+  ],
+  "best_score": 1.181672112623377,
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 1.384627220770892,
+      "rmse_speed_mps": 1.475816011428833,
+      "rmse_yaw_rate_rps": 0.015541737899184227,
+      "rmse_yaw_rate_dps": 0.8904759879217747,
+      "rmse_roll_res_rad": 0.04050678387284279,
+      "rmse_pitch_res_rad": 0.01883625239133835
+    },
+    {
+      "epoch": 2,
+      "train_loss": -1.9088401325076234,
+      "rmse_speed_mps": 1.3601490259170532,
+      "rmse_yaw_rate_rps": 0.017256779596209526,
+      "rmse_yaw_rate_dps": 0.9887406388502789,
+      "rmse_roll_res_rad": 0.07094954699277878,
+      "rmse_pitch_res_rad": 0.023922279477119446
+    },
+    {
+      "epoch": 3,
+      "train_loss": -2.491635913287892,
+      "rmse_speed_mps": 1.3156465291976929,
+      "rmse_yaw_rate_rps": 0.01251264475286007,
+      "rmse_yaw_rate_dps": 0.716921734885397,
+      "rmse_roll_res_rad": 0.03506339713931084,
+      "rmse_pitch_res_rad": 0.027315424755215645
+    },
+    {
+      "epoch": 4,
+      "train_loss": -2.922530035318113,
+      "rmse_speed_mps": 1.1944975852966309,
+      "rmse_yaw_rate_rps": 0.015044936910271645,
+      "rmse_yaw_rate_dps": 0.8620113879991581,
+      "rmse_roll_res_rad": 0.027929682284593582,
+      "rmse_pitch_res_rad": 0.01694962941110134
+    },
+    {
+      "epoch": 5,
+      "train_loss": -3.0055063655329683,
+      "rmse_speed_mps": 1.1922905445098877,
+      "rmse_yaw_rate_rps": 0.008442713879048824,
+      "rmse_yaw_rate_dps": 0.48373187290602143,
+      "rmse_roll_res_rad": 0.020761609077453613,
+      "rmse_pitch_res_rad": 0.023830950260162354
+    },
+    {
+      "epoch": 6,
+      "train_loss": -3.040880983577055,
+      "rmse_speed_mps": 1.1912922859191895,
+      "rmse_yaw_rate_rps": 0.008798857219517231,
+      "rmse_yaw_rate_dps": 0.5041373832165519,
+      "rmse_roll_res_rad": 0.02268877439200878,
+      "rmse_pitch_res_rad": 0.010411703027784824
+    },
+    {
+      "epoch": 7,
+      "train_loss": -3.1670333172293272,
+      "rmse_speed_mps": 1.1698464155197144,
+      "rmse_yaw_rate_rps": 0.004645234905183315,
+      "rmse_yaw_rate_dps": 0.2661523549138571,
+      "rmse_roll_res_rad": 0.016776619479060173,
+      "rmse_pitch_res_rad": 0.010829598642885685
+    },
+    {
+      "epoch": 8,
+      "train_loss": -3.228917329825607,
+      "rmse_speed_mps": 1.168697714805603,
+      "rmse_yaw_rate_rps": 0.005019825417548418,
+      "rmse_yaw_rate_dps": 0.28761481031802055,
+      "rmse_roll_res_rad": 0.013862241059541702,
+      "rmse_pitch_res_rad": 0.007738280110061169
+    },
+    {
+      "epoch": 9,
+      "train_loss": -3.252230203291949,
+      "rmse_speed_mps": 1.171380639076233,
+      "rmse_yaw_rate_rps": 0.003795175813138485,
+      "rmse_yaw_rate_dps": 0.21744755660296555,
+      "rmse_roll_res_rad": 0.011891836300492287,
+      "rmse_pitch_res_rad": 0.006959008052945137
+    },
+    {
+      "epoch": 10,
+      "train_loss": -3.2901615298028086,
+      "rmse_speed_mps": 1.1676400899887085,
+      "rmse_yaw_rate_rps": 0.0014288169331848621,
+      "rmse_yaw_rate_dps": 0.08186517996831834,
+      "rmse_roll_res_rad": 0.011205298826098442,
+      "rmse_pitch_res_rad": 0.0071299378760159016
+    },
+    {
+      "epoch": 11,
+      "train_loss": -3.3070847283157647,
+      "rmse_speed_mps": 1.1629167795181274,
+      "rmse_yaw_rate_rps": 0.0009352637571282685,
+      "rmse_yaw_rate_dps": 0.053586666014998244,
+      "rmse_roll_res_rad": 0.01193519588559866,
+      "rmse_pitch_res_rad": 0.0068775261752307415
+    },
+    {
+      "epoch": 12,
+      "train_loss": -3.3147272440966438,
+      "rmse_speed_mps": 1.1651268005371094,
+      "rmse_yaw_rate_rps": 0.000991703593172133,
+      "rmse_yaw_rate_dps": 0.05682043041672202,
+      "rmse_roll_res_rad": 0.010404025204479694,
+      "rmse_pitch_res_rad": 0.006794837769120932
+    }
+  ]
+}

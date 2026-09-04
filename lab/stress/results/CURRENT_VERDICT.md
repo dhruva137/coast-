@@ -8,6 +8,8 @@ Canonical evidence status after the corrected IO-VNBD mapping:
 | Alignment gate | **GREEN** | `PASS_ALIGNMENT`; S-S1 correlation 0.992 bearing / 0.930 displacement; S-S2 0.983 / 0.956 | Real IO-VNBD car phone IMU against true GPS bearing and lat/lon course changes; `results/alignment/alignment_report.json` |
 | Real car open-loop 60 s | **RED** | Basic car-style mid/high-speed: 0/8 competitive passes; final error 170.3–1154.1 m, drift 136.1–253.9%. Focused corrected replay: 0 ISRO passes. | Real IO-VNBD held-out GNSS replay; `results/report.json` and focused alignment rerun |
 | Real car map-aided 60 s | **YELLOW** | 3 passing methods, but only 1 independent low-speed scenario: S-M early, v0 1.85 m/s, 15.52 m final, 14.33% drift. Focused corrected replay has 0 ISRO passes. | Real car replay with in-dataset known-route geometry built from the full GNSS polyline, including the evaluated interval; not independent OSM/fleet-map proof |
+| AVNet closed-loop mid 60 s | **RED** | Wired maximize weights into ISRO scoring; **0 PASS_ISRO**. Leave-file-out protocol also **0 PASS_ISRO**. S-S1 LFO `avnet_speed` 182.9 m vs `car_bias` 185.5 m (tiny win, still FAIL). | `results/avnet_closed_loop/`, `results/leave_file_out/` |
+| Known-route arclength | **RED** | `hold_arclength` / `avnet_arclength` still FAIL mid-route — along-track speed error dominates even with cross-track killed | Product prior; label separately from free-DR |
 | Injected-lean claim | **GREEN** | `PASS_CLAIM`: car 10.56% drift vs lean-aware 3.84% | `INJECTED_LEAN`: synthetic 26° coordinated-lean kinematics plus corrected IO-VNBD channel samples; not a field result |
 | Real two-wheeler field proof | **RED** | No qualifying bicycle/scooter field logs or loop-closure acceptance battery | IO-VNBD files used here are cars; injected evidence cannot close this gate |
 
@@ -29,3 +31,5 @@ Generated evidence:
 - `lab/stress/results/hardened_summary.md`
 - `lab/stress/results/product_gate_output.md`
 - `lab/stress/results/alignment/alignment_report.json`
+- `lab/stress/results/avnet_closed_loop/summary.md`
+- `lab/stress/results/leave_file_out/summary.md`

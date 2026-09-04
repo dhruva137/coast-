@@ -23,10 +23,10 @@ from pathlib import Path
 import numpy as np
 
 try:
-    from .log_schema import IMU_HZ_IO_VNBD, WINDOW_SAMPLES
+    from .log_schema import IMU_HZ_IO_VNBD, WINDOW_SAMPLES, WINDOW_SECONDS
     from .synthetic_tw import WindowBatch, generate_windows
 except ImportError:
-    from log_schema import IMU_HZ_IO_VNBD, WINDOW_SAMPLES  # type: ignore
+    from log_schema import IMU_HZ_IO_VNBD, WINDOW_SAMPLES, WINDOW_SECONDS  # type: ignore
     from synthetic_tw import WindowBatch, generate_windows  # type: ignore
 
 LFS_MIN_BYTES = 1_000_000
@@ -45,11 +45,39 @@ _ALIASES: dict[str, tuple[str, ...]] = {
     "ax": ("accelerometer x", "accel_x", "acc_x", "accx", "ax", "accx[m/s2]", "longitudinal acceleration"),
     "ay": ("accelerometer y", "accel_y", "acc_y", "accy", "ay", "accy[m/s2]", "lateral acceleration"),
     "az": ("accelerometer z", "accel_z", "acc_z", "accz", "az", "accz[m/s2]"),
-    "gx": ("gyroscope (roll)", "gyro_x", "gyrox", "gx", "roll rate", "rollrate", "wx"),
-    "gy": ("gyroscope (pitch)", "gyro_y", "gyroy", "gy", "pitch rate", "pitchrate", "wy"),
-    "gz": ("gyroscope (yaw)", "gyro_z", "gyroz", "gz", "yaw rate", "yawrate", "yaw_rate", "wz"),
+    "gx": (
+        "gyroscope roll",
+        "gyroscope (roll)",
+        "gyro_x",
+        "gyrox",
+        "gx",
+        "roll rate",
+        "rollrate",
+        "wx",
+    ),
+    "gy": (
+        "gyroscope pitch",
+        "gyroscope (pitch)",
+        "gyro_y",
+        "gyroy",
+        "gy",
+        "pitch rate",
+        "pitchrate",
+        "wy",
+    ),
+    "gz": (
+        "gyroscope yaw",
+        "gyroscope (yaw)",
+        "gyro_z",
+        "gyroz",
+        "gz",
+        "yaw rate",
+        "yawrate",
+        "yaw_rate",
+        "wz",
+    ),
     "speed": ("gps speed", "speed", "velocity", "vf", "gps_speed", "veh_speed"),
-    "bearing": ("gps orientation", "bearing", "heading", "course", "gps heading", "orientation (yaw)"),
+    "bearing": ("gps orientation", "bearing", "heading", "course", "gps heading", "orientation yaw"),
     "lat": ("gps latitude", "latitude", "lat"),
     "lon": ("gps longitude", "longitude", "lon", "lng"),
     "t": ("time since start", "timestamp", "time", "t", "t_ns", "gps time", "millis"),
@@ -107,12 +135,14 @@ def _map_header(header: list[str]) -> dict[str, int]:
     norms = [_norm(h) for h in header]
     found: dict[str, int] = {}
     for key, aliases in _ALIASES.items():
+        alias_norms = {_norm(a) for a in aliases}
+        alias_compact = {a.replace(" ", "") for a in alias_norms}
         for i, n in enumerate(norms):
-            if n in aliases or n.replace(" ", "") in {a.replace(" ", "") for a in aliases}:
+            n_compact = n.replace(" ", "")
+            if n in alias_norms or n_compact in alias_compact:
                 found[key] = i
                 break
-            # substring fallback for "Accelerometer X (m/s^2)"
-            if any(a in n for a in aliases if len(a) > 3):
+            if any(a in n for a in alias_norms if len(a) > 3):
                 found[key] = i
                 break
     return found
@@ -210,25 +240,36 @@ def _window_stream(
     )
 
 
-def discover_csvs(raw_dir: Path) -> list[Path]:
+def discover_csvs(raw_dir: Path, *, smartphone_only: bool = True) -> list[Path]:
     if not raw_dir.is_dir():
         return []
     files = sorted(p for p in raw_dir.rglob("*.csv") if p.is_file())
+    if smartphone_only:
+        s_files = [p for p in files if p.name.upper().startswith("S-")]
+        if s_files:
+            return s_files
     return files
 
 
-def load_io_vnbd(raw_dir: Path | None = None) -> WindowBatch:
-    """Parse every real CSV under the raw dir into 20-sample windows."""
+def load_io_vnbd(
+    raw_dir: Path | None = None,
+    *,
+    exclude_names: set[str] | frozenset[str] | None = None,
+) -> WindowBatch:
+    """Parse every real CSV under the raw dir into 20-sample windows.
+
+    ``exclude_names``: basename set (e.g. ``{"S-S1.csv"}``) for leave-file-out.
+    """
     raw_dir = Path(raw_dir) if raw_dir is not None else default_raw_dir()
+    exclude = {n.lower() for n in (exclude_names or ())}
     csvs = discover_csvs(raw_dir)
     if not csvs:
         raise FileNotFoundError(f"no CSV files under {raw_dir}")
-    pointers = [p for p in csvs if _is_lfs_pointer(p)]
-    if pointers:
-        raise IoVnbdLfsError(f"{pointers[0]} {LFS_HINT}")
     usable = []
     tiny = []
     for p in csvs:
+        if p.name.lower() in exclude:
+            continue
         try:
             verify_csv_not_lfs_stub(p)
             usable.append(p)
@@ -237,12 +278,24 @@ def load_io_vnbd(raw_dir: Path | None = None) -> WindowBatch:
     if not usable:
         sample = tiny[0] if tiny else csvs[0]
         raise IoVnbdLfsError(f"{sample} {LFS_HINT}")
+    if tiny:
+        print(f"io_vnbd: skipping {len(tiny)} LFS stub/tiny CSV(s); using {len(usable)}")
+    if exclude:
+        print(f"io_vnbd: leave-file-out exclude={sorted(exclude)} train_files={len(usable)}")
     batches: list[WindowBatch] = []
+    errors: list[str] = []
     for p in usable:
-        parsed = parse_generic_csv(p)
-        batches.append(
-            _window_stream(parsed["imu"], parsed["speed"], parsed["bearing"], parsed["t"])
-        )
+        try:
+            parsed = parse_generic_csv(p)
+            batches.append(
+                _window_stream(parsed["imu"], parsed["speed"], parsed["bearing"], parsed["t"])
+            )
+        except Exception as exc:  # noqa: BLE001 — skip unmappable tables
+            errors.append(f"{p.name}: {exc}")
+    if not batches:
+        raise ValueError("no IO-VNBD tables produced windows:\n" + "\n".join(errors[:8]))
+    if errors:
+        print(f"io_vnbd: skipped {len(errors)} CSV(s); used {len(batches)}")
     imu = np.concatenate([b.imu for b in batches], axis=0)
     return WindowBatch(
         imu=imu,
@@ -261,6 +314,7 @@ def load_windows(
     fallback_synthetic: bool = True,
     n_windows: int = 4096,
     seed: int = 7,
+    exclude_names: set[str] | frozenset[str] | None = None,
 ) -> tuple[WindowBatch, str]:
     """Load IO-VNBD windows, or synthetic if the dataset directory is absent.
 
@@ -277,7 +331,7 @@ def load_windows(
                 f"    git lfs install && git lfs pull"
             )
         return generate_windows(n_windows=n_windows, seed=seed), "synthetic"
-    return load_io_vnbd(raw_dir), "io-vnbd"
+    return load_io_vnbd(raw_dir, exclude_names=exclude_names), "io-vnbd"
 
 
 if __name__ == "__main__":

@@ -29,7 +29,9 @@ for _p in (_STRESS, _LAB / "eval", _LAB / "baselines"):
 from load_iovnbd import load_smartphone_csv, verify_csv_not_lfs_stub  # noqa: E402
 from map_aid import (  # noqa: E402
     build_map_from_gnss,
+    dead_reckon_arclength,
     dead_reckon_map_aided,
+    project_point,
     project_trajectory,
 )
 from metrics import ate, drift_pct, lla_to_enu, path_length, position_errors  # noqa: E402
@@ -44,6 +46,7 @@ from outage_replay import (  # noqa: E402
     lean_aware_yaw_rates,
     score_outage,
 )
+from avnet_closed_loop import build_train_layout_imu, dead_reckon_avnet  # noqa: E402
 
 try:
     from car_style import wrap_pi
@@ -93,8 +96,9 @@ def run_hardened_outage(
     start_idx: int | None = None,
     t0_s: float = 30.0,
     seed: int = SEED,
+    avnet_weights: str | Path | None = None,
 ) -> dict[str, Any]:
-    """Bias-calibrated DR + map-aided variants. Returns scores for 5 methods."""
+    """Bias-calibrated DR + map-aided variants. Returns scores for methods."""
     _ = seed
     t = np.asarray(data["t_s"], dtype=np.float64)
     n = t.size
@@ -152,10 +156,44 @@ def run_hardened_outage(
         x0=x0, y0=y0, yaw0=yaw0, speed0=speed0,
     )
 
+    # Closed-loop AVNet prior (trained weights). IMU layout = training raw axes.
+    roll_dr = np.concatenate([[data["gyro_roll_raw"][i0 - 1]], data["gyro_roll_raw"][i0:i1]])
+    pitch_dr = np.concatenate([[data["gyro_pitch_raw"][i0 - 1]], data["gyro_pitch_raw"][i0:i1]])
+    yaw_raw_dr = np.concatenate([[data["gyro_yaw_raw"][i0 - 1]], data["gyro_yaw_raw"][i0:i1]])
+    imu_tr = build_train_layout_imu(ax_dr, ay_dr, az_dr, roll_dr, pitch_dr, yaw_raw_dr)
+    av_speed = dead_reckon_avnet(
+        t_dr,
+        imu_tr,
+        gz_dr,
+        x0=x0,
+        y0=y0,
+        yaw0=yaw0,
+        speed0=speed0,
+        use_net_yaw=False,
+        weights=avnet_weights,
+    )
+    av_full = dead_reckon_avnet(
+        t_dr,
+        imu_tr,
+        gz_dr,
+        x0=x0,
+        y0=y0,
+        yaw0=yaw0,
+        speed0=speed0,
+        use_net_yaw=True,
+        weights=avnet_weights,
+    )
+
     est_raw = {
         "car_bias": np.column_stack([xc[1:], yc[1:]]),
         "idr_bias": np.column_stack([xl[1:], yl[1:]]),
         "inekf_bias": np.column_stack([xi[1:], yi[1:]]),
+        "avnet_speed": np.column_stack([av_speed["x"][1:], av_speed["y"][1:]]),
+        "avnet_full": np.column_stack([av_full["x"][1:], av_full["y"][1:]]),
+    }
+    avnet_meta = {
+        "avnet_speed_torch_frac": av_speed["backend_torch_frac"],
+        "avnet_full_torch_frac": av_full["backend_torch_frac"],
     }
 
     # Map modes:
@@ -196,6 +234,8 @@ def run_hardened_outage(
         "car_bias": gz_dr,
         "idr_bias": lean_aware_yaw_rates(gy_dr, gz_dr, spd_dr, gx_dr)[0],
         "inekf_bias": gz_dr,  # inekf open-loop already integrated; map uses car yaw
+        "avnet_speed": gz_dr,
+        "avnet_full": av_full["psi"],
     }
 
     est = dict(est_raw)
@@ -205,12 +245,39 @@ def run_hardened_outage(
         "heading_blend": 0.45,
     }
     if route_ok and prior_route is not None:
-        # Product mode: arc-length along known route + blend heading to tangent.
-        seed_s = float(prior_route["length_m"]) * (i0 / max(n - 1, 1))
+        # Product mode: project seed pose onto route (not time-fraction guess).
+        seed_hit = project_point(
+            np.array([x0, y0], dtype=np.float64),
+            prior_route,
+            max_cross_track_m=200.0,
+            hint_seg=None,
+            search_window=0,
+        )
+        if seed_hit["snapped"]:
+            cum = np.asarray(prior_route["cum_m"], dtype=np.float64)
+            verts = np.asarray(prior_route["vertices"], dtype=np.float64)
+            j = int(seed_hit["seg"])
+            seed_s = float(cum[j])
+            if j < len(verts) - 1:
+                ab = verts[j + 1] - verts[j]
+                L2 = float(np.dot(ab, ab))
+                if L2 > 1e-12:
+                    frac = float(np.dot(seed_hit["xy"] - verts[j], ab) / L2)
+                    frac = max(0.0, min(1.0, frac))
+                    seed_s = float(cum[j] + frac * (cum[j + 1] - cum[j]))
+        else:
+            seed_s = float(prior_route["length_m"]) * (i0 / max(n - 1, 1))
+        speed_for = {
+            "car_bias": spd_dr,
+            "idr_bias": spd_dr,
+            "inekf_bias": spd_dr,
+            "avnet_speed": av_speed["speed"],
+            "avnet_full": av_full["speed"],
+        }
         for name, rate in yaw_rates.items():
             seq = dead_reckon_map_aided(
                 t_dr,
-                spd_dr,
+                speed_for.get(name, spd_dr),
                 rate,
                 prior_route,
                 x0=x0,
@@ -225,9 +292,31 @@ def run_hardened_outage(
                 "snap_frac": seq["snap_frac"],
                 "mode": seq.get("mode", "arc_length_route"),
             }
+        # Known-corridor arc-length (cross-track = 0): product tunnel claim.
+        for name, spd in (
+            ("hold_arclength", spd_dr),
+            ("avnet_arclength", av_speed["speed"]),
+        ):
+            arc = dead_reckon_arclength(
+                t_dr,
+                spd,
+                prior_route,
+                x0=x0,
+                y0=y0,
+                yaw0=yaw0,
+                seed_s_hint_m=seed_s,
+            )
+            est[name] = arc["xy"][1:]
+            map_meta[name] = {
+                "snap_frac": arc["snap_frac"],
+                "mode": arc.get("mode", "arclength_route"),
+                "final_s_m": arc.get("final_s_m"),
+            }
         map_meta["route_length_m"] = prior_route["length_m"]
         map_meta["route_n_vertices"] = prior_route["n_vertices"]
         map_meta["heading_blend"] = 0.55
+        map_meta["seed_s_m"] = seed_s
+        map_meta.update(avnet_meta)
     # Blind map: skip in default path (slow + weak). Enable via env if needed.
     if False and blind_ok and prior_blind is not None:
         for name, xy in list(est_raw.items()):

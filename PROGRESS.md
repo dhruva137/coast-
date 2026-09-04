@@ -1,68 +1,55 @@
 # SIH 26168 — current progress
 
-**Updated:** 4 Sep 2026  
-**Repo:** https://github.com/dhruva137/SIH-2026  
-**PS:** ISRO — AI-ML Intelligent Dead Reckoning (SIH26168)  
-**App version:** Android IDR **0.3.0**
+**Updated:** 4 Sep 2026 (finals eng finish + push)  
+**Repo:** https://github.com/dhruva137/SIH-2026
 
 ## One-line status
 
-Research prototype is built and demoable; **field scooter proof is still the blocker**. Teammate **RECORD APK v0.3.0** is ready for campus loop collection.
+Finals pack + closed-loop AVNet + **leave-file-out** protocol shipped. Mid-route 60 s road-speed: **0 PASS_ISRO** (honest). Winning path = own RED + improve heading/map priors — never fake GREEN.
 
-## What is done
+## Credibility rule
 
-| Area | Status | Notes |
-|---|---|---|
-| Web console + Evidence Room | Done | `npm run dev` → http://localhost:26168 |
-| Lean solver + InEKF + graph / vector locator | Done | `core/ts` (+ C++ port) |
-| IO-VNBD stress + axis audit | Done | Yaw = `-GYROSCOPE Pitch`; alignment **GREEN** |
-| Injected-lean claim | Done | Lean-aware **3.84%** vs car-style **10.56%** (synthetic, not field) |
-| Prototype gate | Pass | `RESEARCH_PROTOTYPE_PASS` |
-| Deployment gate | **Fail** | Expected until real TW logs + road-speed ISRO passes |
-| Android RECORD / NAVIGATE | Done | Foreground logging, loop mark |
-| **Sessions + quality gate + zip share** | **Done (v0.3.0)** | CHECK / RENAME / DELETE / ZIP; auto `quality.json` on stop |
-| Unit tests (Android) | **8/8 pass** | LeanSolver + QualityGate |
-| Debug APK built | Done | `android/dist/IDR-0.3.0-debug.apk` (local; `*.apk` gitignored) |
+Judges destroy teams that claim “proven / first-try perfect APK accuracy” without measured rows.  
+Every cross-question lives in `docs/JUDGE_CROSS_EXAM.md` with **file pointers**, including failures.
 
-## Honest evidence (do not overclaim)
+## Shipped this push
 
-| Gate | Colour | Meaning |
-|---|---|---|
-| Alignment (IO-VNBD) | GREEN | Gyro axis mapping validated |
-| Real car open-loop 60 s | RED | Does not meet ISRO &lt;10% / &lt;100 m/km |
-| Real car map-aided 60 s | YELLOW | Only weak / low-speed competitive cases |
-| Injected lean | GREEN | Sim claim only |
-| Real two-wheeler field | **RED** | **No qualifying scooter/bike logs yet** |
+| Artifact | Role |
+|---|---|
+| `docs/FINALS_WINNER_ARCHITECTURE.md` | Finals stack + novelty |
+| `docs/JUDGE_CROSS_EXAM.md` | 25 hostile Q&As |
+| `docs/PAPER_NOVELTY.md` | Defensible abstract claims |
+| `lab/stress/avnet_closed_loop.py` | Wire trained weights into DR |
+| `lab/stress/run_avnet_closed_loop.py` | Closed-loop score table |
+| `lab/stress/run_leave_file_out.py` | Paper leave-file-out protocol |
+| `lab/stress/map_aid.py` `dead_reckon_arclength` | Known-corridor product mode |
+| `lab/models/train_avnet.py` `--exclude` | Hold-out training |
+| `lab/stress/results/avnet_closed_loop/` | Wired maximize → ISRO scores |
+| `lab/stress/results/leave_file_out/` | No train/eval leakage table |
 
-Canonical detail: `lab/stress/results/CURRENT_VERDICT.md`
+## Measured (honest)
 
-## Benchmark we must beat (ISRO)
+| Protocol | PASS_ISRO |
+|---|---|
+| Closed-loop AVNet mid 60 s | **0** |
+| Leave-file-out AVNet mid 60 s | **0** |
+| Arclength known-route mid 60 s | **0** |
 
-- Drift **&lt; 10%** of distance travelled  
-- **&lt; 100 m** error over **1 km** at **60 km/h**  
-- **10 Hz** on-device  
+S-S1 LFO: `avnet_speed` 182.9 m vs `car_bias` 185.5 m — tiny improvement, still FAIL the bar.
 
-Measure via **loop closure** and **forced GNSS outage replay** (GPS logged for truth; deny in software) — not by eyeballing Maps with GPS off.
+## Still true
 
-## Next actions (team)
+| Gate | Colour |
+|---|---|
+| Alignment | GREEN |
+| Proposal IO-VNBD plots | GREEN |
+| Prototype gate | PASS (≠ ISRO) |
+| Open-loop / closed-loop ISRO road-speed | **RED** |
+| Real two-wheeler field | **RED** |
 
-1. Install `android/dist/IDR-0.3.0-debug.apk` (or rebuild with `android/build-apk.bat assembleDebug`).
-2. Collect **≥10 handlebar loop rides** (return to chalk mark; aim for quality **KEEP**).
-3. Add **3–5 underpass / basement** outage rides.
-4. Upload session zips → replay drift % in lab / Evidence Room.
-5. Keep proposal IO-VNBD plots honest; regenerate if needed after axis fix.
+## Next (post-push)
 
-## How teammates use the APK
-
-1. RECORD → set rider / vehicle / **handlebar** → START (GPS **on**).  
-2. MARK LOOP CLOSURE at start.  
-3. Ride ≥ ~90 s / ≥150 m → STOP → read KEEP/RETRY/FAIL.  
-4. SESSIONS → RENAME / ZIP / share.  
-
-See `android/dist/README.md`.
-
-## Build notes
-
-- Rebuild: `android\build-apk.bat testDebugUnitTest assembleDebug`  
-- Needs JDK 17 + Android SDK (`android/local.properties` is local-only).  
-- APKs are **not** committed (`*.apk` ignored); build locally or share via Drive.
+1. Better heading prior (mount-cal + longer seed bias) — speed is not the only killer.  
+2. OSM / local corridor PF (not whole-drive snap).  
+3. Port map-aid into Android NAVIGATE as **method demo** only until green rows exist.  
+4. Optional scooter KEEP logs for lean novelty.

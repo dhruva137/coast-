@@ -52,33 +52,50 @@ def _norm(name: str) -> str:
 
 
 _ALIASES = {
-    "lat": ("gpslatitude", "latitude", "lat"),
-    "lon": ("gpslongitude", "longitude", "lon", "lng"),
-    "alt": ("gpsaltitude", "altitude", "alt", "gpsheight"),
-    "speed": ("gpsspeed", "gpsvelocity", "indicatedvehiclespeed", "speed"),
-    "heading": ("gpsorientation", "gpsheading", "orientationyaw", "heading"),
+    "lat": ("gpslatitude", "gps latitude", "latitude", "lat"),
+    "lon": ("gpslongitude", "gps longitude", "longitude", "lon", "lng"),
+    "alt": ("gpsaltitude", "gps altitude", "altitude", "alt", "gpsheight"),
+    "speed": ("gpsspeed", "gps speed", "gpsvelocity", "indicatedvehiclespeed", "speed"),
+    "heading": ("gpsorientation", "gps orientation", "gpsheading", "orientationyaw", "heading"),
     "sats": ("gpssatellitesinrange", "noofgpssatellitesavailable", "sats", "nsats"),
-    "acc": ("gpsaccuracy", "acch"),
-    "t": ("timesincestart", "timesincestartofday", "timestamp", "time", "t"),
-    "ax": ("accelerometerx", "indicatedlongitudinalacceleration", "ax"),
-    "ay": ("accelerometery", "indicatedlateralacceleration", "ay"),
-    "az": ("accelerometerz", "az"),
-    "gx": ("gyroscoperoll", "gx"),
-    "gy": ("gyroscopepitch", "gy"),
-    "gz": ("gyroscopeyaw", "yawrate", "gz"),
+    "acc": ("gpsaccuracy", "gps accuracy", "acch"),
+    "t": ("timesincestart", "time since start", "timesincestartofday", "timestamp", "time", "t"),
+    "ax": ("accelerometerx", "accelerometer x", "indicatedlongitudinalacceleration", "ax"),
+    "ay": ("accelerometery", "accelerometer y", "indicatedlateralacceleration", "ay"),
+    "az": ("accelerometerz", "accelerometer z", "az"),
+    "gx": ("gyroscoperoll", "gyroscope roll", "gx"),
+    "gy": ("gyroscopepitch", "gyroscope pitch", "gy"),
+    "gz": ("gyroscopeyaw", "gyroscope yaw", "yawrate", "gz"),
     "gnss_ok": ("gnssvalid", "gpsvalid", "gnssok"),
 }
 
 
 def resolve_csv() -> tuple[Path, str]:
+    """Prefer real smartphone S-*.csv files that actually parse with lat/lon."""
     root = RAW_IOVNBD
+    candidates: list[Path] = []
     if root.is_dir():
-        for path in sorted(root.rglob("*.csv")):
+        for path in sorted(root.rglob("S-*.csv")):
             try:
                 if path.stat().st_size > MIN_REAL_BYTES:
-                    return path, "IO-VNBD raw"
+                    candidates.append(path)
             except OSError:
                 continue
+        # Prefer known good sessions first
+        prefer = ("S-S1.csv", "S-S2.csv", "S-S4.csv", "S-M.csv")
+        ranked = sorted(
+            candidates,
+            key=lambda p: (prefer.index(p.name) if p.name in prefer else 99, p.name),
+        )
+        for path in ranked:
+            try:
+                tr = load_trace(path)
+                if np.isfinite(tr["lat"]).sum() > 50 and np.isfinite(tr["lon"]).sum() > 50:
+                    return path, "IO-VNBD raw"
+            except Exception:
+                continue
+        if ranked:
+            return ranked[0], "IO-VNBD raw"
     if not FIXTURE_PATH.is_file():
         write_csv(FIXTURE_PATH, seed=SEED)
     return FIXTURE_PATH, "IO-VNBD fixture (Git LFS absent)"
@@ -86,9 +103,17 @@ def resolve_csv() -> tuple[Path, str]:
 
 def _pick(header: list[str], key: str) -> int | None:
     norms = [_norm(h) for h in header]
+    compact = [n.replace(" ", "") for n in norms]
     for alias in _ALIASES[key]:
-        if alias in norms:
-            return norms.index(alias)
+        a = _norm(alias)
+        ac = a.replace(" ", "")
+        if a in norms:
+            return norms.index(a)
+        if ac in compact:
+            return compact.index(ac)
+        for i, n in enumerate(norms):
+            if a and a in n:
+                return i
     return None
 
 
