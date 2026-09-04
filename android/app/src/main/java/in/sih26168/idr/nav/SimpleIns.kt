@@ -4,6 +4,7 @@ import `in`.sih26168.idr.data.AppMode
 import `in`.sih26168.idr.data.GnssFix
 import `in`.sih26168.idr.data.HudState
 import `in`.sih26168.idr.data.SensorFrame
+import `in`.sih26168.idr.data.SpeedSource
 import `in`.sih26168.idr.data.TrailPoint
 import kotlin.math.cos
 import kotlin.math.sin
@@ -11,13 +12,16 @@ import kotlin.math.sin
 /**
  * Lean-aware strapdown coast: integrate gyro yaw-rate + speed, no magnetometer.
  *
- * GNSS when locked seeds (lat, lon, alt, speed, bearing). During outage the
- * coordinated-turn solver supplies ψ̇; car-style ψ̇ = ω_z is kept only so the
- * HUD can show heading disagreement — it is not used for the trail.
+ * GNSS when locked seeds (lat, lon, alt, speed, bearing). During outage speed
+ * comes from the on-device AVNet-tiny ONNX head ([OnnxSpeedModel]) when a
+ * window is fresh, and from the accel-integrator coast otherwise — [speedSource]
+ * says which, every tick. The coordinated-turn solver supplies ψ̇; car-style
+ * ψ̇ = ω_z is kept only so the HUD can show heading disagreement.
  */
 class SimpleIns(
     private val trailCap: Int = 4000,
     private val gnssTimeoutNs: Long = 2_000_000_000L,
+    private val modelStaleNs: Long = 500_000_000L,
 ) {
     var lat: Double = 0.0
         private set
@@ -40,6 +44,17 @@ class SimpleIns(
         private set
     var seeded: Boolean = false
         private set
+    var speedSource: SpeedSource = SpeedSource.FALLBACK
+        private set
+
+    private var modelSpeed: Double = Double.NaN
+    private var modelPsiDot: Double = Double.NaN
+    private var modelSpeedVar: Double = Double.NaN
+    private var modelTNs: Long = 0L
+    private var modelLatencyMs: Double = 0.0
+    private var modelHz: Double = 0.0
+    private var modelReady: Boolean = false
+    private var modelError: String? = null
 
     private var lastTns: Long = 0L
     private var lastGnssNs: Long = 0L
@@ -69,6 +84,13 @@ class SimpleIns(
         distanceM = 0.0
         coordinated = false
         seeded = false
+        speedSource = SpeedSource.FALLBACK
+        modelSpeed = Double.NaN
+        modelPsiDot = Double.NaN
+        modelSpeedVar = Double.NaN
+        modelTNs = 0L
+        modelLatencyMs = 0.0
+        modelHz = 0.0
         lastTns = 0L
         lastGnssNs = 0L
         lastAccH = Double.NaN
@@ -96,13 +118,24 @@ class SimpleIns(
         if (dt <= 0.0 || dt > 0.5) return
 
         val lock = gnssLock(frame.tNs)
-        if (!lock) {
-            // Physics-informed coast from FrequencyDecoupledOdo stand-in.
+        val modelFresh = modelSpeed.isFinite() &&
+            modelTNs != 0L &&
+            frame.tNs - modelTNs in 0 until modelStaleNs
+        if (lock) {
+            // onGnss already wrote speed from the fix.
+            speedSource = SpeedSource.GNSS
+        } else if (modelFresh) {
+            // Trained AVNet-tiny head drives the coast.
+            speed = maxOf(0.0, modelSpeed)
+            speedSource = SpeedSource.MODEL
+        } else {
+            // Labelled fallback: physics-informed coast, FrequencyDecoupledOdo stand-in.
             speed = maxOf(0.0, speed + frame.ax * dt)
             val aMean = hypot3(frame.ax, frame.ay, frame.az)
             if (aMean < 10.4 && kotlin.math.abs(frame.gz) < 0.05) {
                 speed *= 0.995
             }
+            speedSource = SpeedSource.FALLBACK
         }
 
         val sol = solveLean(
@@ -130,6 +163,26 @@ class SimpleIns(
         }
         distanceM += speed * dt
         push(insTrail, TrailPoint(lat, lon, fromGnss = false, tNs = frame.tNs))
+    }
+
+    /**
+     * Newest on-device inference. ψ̇ is stored for the HUD only — heading stays
+     * on the coordinated-turn solver, which is the validated path; swapping it
+     * for the model head is a separate, separately-evidenced change.
+     */
+    fun onModel(est: SpeedEstimate, hz: Double) {
+        modelSpeed = est.speed
+        modelPsiDot = est.psiDot
+        modelSpeedVar = est.speedVar
+        modelTNs = est.tNs
+        modelLatencyMs = est.latencyMs
+        modelHz = hz
+    }
+
+    /** Session health from [OnnxSpeedModel]; `error` non-null means no model ran. */
+    fun setModelStatus(ready: Boolean, error: String?) {
+        modelReady = ready
+        modelError = error
     }
 
     fun onGnss(fix: GnssFix) {
@@ -212,6 +265,14 @@ class SimpleIns(
             loopDistanceM = loopDist,
             driftPct = drift,
             coordinated = coordinated,
+            speedSource = speedSource,
+            modelReady = modelReady,
+            modelSpeedMps = modelSpeed,
+            modelPsiDot = modelPsiDot,
+            modelSpeedVar = modelSpeedVar,
+            inferMs = modelLatencyMs,
+            modelHz = modelHz,
+            modelError = modelError,
             mode = mode,
             insTrail = insTrail.toList(),
             gnssTrail = gnssTrail.toList(),

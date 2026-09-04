@@ -32,7 +32,12 @@ for _p in (_STRESS, _LAB / "eval", _LAB / "baselines"):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
 
-from load_iovnbd import IoVnbdLfsError, load_smartphone_csv, verify_csv_not_lfs_stub  # noqa: E402
+from load_iovnbd import (  # noqa: E402
+    IoVnbdLfsError,
+    attach_vehicle_truth,
+    load_smartphone_csv,
+    verify_csv_not_lfs_stub,
+)
 from metrics import ate, drift_pct, lla_to_enu, path_length, position_errors  # noqa: E402
 
 try:
@@ -360,12 +365,24 @@ def run_outage_replay(
     if i1 - i0 < 10:
         raise ValueError(f"outage window too short: {i1 - i0} samples")
 
-    # Ground truth ENU from held-out GNSS (interpolated across 1 Hz holds).
+    # Ground truth ENU from held-out GNSS.
+    #
+    # Prefer the paired V-*.csv CAN log: it carries a true 10 Hz fix, whereas
+    # the smartphone table holds each fix for ~9 s (S-S1: 498 unique positions
+    # across 51 746 rows against the CAN log's 40 684). Interpolating that
+    # staircase and scoring against it measures the interpolation as much as
+    # the estimator, so it is now a labelled fallback, not the default.
     sl = slice(0, i1)
-    origin_lat = float(data["lat"][0])
-    origin_lon = float(data["lon"][0])
-    lat_i, lon_i = _interp_lla(t[sl], data["lat"][sl], data["lon"][sl])
-    gt_all = lla_to_enu(lat_i, lon_i, origin_lat, origin_lon)
+    truth_source = str(data.get("truth_source", "phone_gnss_interpolated"))
+    if truth_source == "can_10hz" and int(data.get("can_n", 0)) >= i1:
+        truth_lat = np.asarray(data["can_lat"][sl], dtype=np.float64)
+        truth_lon = np.asarray(data["can_lon"][sl], dtype=np.float64)
+    else:
+        truth_source = "phone_gnss_interpolated"
+        truth_lat, truth_lon = _interp_lla(t[sl], data["lat"][sl], data["lon"][sl])
+    origin_lat = float(truth_lat[0])
+    origin_lon = float(truth_lon[0])
+    gt_all = lla_to_enu(truth_lat, truth_lon, origin_lat, origin_lon)
     gt_out = gt_all[i0:]  # outage portion only
 
     yaw0 = _bearing_to_yaw_rad(data["bearing_deg"], i0 - 1)
@@ -406,8 +423,12 @@ def run_outage_replay(
         "inekf_basic": np.column_stack([xi[1:], yi[1:]]),
         "idr_lean": np.column_stack([xl[1:], yl[1:]]),
     }
-    # Distance from held-out GNSS *speed* (not zigzagging lat/lon polyline).
-    spd_out = np.asarray(data["speed_mps"][i0:i1], dtype=np.float64)
+    # Distance from held-out *speed* (not the zigzagging lat/lon polyline).
+    # CAN indicated speed where the pair exists, else the phone's GNSS speed.
+    truth_speed = (
+        data["can_speed_mps"] if truth_source == "can_10hz" else data["speed_mps"]
+    )
+    spd_out = np.asarray(truth_speed[i0:i1], dtype=np.float64)
     spd_out = np.where(np.isfinite(spd_out), np.maximum(spd_out, 0.0), speed0)
     dt_out = np.diff(t[i0:i1], prepend=t[i0])
     dt_out = np.clip(dt_out, 0.0, 0.5)
@@ -422,6 +443,7 @@ def run_outage_replay(
     ratio = float(fe_l / fe_c) if fe_c > 1e-6 else float("nan")
 
     return {
+        "truth_source": truth_source,
         "t0_s": float(t[i0] - t[0]),
         "deny_s": float(t[i1 - 1] - t[i0]) if i1 > i0 else 0.0,
         "i0": i0,
@@ -446,7 +468,7 @@ def run_outage_on_csv(
 ) -> dict[str, Any]:
     path = Path(path)
     verify_csv_not_lfs_stub(path)
-    data = load_smartphone_csv(path)
+    data = attach_vehicle_truth(load_smartphone_csv(path))
     result = run_outage_replay(
         data, t0_s=t0_s, deny_s=deny_s, start_idx=start_idx, seed=seed
     )

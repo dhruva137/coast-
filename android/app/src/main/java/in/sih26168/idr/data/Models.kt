@@ -65,6 +65,15 @@ data class TrailPoint(
     val tNs: Long,
 )
 
+/**
+ * What actually produced the speed the HUD is showing right now.
+ *
+ * `GNSS` = live fix. `MODEL` = on-device AVNet-tiny ONNX head. `FALLBACK` =
+ * the hand-rolled accel-integrator coast in [`in`.sih26168.idr.nav.SimpleIns].
+ * Never label a tick `MODEL` unless the session really ran.
+ */
+enum class SpeedSource { GNSS, MODEL, FALLBACK }
+
 data class HudState(
     val tNs: Long = 0L,
     val lat: Double = 0.0,
@@ -86,6 +95,14 @@ data class HudState(
     val loopDistanceM: Double = 0.0,
     val driftPct: Double? = null,
     val coordinated: Boolean = false,
+    val speedSource: SpeedSource = SpeedSource.FALLBACK,
+    val modelReady: Boolean = false,
+    val modelSpeedMps: Double = Double.NaN,
+    val modelPsiDot: Double = Double.NaN,
+    val modelSpeedVar: Double = Double.NaN,
+    val inferMs: Double = 0.0,
+    val modelHz: Double = 0.0,
+    val modelError: String? = null,
     val mode: AppMode = AppMode.IDLE,
     val insTrail: List<TrailPoint> = emptyList(),
     val gnssTrail: List<TrailPoint> = emptyList(),

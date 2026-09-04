@@ -1,0 +1,1690 @@
+{
+  "segments_per_file": 10,
+  "deny_s": 60.0,
+  "cutoff_hz": 0.5,
+  "aggregate": {
+    "A_raw": {
+      "n_drives": 23,
+      "n_rows": 186,
+      "median_error_m": 321.64774321105847,
+      "median_drift_pct": 40.23244743749943,
+      "pass_isro": 32,
+      "is_oracle": false
+    },
+    "B_lowpass": {
+      "n_drives": 23,
+      "n_rows": 186,
+      "median_error_m": 341.76417313615025,
+      "median_drift_pct": 37.777907553008205,
+      "pass_isro": 29,
+      "is_oracle": false
+    },
+    "C_mount": {
+      "n_drives": 23,
+      "n_rows": 186,
+      "median_error_m": 233.7341079056523,
+      "median_drift_pct": 30.833037371709608,
+      "pass_isro": 37,
+      "is_oracle": true
+    },
+    "D_mount_lp": {
+      "n_drives": 23,
+      "n_rows": 186,
+      "median_error_m": 205.17251404668443,
+      "median_drift_pct": 24.71841265715256,
+      "pass_isro": 42,
+      "is_oracle": true
+    },
+    "E_mount_lp_bias": {
+      "n_drives": 23,
+      "n_rows": 186,
+      "median_error_m": 207.53699472002234,
+      "median_drift_pct": 26.16007650123145,
+      "pass_isro": 41,
+      "is_oracle": true
+    },
+    "F_oracle": {
+      "n_drives": 23,
+      "n_rows": 186,
+      "median_error_m": 87.62224159129397,
+      "median_drift_pct": 12.411820141014346,
+      "pass_isro": 84,
+      "is_oracle": true
+    }
+  },
+  "files": [
+    {
+      "name": "S-M.csv",
+      "meta": {
+        "n": 105974,
+        "mount_vector_raw": [
+          -0.07083224093816892,
+          -0.6499132430418003,
+          -0.34960562874354845
+        ],
+        "mount_vector_lp": [
+          -0.046415039408923664,
+          -0.8423908687202726,
+          -0.29914029577339973
+        ],
+        "mount_norm_lp": 0.8951321959029429,
+        "stationary_bias_rad_s": -0.0010648905995450722,
+        "can_yaw_std_rad_s": 0.16465009475877107,
+        "gyro_pitch_std_rad_s": 0.18161354931590432,
+        "mean_speed_mps": 11.774782764635965
+      },
+      "configs": {
+        "A_raw": {
+          "n": 9,
+          "median_error_m": 99.15849481685724,
+          "median_drift_pct": 19.051785077160787,
+          "median_m_per_km": 190.51785077160787,
+          "pass_isro": 2,
+          "is_oracle": false
+        },
+        "B_lowpass": {
+          "n": 9,
+          "median_error_m": 86.53700652756015,
+          "median_drift_pct": 18.57377712200512,
+          "median_m_per_km": 185.73777122005117,
+          "pass_isro": 2,
+          "is_oracle": false
+        },
+        "C_mount": {
+          "n": 9,
+          "median_error_m": 222.40133129359032,
+          "median_drift_pct": 34.64580264924791,
+          "median_m_per_km": 346.4580264924791,
+          "pass_isro": 0,
+          "is_oracle": true
+        },
+        "D_mount_lp": {
+          "n": 9,
+          "median_error_m": 146.32930204116948,
+          "median_drift_pct": 25.217261426603596,
+          "median_m_per_km": 252.17261426603594,
+          "pass_isro": 0,
+          "is_oracle": true
+        },
+        "E_mount_lp_bias": {
+          "n": 9,
+          "median_error_m": 167.92902446271773,
+          "median_drift_pct": 26.16007650123145,
+          "median_m_per_km": 261.6007650123145,
+          "pass_isro": 0,
+          "is_oracle": true
+        },
+        "F_oracle": {
+          "n": 9,
+          "median_error_m": 52.5550338480235,
+          "median_drift_pct": 12.382486409947907,
+          "median_m_per_km": 123.82486409947909,
+          "pass_isro": 4,
+          "is_oracle": true
+        }
+      }
+    },
+    {
+      "name": "S-S1.csv",
+      "meta": {
+        "n": 51746,
+        "mount_vector_raw": [
+          -0.0287680954279854,
+          -0.943583372456309,
+          -0.4306320751285432
+        ],
+        "mount_vector_lp": [
+          -0.07682508882228224,
+          -0.9461291896614427,
+          0.05079392094250284
+        ],
+        "mount_norm_lp": 0.9506011572719039,
+        "stationary_bias_rad_s": 0.004830924160939071,
+        "can_yaw_std_rad_s": 0.1246777458050642,
+        "gyro_pitch_std_rad_s": 0.13204011622254158,
+        "mean_speed_mps": 9.3960777046933
+      },
+      "configs": {
+        "A_raw": {
+          "n": 7,
+          "median_error_m": 65.10265795855821,
+          "median_drift_pct": 14.362156044070167,
+          "median_m_per_km": 143.62156044070167,
+          "pass_isro": 1,
+          "is_oracle": false
+        },
+        "B_lowpass": {
+          "n": 7,
+          "median_error_m": 66.04947445631167,
+          "median_drift_pct": 14.571031176242057,
+          "median_m_per_km": 145.7103117624206,
+          "pass_isro": 2,
+          "is_oracle": false
+        },
+        "C_mount": {
+          "n": 7,
+          "median_error_m": 100.63573664617873,
+          "median_drift_pct": 29.090749110833418,
+          "median_m_per_km": 290.90749110833417,
+          "pass_isro": 0,
+          "is_oracle": true
+        },
+        "D_mount_lp": {
+          "n": 7,
+          "median_error_m": 97.62425941717309,
+          "median_drift_pct": 25.618536290044677,
+          "median_m_per_km": 256.18536290044676,
+          "pass_isro": 1,
+          "is_oracle": true
+        },
+        "E_mount_lp_bias": {
+          "n": 7,
+          "median_error_m": 83.22639067862768,
+          "median_drift_pct": 19.14073050250166,
+          "median_m_per_km": 191.40730502501663,
+          "pass_isro": 1,
+          "is_oracle": true
+        },
+        "F_oracle": {
+          "n": 7,
+          "median_error_m": 61.13562662001485,
+          "median_drift_pct": 15.93221052238903,
+          "median_m_per_km": 159.32210522389028,
+          "pass_isro": 2,
+          "is_oracle": true
+        }
+      }
+    },
+    {
+      "name": "S-S2.csv",
+      "meta": {
+        "n": 93876,
+        "mount_vector_raw": [
+          0.000247466612369137,
+          0.0065082723314702495,
+          0.012406266732161131
+        ],
+        "mount_vector_lp": [
+          -0.004857333455925896,
+          0.011500677770663603,
+          0.07424336944770366
+        ],
+        "mount_norm_lp": 0.07528570371879982,
+        "stationary_bias_rad_s": 0.00012161994050072571,
+        "can_yaw_std_rad_s": 0.13591189500372303,
+        "gyro_pitch_std_rad_s": 0.14982643344339355,
+        "mean_speed_mps": 10.529435783884518
+      },
+      "configs": {
+        "A_raw": {
+          "n": 8,
+          "median_error_m": 150.14925373637158,
+          "median_drift_pct": 40.23244743749943,
+          "median_m_per_km": 402.32447437499434,
+          "pass_isro": 1,
+          "is_oracle": false
+        },
+        "B_lowpass": {
+          "n": 8,
+          "median_error_m": 143.13576153263966,
+          "median_drift_pct": 38.35923127614488,
+          "median_m_per_km": 383.59231276144874,
+          "pass_isro": 1,
+          "is_oracle": false
+        },
+        "C_mount": {
+          "n": 8,
+          "median_error_m": 257.1788709972604,
+          "median_drift_pct": 78.23806154024095,
+          "median_m_per_km": 782.3806154024094,
+          "pass_isro": 0,
+          "is_oracle": true
+        },
+        "D_mount_lp": {
+          "n": 8,
+          "median_error_m": 257.07124310393266,
+          "median_drift_pct": 78.23371286450984,
+          "median_m_per_km": 782.3371286450983,
+          "pass_isro": 0,
+          "is_oracle": true
+        },
+        "E_mount_lp_bias": {
+          "n": 8,
+          "median_error_m": 257.7343999870142,
+          "median_drift_pct": 78.44012143652289,
+          "median_m_per_km": 784.4012143652288,
+          "pass_isro": 0,
+          "is_oracle": true
+        },
+        "F_oracle": {
+          "n": 8,
+          "median_error_m": 35.19165220466214,
+          "median_drift_pct": 9.413263220258965,
+          "median_m_per_km": 94.13263220258965,
+          "pass_isro": 5,
+          "is_oracle": true
+        }
+      }
+    },
+    {
+      "name": "S-S3a.csv",
+      "meta": {
+        "n": 24621,
+        "mount_vector_raw": [
+          0.02405146188319234,
+          -0.2157079209479914,
+          0.09483648399247528
+        ],
+        "mount_vector_lp": [
+          0.19064343331765587,
+          -0.2220242360065462,
+          -0.07817491721638717
+        ],
+        "mount_norm_lp": 0.30290427154997834,
+        "stationary_bias_rad_s": -0.000368625628788246,
+        "can_yaw_std_rad_s": 0.12661845353384643,
+        "gyro_pitch_std_rad_s": 0.13662334178089602,
+        "mean_speed_mps": 12.228329603238484
+      },
+      "configs": {
+        "A_raw": {
+          "n": 8,
+          "median_error_m": 87.51079389935191,
+          "median_drift_pct": 15.48248894414793,
+          "median_m_per_km": 154.82488944147929,
+          "pass_isro": 2,
+          "is_oracle": false
+        },
+        "B_lowpass": {
+          "n": 8,
+          "median_error_m": 92.54376486397418,
+          "median_drift_pct": 16.41635184847997,
+          "median_m_per_km": 164.1635184847997,
+          "pass_isro": 2,
+          "is_oracle": false
+        },
+        "C_mount": {
+          "n": 8,
+          "median_error_m": 356.7084589002345,
+          "median_drift_pct": 48.64965485835975,
+          "median_m_per_km": 486.4965485835975,
+          "pass_isro": 2,
+          "is_oracle": true
+        },
+        "D_mount_lp": {
+          "n": 8,
+          "median_error_m": 359.4185512253917,
+          "median_drift_pct": 47.3998817702867,
+          "median_m_per_km": 473.998817702867,
+          "pass_isro": 2,
+          "is_oracle": true
+        },
+        "E_mount_lp_bias": {
+          "n": 8,
+          "median_error_m": 357.9327256317165,
+          "median_drift_pct": 46.250117903711484,
+          "median_m_per_km": 462.50117903711487,
+          "pass_isro": 2,
+          "is_oracle": true
+        },
+        "F_oracle": {
+          "n": 8,
+          "median_error_m": 67.35048668990179,
+          "median_drift_pct": 12.54010418859276,
+          "median_m_per_km": 125.40104188592761,
+          "pass_isro": 2,
+          "is_oracle": true
+        }
+      }
+    },
+    {
+      "name": "S-S3b.csv",
+      "meta": {
+        "n": 6813,
+        "mount_vector_raw": [
+          0.026081915721278798,
+          -0.21189223658101977,
+          0.22669976683019954
+        ],
+        "mount_vector_lp": [
+          -0.7215508734402121,
+          -0.4928263676572155,
+          0.03910682930364772
+        ],
+        "mount_norm_lp": 0.8746672714345282,
+        "stationary_bias_rad_s": 0.016093600984585513,
+        "can_yaw_std_rad_s": 0.18821906247855527,
+        "gyro_pitch_std_rad_s": 0.37871036495768395,
+        "mean_speed_mps": 7.136271226574657
+      },
+      "configs": {
+        "A_raw": {
+          "n": 8,
+          "median_error_m": 48.04150505587406,
+          "median_drift_pct": 13.816922606647756,
+          "median_m_per_km": 138.16922606647756,
+          "pass_isro": 2,
+          "is_oracle": false
+        },
+        "B_lowpass": {
+          "n": 8,
+          "median_error_m": 47.694525734918955,
+          "median_drift_pct": 13.545943096324885,
+          "median_m_per_km": 135.45943096324885,
+          "pass_isro": 2,
+          "is_oracle": false
+        },
+        "C_mount": {
+          "n": 8,
+          "median_error_m": 272.85850233211124,
+          "median_drift_pct": 84.27067026984435,
+          "median_m_per_km": 842.7067026984435,
+          "pass_isro": 0,
+          "is_oracle": true
+        },
+        "D_mount_lp": {
+          "n": 8,
+          "median_error_m": 234.098786308037,
+          "median_drift_pct": 67.95261262990877,
+          "median_m_per_km": 679.5261262990877,
+          "pass_isro": 0,
+          "is_oracle": true
+        },
+        "E_mount_lp_bias": {
+          "n": 8,
+          "median_error_m": 190.77730966492913,
+          "median_drift_pct": 52.881411046407116,
+          "median_m_per_km": 528.8141104640712,
+          "pass_isro": 0,
+          "is_oracle": true
+        },
+        "F_oracle": {
+          "n": 8,
+          "median_error_m": 28.800159700863585,
+          "median_drift_pct": 8.059033818170654,
+          "median_m_per_km": 80.59033818170654,
+          "pass_isro": 5,
+          "is_oracle": true
+        }
+      }
+    },
+    {
+      "name": "S-S3c.csv",
+      "meta": {
+        "n": 37183,
+        "mount_vector_raw": [
+          -0.0017464997184169345,
+          -0.9371396701142292,
+          -0.23248598971518805
+        ],
+        "mount_vector_lp": [
+          0.016782223391656532,
+          -0.9893867137488501,
+          -0.06007460813456093
+        ],
+        "mount_norm_lp": 0.9913509322672964,
+        "stationary_bias_rad_s": 9.398879184753887e-05,
+        "can_yaw_std_rad_s": 0.11537958129952199,
+        "gyro_pitch_std_rad_s": 0.11529337593078783,
+        "mean_speed_mps": 13.653811332671957
+      },
+      "configs": {
+        "A_raw": {
+          "n": 9,
+          "median_error_m": 47.18369337959322,
+          "median_drift_pct": 12.366332452973706,
+          "median_m_per_km": 123.66332452973705,
+          "pass_isro": 4,
+          "is_oracle": false
+        },
+        "B_lowpass": {
+          "n": 9,
+          "median_error_m": 45.72270028879713,
+          "median_drift_pct": 11.983422066393073,
+          "median_m_per_km": 119.83422066393072,
+          "pass_isro": 4,
+          "is_oracle": false
+        },
+        "C_mount": {
+          "n": 9,
+          "median_error_m": 64.44994432971234,
+          "median_drift_pct": 16.891628888500154,
+          "median_m_per_km": 168.91628888500153,
+          "pass_isro": 4,
+          "is_oracle": true
+        },
+        "D_mount_lp": {
+          "n": 9,
+          "median_error_m": 48.37794371114883,
+          "median_drift_pct": 12.67933246578063,
+          "median_m_per_km": 126.79332465780632,
+          "pass_isro": 4,
+          "is_oracle": true
+        },
+        "E_mount_lp_bias": {
+          "n": 9,
+          "median_error_m": 47.83723835387813,
+          "median_drift_pct": 12.537619477072433,
+          "median_m_per_km": 125.37619477072431,
+          "pass_isro": 4,
+          "is_oracle": true
+        },
+        "F_oracle": {
+          "n": 9,
+          "median_error_m": 59.0475824196243,
+          "median_drift_pct": 13.372822724947934,
+          "median_m_per_km": 133.72822724947932,
+          "pass_isro": 4,
+          "is_oracle": true
+        }
+      }
+    },
+    {
+      "name": "S-S4.csv",
+      "meta": {
+        "n": 94600,
+        "mount_vector_raw": [
+          0.00249473618624562,
+          -0.11189404855483956,
+          -0.056556559070112276
+        ],
+        "mount_vector_lp": [
+          -0.04687122112534232,
+          -0.25017101868771735,
+          -0.3803329521194607
+        ],
+        "mount_norm_lp": 0.45764134912498344,
+        "stationary_bias_rad_s": 0.0006307717048426742,
+        "can_yaw_std_rad_s": 0.11771500656927628,
+        "gyro_pitch_std_rad_s": 0.13532786287187357,
+        "mean_speed_mps": 12.419477942570241
+      },
+      "configs": {
+        "A_raw": {
+          "n": 8,
+          "median_error_m": 203.77959343967618,
+          "median_drift_pct": 31.800045668587973,
+          "median_m_per_km": 318.0004566858797,
+          "pass_isro": 3,
+          "is_oracle": false
+        },
+        "B_lowpass": {
+          "n": 8,
+          "median_error_m": 206.5068179192608,
+          "median_drift_pct": 31.780051426345143,
+          "median_m_per_km": 317.80051426345136,
+          "pass_isro": 3,
+          "is_oracle": false
+        },
+        "C_mount": {
+          "n": 8,
+          "median_error_m": 396.35097781894353,
+          "median_drift_pct": 55.20319541341482,
+          "median_m_per_km": 552.0319541341482,
+          "pass_isro": 0,
+          "is_oracle": true
+        },
+        "D_mount_lp": {
+          "n": 8,
+          "median_error_m": 397.5328424463383,
+          "median_drift_pct": 55.71759143250496,
+          "median_m_per_km": 557.1759143250496,
+          "pass_isro": 0,
+          "is_oracle": true
+        },
+        "E_mount_lp_bias": {
+          "n": 8,
+          "median_error_m": 403.4619245691315,
+          "median_drift_pct": 56.81606536228135,
+          "median_m_per_km": 568.1606536228135,
+          "pass_isro": 0,
+          "is_oracle": true
+        },
+        "F_oracle": {
+          "n": 8,
+          "median_error_m": 109.70828656264939,
+          "median_drift_pct": 13.668555320327158,
+          "median_m_per_km": 136.68555320327158,
+          "pass_isro": 1,
+          "is_oracle": true
+        }
+      }
+    },
+    {
+      "name": "S-Vfa01.csv",
+      "meta": {
+        "n": 11486,
+        "mount_vector_raw": [
+          0.012111440461564368,
+          0.014543712231125074,
+          0.0206690950034961
+        ],
+        "mount_vector_lp": [
+          0.0059883883051292455,
+          0.02457931072387694,
+          0.06178626106087478
+        ],
+        "mount_norm_lp": 0.06676485127697411,
+        "stationary_bias_rad_s": -0.0005788374931451117,
+        "can_yaw_std_rad_s": 0.06210448108786123,
+        "gyro_pitch_std_rad_s": 0.27896266047992885,
+        "mean_speed_mps": 17.969095684083168
+      },
+      "configs": {
+        "A_raw": {
+          "n": 9,
+          "median_error_m": 106.13711502937961,
+          "median_drift_pct": 10.894142772468053,
+          "median_m_per_km": 108.94142772468054,
+          "pass_isro": 4,
+          "is_oracle": false
+        },
+        "B_lowpass": {
+          "n": 9,
+          "median_error_m": 112.67276570270724,
+          "median_drift_pct": 10.044659581156527,
+          "median_m_per_km": 100.44659581156526,
+          "pass_isro": 4,
+          "is_oracle": false
+        },
+        "C_mount": {
+          "n": 9,
+          "median_error_m": 195.9357798301537,
+          "median_drift_pct": 25.417134209863,
+          "median_m_per_km": 254.17134209863002,
+          "pass_isro": 2,
+          "is_oracle": true
+        },
+        "D_mount_lp": {
+          "n": 9,
+          "median_error_m": 185.58237728089352,
+          "median_drift_pct": 24.71841265715256,
+          "median_m_per_km": 247.1841265715256,
+          "pass_isro": 2,
+          "is_oracle": true
+        },
+        "E_mount_lp_bias": {
+          "n": 9,
+          "median_error_m": 204.1558350708747,
+          "median_drift_pct": 26.404828571309483,
+          "median_m_per_km": 264.04828571309486,
+          "pass_isro": 2,
+          "is_oracle": true
+        },
+        "F_oracle": {
+          "n": 9,
+          "median_error_m": 171.86494882010965,
+          "median_drift_pct": 13.957967831886096,
+          "median_m_per_km": 139.57967831886094,
+          "pass_isro": 2,
+          "is_oracle": true
+        }
+      }
+    },
+    {
+      "name": "S-Vfa02.csv",
+      "meta": {
+        "n": 67523,
+        "mount_vector_raw": [
+          -0.00683731615973249,
+          -0.008537126964343531,
+          -0.010131093168325075
+        ],
+        "mount_vector_lp": [
+          -0.022539070881774793,
+          -0.03924058594665253,
+          -0.05068339264897362
+        ],
+        "mount_norm_lp": 0.06794585779913537,
+        "stationary_bias_rad_s": -0.0006926809477681649,
+        "can_yaw_std_rad_s": 0.041879920220759634,
+        "gyro_pitch_std_rad_s": 0.24213024552698925,
+        "mean_speed_mps": 24.907577912082605
+      },
+      "configs": {
+        "A_raw": {
+          "n": 9,
+          "median_error_m": 359.9515729330908,
+          "median_drift_pct": 22.81633554135717,
+          "median_m_per_km": 228.16335541357168,
+          "pass_isro": 1,
+          "is_oracle": false
+        },
+        "B_lowpass": {
+          "n": 9,
+          "median_error_m": 320.6282356186484,
+          "median_drift_pct": 20.211562826704935,
+          "median_m_per_km": 202.11562826704935,
+          "pass_isro": 1,
+          "is_oracle": false
+        },
+        "C_mount": {
+          "n": 9,
+          "median_error_m": 284.90492380539416,
+          "median_drift_pct": 17.023830790755138,
+          "median_m_per_km": 170.23830790755136,
+          "pass_isro": 4,
+          "is_oracle": true
+        },
+        "D_mount_lp": {
+          "n": 9,
+          "median_error_m": 272.02662043663975,
+          "median_drift_pct": 16.254317738845096,
+          "median_m_per_km": 162.54317738845094,
+          "pass_isro": 4,
+          "is_oracle": true
+        },
+        "E_mount_lp_bias": {
+          "n": 9,
+          "median_error_m": 238.10609827745978,
+          "median_drift_pct": 14.227475865215789,
+          "median_m_per_km": 142.27475865215789,
+          "pass_isro": 4,
+          "is_oracle": true
+        },
+        "F_oracle": {
+          "n": 9,
+          "median_error_m": 60.21744393059759,
+          "median_drift_pct": 4.3633676296603605,
+          "median_m_per_km": 43.6336762966036,
+          "pass_isro": 6,
+          "is_oracle": true
+        }
+      }
+    },
+    {
+      "name": "S-Vta16.csv",
+      "meta": {
+        "n": 11335,
+        "mount_vector_raw": [
+          -0.13198298160423486,
+          -0.18334792082670498,
+          -0.24357845098098782
+        ],
+        "mount_vector_lp": [
+          -0.4283572063879915,
+          -0.6566410526587441,
+          -0.9741859405730414
+        ],
+        "mount_norm_lp": 1.250482153055968,
+        "stationary_bias_rad_s": 0.00374702585307256,
+        "can_yaw_std_rad_s": 0.08484893046459913,
+        "gyro_pitch_std_rad_s": 0.2962562597832817,
+        "mean_speed_mps": 13.520109691265892
+      },
+      "configs": {
+        "A_raw": {
+          "n": 8,
+          "median_error_m": 378.55936936312395,
+          "median_drift_pct": 50.01417408969826,
+          "median_m_per_km": 500.1417408969826,
+          "pass_isro": 1,
+          "is_oracle": false
+        },
+        "B_lowpass": {
+          "n": 8,
+          "median_error_m": 371.86029681752734,
+          "median_drift_pct": 47.9694138439065,
+          "median_m_per_km": 479.694138439065,
+          "pass_isro": 1,
+          "is_oracle": false
+        },
+        "C_mount": {
+          "n": 8,
+          "median_error_m": 210.0714144772418,
+          "median_drift_pct": 30.08021279677883,
+          "median_m_per_km": 300.80212796778835,
+          "pass_isro": 2,
+          "is_oracle": true
+        },
+        "D_mount_lp": {
+          "n": 8,
+          "median_error_m": 197.40500924011337,
+          "median_drift_pct": 20.616167793859383,
+          "median_m_per_km": 206.16167793859384,
+          "pass_isro": 2,
+          "is_oracle": true
+        },
+        "E_mount_lp_bias": {
+          "n": 8,
+          "median_error_m": 207.53699472002234,
+          "median_drift_pct": 24.546193745314806,
+          "median_m_per_km": 245.46193745314807,
+          "pass_isro": 0,
+          "is_oracle": true
+        },
+        "F_oracle": {
+          "n": 8,
+          "median_error_m": 95.1079788595556,
+          "median_drift_pct": 12.411820141014346,
+          "median_m_per_km": 124.11820141014346,
+          "pass_isro": 4,
+          "is_oracle": true
+        }
+      }
+    },
+    {
+      "name": "S-Vta1a.csv",
+      "meta": {
+        "n": 25676,
+        "mount_vector_raw": [
+          0.013398453394183522,
+          0.01591179649234427,
+          0.02243833926289673
+        ],
+        "mount_vector_lp": [
+          0.02917894461029351,
+          0.05153979584564543,
+          0.09973898713574691
+        ],
+        "mount_norm_lp": 0.11599839188215531,
+        "stationary_bias_rad_s": -5.2184979016019384e-05,
+        "can_yaw_std_rad_s": 0.07437893059025703,
+        "gyro_pitch_std_rad_s": 0.3442053356296022,
+        "mean_speed_mps": 16.32739823868806
+      },
+      "configs": {
+        "A_raw": {
+          "n": 10,
+          "median_error_m": 441.1700458874865,
+          "median_drift_pct": 47.76134715033341,
+          "median_m_per_km": 477.6134715033341,
+          "pass_isro": 1,
+          "is_oracle": false
+        },
+        "B_lowpass": {
+          "n": 10,
+          "median_error_m": 432.41917719993893,
+          "median_drift_pct": 48.84816103220845,
+          "median_m_per_km": 488.4816103220845,
+          "pass_isro": 0,
+          "is_oracle": false
+        },
+        "C_mount": {
+          "n": 10,
+          "median_error_m": 387.5594104223005,
+          "median_drift_pct": 32.24932950959092,
+          "median_m_per_km": 322.49329509590916,
+          "pass_isro": 0,
+          "is_oracle": true
+        },
+        "D_mount_lp": {
+          "n": 10,
+          "median_error_m": 392.42379177860954,
+          "median_drift_pct": 32.6680777329118,
+          "median_m_per_km": 326.680777329118,
+          "pass_isro": 0,
+          "is_oracle": true
+        },
+        "E_mount_lp_bias": {
+          "n": 10,
+          "median_error_m": 392.28512033354656,
+          "median_drift_pct": 32.669939128130736,
+          "median_m_per_km": 326.6993912813074,
+          "pass_isro": 0,
+          "is_oracle": true
+        },
+        "F_oracle": {
+          "n": 10,
+          "median_error_m": 124.27444435970489,
+          "median_drift_pct": 12.483826268626878,
+          "median_m_per_km": 124.83826268626879,
+          "pass_isro": 2,
+          "is_oracle": true
+        }
+      }
+    },
+    {
+      "name": "S-Vta2.csv",
+      "meta": {
+        "n": 10991,
+        "mount_vector_raw": [
+          -0.18129882091262675,
+          -0.27448354117118073,
+          -0.378001475417198
+        ],
+        "mount_vector_lp": [
+          -0.6270403522507111,
+          -0.8948763479006189,
+          -1.2771425394754001
+        ],
+        "mount_norm_lp": 1.680796343261229,
+        "stationary_bias_rad_s": -0.000405223738538896,
+        "can_yaw_std_rad_s": 0.08471714132594389,
+        "gyro_pitch_std_rad_s": 0.32614080235055914,
+        "mean_speed_mps": 11.39686708640565
+      },
+      "configs": {
+        "A_raw": {
+          "n": 9,
+          "median_error_m": 115.82343403827987,
+          "median_drift_pct": 20.54697494008993,
+          "median_m_per_km": 205.46974940089933,
+          "pass_isro": 3,
+          "is_oracle": false
+        },
+        "B_lowpass": {
+          "n": 9,
+          "median_error_m": 109.47064074249356,
+          "median_drift_pct": 20.53193751055047,
+          "median_m_per_km": 205.31937510550472,
+          "pass_isro": 2,
+          "is_oracle": false
+        },
+        "C_mount": {
+          "n": 9,
+          "median_error_m": 199.24184416178147,
+          "median_drift_pct": 30.833037371709608,
+          "median_m_per_km": 308.3303737170961,
+          "pass_isro": 1,
+          "is_oracle": true
+        },
+        "D_mount_lp": {
+          "n": 9,
+          "median_error_m": 70.00326838398598,
+          "median_drift_pct": 13.53619164800157,
+          "median_m_per_km": 135.36191648001568,
+          "pass_isro": 3,
+          "is_oracle": true
+        },
+        "E_mount_lp_bias": {
+          "n": 9,
+          "median_error_m": 64.72174811324838,
+          "median_drift_pct": 13.63654759012124,
+          "median_m_per_km": 136.3654759012124,
+          "pass_isro": 3,
+          "is_oracle": true
+        },
+        "F_oracle": {
+          "n": 9,
+          "median_error_m": 29.416330042911586,
+          "median_drift_pct": 6.855397564492257,
+          "median_m_per_km": 68.55397564492257,
+          "pass_isro": 7,
+          "is_oracle": true
+        }
+      }
+    },
+    {
+      "name": "S-Vta29.csv",
+      "meta": {
+        "n": 23705,
+        "mount_vector_raw": [
+          -0.017099850158199207,
+          -0.02778625586671864,
+          -0.04656745021118874
+        ],
+        "mount_vector_lp": [
+          -0.007341127239483975,
+          -0.07018314138206616,
+          -0.1321201589869819
+        ],
+        "mount_norm_lp": 0.1497841843925678,
+        "stationary_bias_rad_s": -0.0005667057982525152,
+        "can_yaw_std_rad_s": 0.0871984356155415,
+        "gyro_pitch_std_rad_s": 0.4244379815251459,
+        "mean_speed_mps": 13.094030126684498
+      },
+      "configs": {
+        "A_raw": {
+          "n": 7,
+          "median_error_m": 232.71512596650467,
+          "median_drift_pct": 47.362268116076514,
+          "median_m_per_km": 473.6226811607652,
+          "pass_isro": 0,
+          "is_oracle": false
+        },
+        "B_lowpass": {
+          "n": 7,
+          "median_error_m": 179.88038324083882,
+          "median_drift_pct": 32.12285808752583,
+          "median_m_per_km": 321.2285808752582,
+          "pass_isro": 0,
+          "is_oracle": false
+        },
+        "C_mount": {
+          "n": 7,
+          "median_error_m": 233.7341079056523,
+          "median_drift_pct": 38.41563579013503,
+          "median_m_per_km": 384.1563579013503,
+          "pass_isro": 1,
+          "is_oracle": true
+        },
+        "D_mount_lp": {
+          "n": 7,
+          "median_error_m": 205.17251404668443,
+          "median_drift_pct": 36.63950139220199,
+          "median_m_per_km": 366.3950139220199,
+          "pass_isro": 1,
+          "is_oracle": true
+        },
+        "E_mount_lp_bias": {
+          "n": 7,
+          "median_error_m": 211.94348940898408,
+          "median_drift_pct": 37.84865536863129,
+          "median_m_per_km": 378.4865536863129,
+          "pass_isro": 1,
+          "is_oracle": true
+        },
+        "F_oracle": {
+          "n": 7,
+          "median_error_m": 88.63712511645163,
+          "median_drift_pct": 15.828728736862175,
+          "median_m_per_km": 158.28728736862175,
+          "pass_isro": 1,
+          "is_oracle": true
+        }
+      }
+    },
+    {
+      "name": "S-Vta30.csv",
+      "meta": {
+        "n": 17136,
+        "mount_vector_raw": [
+          -0.01286735667645568,
+          -0.01226577982855973,
+          -0.015533742743499043
+        ],
+        "mount_vector_lp": [
+          -0.06777661016237532,
+          -0.07015090561263508,
+          -0.11235056986845604
+        ],
+        "mount_norm_lp": 0.1487866559646471,
+        "stationary_bias_rad_s": 8.506864062297488e-05,
+        "can_yaw_std_rad_s": 0.05901806827203515,
+        "gyro_pitch_std_rad_s": 0.305238249925614,
+        "mean_speed_mps": 11.132828791542968
+      },
+      "configs": {
+        "A_raw": {
+          "n": 3,
+          "median_error_m": 427.57855701674936,
+          "median_drift_pct": 59.67983272398438,
+          "median_m_per_km": 596.7983272398438,
+          "pass_isro": 0,
+          "is_oracle": false
+        },
+        "B_lowpass": {
+          "n": 3,
+          "median_error_m": 444.8890787401414,
+          "median_drift_pct": 62.09597128814644,
+          "median_m_per_km": 620.9597128814645,
+          "pass_isro": 0,
+          "is_oracle": false
+        },
+        "C_mount": {
+          "n": 3,
+          "median_error_m": 23.552701344851975,
+          "median_drift_pct": 4.145138192089551,
+          "median_m_per_km": 41.45138192089551,
+          "pass_isro": 2,
+          "is_oracle": true
+        },
+        "D_mount_lp": {
+          "n": 3,
+          "median_error_m": 18.89284002345028,
+          "median_drift_pct": 3.32502975313102,
+          "median_m_per_km": 33.250297531310196,
+          "pass_isro": 2,
+          "is_oracle": true
+        },
+        "E_mount_lp_bias": {
+          "n": 3,
+          "median_error_m": 19.855471093534156,
+          "median_drift_pct": 3.4944472120913646,
+          "median_m_per_km": 34.944472120913645,
+          "pass_isro": 2,
+          "is_oracle": true
+        },
+        "F_oracle": {
+          "n": 3,
+          "median_error_m": 20.636633888543983,
+          "median_drift_pct": 3.6319273120775346,
+          "median_m_per_km": 36.31927312077535,
+          "pass_isro": 3,
+          "is_oracle": true
+        }
+      }
+    },
+    {
+      "name": "S-Vtb1.csv",
+      "meta": {
+        "n": 32459,
+        "mount_vector_raw": [
+          -0.09803206016145875,
+          -0.13328239403059303,
+          -0.1917171446150631
+        ],
+        "mount_vector_lp": [
+          -0.263998309802952,
+          -0.48654403431094284,
+          -0.7993114423640357
+        ],
+        "mount_norm_lp": 0.9722751600223357,
+        "stationary_bias_rad_s": 0.00337711880328819,
+        "can_yaw_std_rad_s": 0.07331112954409305,
+        "gyro_pitch_std_rad_s": 0.3203156663425456,
+        "mean_speed_mps": 14.769071774556938
+      },
+      "configs": {
+        "A_raw": {
+          "n": 9,
+          "median_error_m": 387.2837189973116,
+          "median_drift_pct": 54.91919063221088,
+          "median_m_per_km": 549.1919063221088,
+          "pass_isro": 1,
+          "is_oracle": false
+        },
+        "B_lowpass": {
+          "n": 9,
+          "median_error_m": 383.9654381096664,
+          "median_drift_pct": 54.44863818783851,
+          "median_m_per_km": 544.4863818783851,
+          "pass_isro": 1,
+          "is_oracle": false
+        },
+        "C_mount": {
+          "n": 9,
+          "median_error_m": 322.58875059601274,
+          "median_drift_pct": 36.724962271785124,
+          "median_m_per_km": 367.2496227178512,
+          "pass_isro": 1,
+          "is_oracle": true
+        },
+        "D_mount_lp": {
+          "n": 9,
+          "median_error_m": 208.6161847232075,
+          "median_drift_pct": 23.879196138957845,
+          "median_m_per_km": 238.79196138957843,
+          "pass_isro": 2,
+          "is_oracle": true
+        },
+        "E_mount_lp_bias": {
+          "n": 9,
+          "median_error_m": 282.52466760788553,
+          "median_drift_pct": 32.33911098917752,
+          "median_m_per_km": 323.3911098917752,
+          "pass_isro": 3,
+          "is_oracle": true
+        },
+        "F_oracle": {
+          "n": 9,
+          "median_error_m": 109.90214195028896,
+          "median_drift_pct": 12.511756870800886,
+          "median_m_per_km": 125.11756870800883,
+          "pass_isro": 2,
+          "is_oracle": true
+        }
+      }
+    },
+    {
+      "name": "S-Vtb2.csv",
+      "meta": {
+        "n": 5712,
+        "mount_vector_raw": [
+          -0.09095072015720612,
+          -0.1272950405953196,
+          -0.1801628655781024
+        ],
+        "mount_vector_lp": [
+          -0.5180592284589571,
+          -0.6620097767760548,
+          -1.0974150575568762
+        ],
+        "mount_norm_lp": 1.3823755341046562,
+        "stationary_bias_rad_s": -0.003052743981355281,
+        "can_yaw_std_rad_s": 0.07463895377475427,
+        "gyro_pitch_std_rad_s": 0.3961470565519056,
+        "mean_speed_mps": 10.884302628155087
+      },
+      "configs": {
+        "A_raw": {
+          "n": 6,
+          "median_error_m": 321.64774321105847,
+          "median_drift_pct": 67.11898009320402,
+          "median_m_per_km": 671.1898009320403,
+          "pass_isro": 0,
+          "is_oracle": false
+        },
+        "B_lowpass": {
+          "n": 6,
+          "median_error_m": 342.5794720860649,
+          "median_drift_pct": 69.70959694780674,
+          "median_m_per_km": 697.0959694780674,
+          "pass_isro": 0,
+          "is_oracle": false
+        },
+        "C_mount": {
+          "n": 6,
+          "median_error_m": 334.756874369878,
+          "median_drift_pct": 42.396174589714576,
+          "median_m_per_km": 423.9617458971459,
+          "pass_isro": 0,
+          "is_oracle": true
+        },
+        "D_mount_lp": {
+          "n": 6,
+          "median_error_m": 234.67029288082708,
+          "median_drift_pct": 33.00435013600823,
+          "median_m_per_km": 330.04350136008225,
+          "pass_isro": 0,
+          "is_oracle": true
+        },
+        "E_mount_lp_bias": {
+          "n": 6,
+          "median_error_m": 211.56437540563383,
+          "median_drift_pct": 31.738469094512762,
+          "median_m_per_km": 317.3846909451276,
+          "pass_isro": 0,
+          "is_oracle": true
+        },
+        "F_oracle": {
+          "n": 6,
+          "median_error_m": 135.2641398663314,
+          "median_drift_pct": 18.389146971458924,
+          "median_m_per_km": 183.89146971458928,
+          "pass_isro": 1,
+          "is_oracle": true
+        }
+      }
+    },
+    {
+      "name": "S-Vtb5.csv",
+      "meta": {
+        "n": 64388,
+        "mount_vector_raw": [
+          0.0030725889643669507,
+          0.005581562954463883,
+          0.0075718116120127455
+        ],
+        "mount_vector_lp": [
+          -0.009434769352717219,
+          0.022509586400640873,
+          0.04362442218935244
+        ],
+        "mount_norm_lp": 0.04998786416743322,
+        "stationary_bias_rad_s": -9.995987587266594e-05,
+        "can_yaw_std_rad_s": 0.04613043593676504,
+        "gyro_pitch_std_rad_s": 0.25315457232260635,
+        "mean_speed_mps": 18.41065968212198
+      },
+      "configs": {
+        "A_raw": {
+          "n": 10,
+          "median_error_m": 378.0933765904043,
+          "median_drift_pct": 35.67645060488569,
+          "median_m_per_km": 356.7645060488569,
+          "pass_isro": 1,
+          "is_oracle": false
+        },
+        "B_lowpass": {
+          "n": 10,
+          "median_error_m": 472.0711292087945,
+          "median_drift_pct": 35.90596619741632,
+          "median_m_per_km": 359.0596619741632,
+          "pass_isro": 1,
+          "is_oracle": false
+        },
+        "C_mount": {
+          "n": 10,
+          "median_error_m": 257.8192163746145,
+          "median_drift_pct": 31.199942506097656,
+          "median_m_per_km": 311.9994250609766,
+          "pass_isro": 3,
+          "is_oracle": true
+        },
+        "D_mount_lp": {
+          "n": 10,
+          "median_error_m": 260.58997014978934,
+          "median_drift_pct": 30.98275365779226,
+          "median_m_per_km": 309.82753657792256,
+          "pass_isro": 3,
+          "is_oracle": true
+        },
+        "E_mount_lp_bias": {
+          "n": 10,
+          "median_error_m": 259.25987455432437,
+          "median_drift_pct": 30.690827349261617,
+          "median_m_per_km": 306.9082734926162,
+          "pass_isro": 3,
+          "is_oracle": true
+        },
+        "F_oracle": {
+          "n": 10,
+          "median_error_m": 115.50539402537214,
+          "median_drift_pct": 12.695818445632066,
+          "median_m_per_km": 126.95818445632068,
+          "pass_isro": 5,
+          "is_oracle": true
+        }
+      }
+    },
+    {
+      "name": "S-Vw14b.csv",
+      "meta": {
+        "n": 19588,
+        "mount_vector_raw": [
+          -0.0011204744280292002,
+          -0.005730015080550193,
+          -0.005096237607398655
+        ],
+        "mount_vector_lp": [
+          -0.03249940558836525,
+          -0.09450771797603795,
+          -0.13917570285783207
+        ],
+        "mount_norm_lp": 0.1713411695612206,
+        "stationary_bias_rad_s": 0.0,
+        "can_yaw_std_rad_s": 0.013681308272726633,
+        "gyro_pitch_std_rad_s": 0.2416045072055711,
+        "mean_speed_mps": 21.112833512969257
+      },
+      "configs": {
+        "A_raw": {
+          "n": 10,
+          "median_error_m": 428.84168540368466,
+          "median_drift_pct": 43.870667784808184,
+          "median_m_per_km": 438.7066778480818,
+          "pass_isro": 2,
+          "is_oracle": false
+        },
+        "B_lowpass": {
+          "n": 10,
+          "median_error_m": 432.1422450793426,
+          "median_drift_pct": 39.441445870511416,
+          "median_m_per_km": 394.41445870511416,
+          "pass_isro": 2,
+          "is_oracle": false
+        },
+        "C_mount": {
+          "n": 10,
+          "median_error_m": 258.0879326369105,
+          "median_drift_pct": 20.636674827424507,
+          "median_m_per_km": 206.36674827424503,
+          "pass_isro": 3,
+          "is_oracle": true
+        },
+        "D_mount_lp": {
+          "n": 10,
+          "median_error_m": 230.7066883776065,
+          "median_drift_pct": 18.71448517098915,
+          "median_m_per_km": 187.14485170989153,
+          "pass_isro": 3,
+          "is_oracle": true
+        },
+        "E_mount_lp_bias": {
+          "n": 10,
+          "median_error_m": 230.7066883776065,
+          "median_drift_pct": 18.71448517098915,
+          "median_m_per_km": 187.14485170989153,
+          "pass_isro": 3,
+          "is_oracle": true
+        },
+        "F_oracle": {
+          "n": 10,
+          "median_error_m": 86.2082027634805,
+          "median_drift_pct": 6.655596845355243,
+          "median_m_per_km": 66.55596845355244,
+          "pass_isro": 8,
+          "is_oracle": true
+        }
+      }
+    },
+    {
+      "name": "S-Vw14c.csv",
+      "meta": {
+        "n": 15826,
+        "mount_vector_raw": [
+          -0.024831513958133565,
+          -0.1010730095119314,
+          -0.11915778128834423
+        ],
+        "mount_vector_lp": [
+          -0.22679671457248732,
+          -0.6319721673922388,
+          -0.960271906278986
+        ],
+        "mount_norm_lp": 1.1717285112550586,
+        "stationary_bias_rad_s": 0.00043799128519990426,
+        "can_yaw_std_rad_s": 0.059154796819745496,
+        "gyro_pitch_std_rad_s": 0.25667484660186307,
+        "mean_speed_mps": 15.486418284242841
+      },
+      "configs": {
+        "A_raw": {
+          "n": 6,
+          "median_error_m": 465.0733778965081,
+          "median_drift_pct": 39.86413667913291,
+          "median_m_per_km": 398.6413667913291,
+          "pass_isro": 1,
+          "is_oracle": false
+        },
+        "B_lowpass": {
+          "n": 6,
+          "median_error_m": 490.0880526705006,
+          "median_drift_pct": 40.06517473258801,
+          "median_m_per_km": 400.65174732588014,
+          "pass_isro": 0,
+          "is_oracle": false
+        },
+        "C_mount": {
+          "n": 6,
+          "median_error_m": 133.2145109747254,
+          "median_drift_pct": 15.243102419489952,
+          "median_m_per_km": 152.43102419489952,
+          "pass_isro": 2,
+          "is_oracle": true
+        },
+        "D_mount_lp": {
+          "n": 6,
+          "median_error_m": 174.75173870797073,
+          "median_drift_pct": 17.342782111156886,
+          "median_m_per_km": 173.42782111156885,
+          "pass_isro": 1,
+          "is_oracle": true
+        },
+        "E_mount_lp_bias": {
+          "n": 6,
+          "median_error_m": 186.58937441524841,
+          "median_drift_pct": 18.502099702218523,
+          "median_m_per_km": 185.02099702218524,
+          "pass_isro": 1,
+          "is_oracle": true
+        },
+        "F_oracle": {
+          "n": 6,
+          "median_error_m": 95.4467937928676,
+          "median_drift_pct": 11.575768877012239,
+          "median_m_per_km": 115.75768877012237,
+          "pass_isro": 2,
+          "is_oracle": true
+        }
+      }
+    },
+    {
+      "name": "S-Vw16a.csv",
+      "meta": {
+        "n": 5879,
+        "mount_vector_raw": [
+          0.004028868385918528,
+          0.007671374144498623,
+          0.01437694121820456
+        ],
+        "mount_vector_lp": [
+          0.02351011606779164,
+          0.05094183303496995,
+          0.08772435610241511
+        ],
+        "mount_norm_lp": 0.10413144848731878,
+        "stationary_bias_rad_s": 0.00035404972244571875,
+        "can_yaw_std_rad_s": 0.04759575265147219,
+        "gyro_pitch_std_rad_s": 0.27181970287367135,
+        "mean_speed_mps": 16.341778264927385
+      },
+      "configs": {
+        "A_raw": {
+          "n": 9,
+          "median_error_m": 308.89396229310944,
+          "median_drift_pct": 43.41007799992807,
+          "median_m_per_km": 434.10077999928063,
+          "pass_isro": 0,
+          "is_oracle": false
+        },
+        "B_lowpass": {
+          "n": 9,
+          "median_error_m": 341.76417313615025,
+          "median_drift_pct": 37.777907553008205,
+          "median_m_per_km": 377.7790755300821,
+          "pass_isro": 0,
+          "is_oracle": false
+        },
+        "C_mount": {
+          "n": 9,
+          "median_error_m": 117.90776099937871,
+          "median_drift_pct": 11.843965633235186,
+          "median_m_per_km": 118.43965633235187,
+          "pass_isro": 2,
+          "is_oracle": true
+        },
+        "D_mount_lp": {
+          "n": 9,
+          "median_error_m": 119.62955197085752,
+          "median_drift_pct": 11.693370128743556,
+          "median_m_per_km": 116.93370128743555,
+          "pass_isro": 2,
+          "is_oracle": true
+        },
+        "E_mount_lp_bias": {
+          "n": 9,
+          "median_error_m": 116.91112652333453,
+          "median_drift_pct": 11.579661587399853,
+          "median_m_per_km": 115.79661587399852,
+          "pass_isro": 2,
+          "is_oracle": true
+        },
+        "F_oracle": {
+          "n": 9,
+          "median_error_m": 116.28513862320644,
+          "median_drift_pct": 11.385869066983485,
+          "median_m_per_km": 113.85869066983487,
+          "pass_isro": 3,
+          "is_oracle": true
+        }
+      }
+    },
+    {
+      "name": "S-Vw2.csv",
+      "meta": {
+        "n": 52712,
+        "mount_vector_raw": [
+          -0.015093649750783145,
+          -0.0738946096886024,
+          -0.08531436720461008
+        ],
+        "mount_vector_lp": [
+          -0.17939168725668259,
+          -0.5184670792797906,
+          -0.7516189130965076
+        ],
+        "mount_norm_lp": 0.9305484835719693,
+        "stationary_bias_rad_s": 0.00020396759066474923,
+        "can_yaw_std_rad_s": 0.06644483573516635,
+        "gyro_pitch_std_rad_s": 0.2745081474212217,
+        "mean_speed_mps": 20.25450730522572
+      },
+      "configs": {
+        "A_raw": {
+          "n": 8,
+          "median_error_m": 415.43513067125434,
+          "median_drift_pct": 41.74170718302446,
+          "median_m_per_km": 417.41707183024465,
+          "pass_isro": 2,
+          "is_oracle": false
+        },
+        "B_lowpass": {
+          "n": 8,
+          "median_error_m": 393.6254157492441,
+          "median_drift_pct": 40.78430583898605,
+          "median_m_per_km": 407.8430583898605,
+          "pass_isro": 1,
+          "is_oracle": false
+        },
+        "C_mount": {
+          "n": 8,
+          "median_error_m": 38.59093528957223,
+          "median_drift_pct": 3.280762722697241,
+          "median_m_per_km": 32.8076272269724,
+          "pass_isro": 6,
+          "is_oracle": true
+        },
+        "D_mount_lp": {
+          "n": 8,
+          "median_error_m": 47.61569501472816,
+          "median_drift_pct": 4.774577579231895,
+          "median_m_per_km": 47.74577579231895,
+          "pass_isro": 7,
+          "is_oracle": true
+        },
+        "E_mount_lp_bias": {
+          "n": 8,
+          "median_error_m": 54.17074647335163,
+          "median_drift_pct": 5.411106901071071,
+          "median_m_per_km": 54.11106901071071,
+          "pass_isro": 7,
+          "is_oracle": true
+        },
+        "F_oracle": {
+          "n": 8,
+          "median_error_m": 43.206065332533136,
+          "median_drift_pct": 3.416163400594683,
+          "median_m_per_km": 34.16163400594683,
+          "pass_isro": 8,
+          "is_oracle": true
+        }
+      }
+    },
+    {
+      "name": "S-Vw4.csv",
+      "meta": {
+        "n": 126526,
+        "mount_vector_raw": [
+          -0.04707456869431897,
+          -0.2236842493487715,
+          -0.28001794655405604
+        ],
+        "mount_vector_lp": [
+          -0.3387245696643579,
+          -0.9503024870382182,
+          -1.4226280508377072
+        ],
+        "mount_norm_lp": 1.7440412042138285,
+        "stationary_bias_rad_s": -0.000292252324660095,
+        "can_yaw_std_rad_s": 0.09468822253657287,
+        "gyro_pitch_std_rad_s": 0.3493258964597796,
+        "mean_speed_mps": 18.868334399502817
+      },
+      "configs": {
+        "A_raw": {
+          "n": 7,
+          "median_error_m": 724.8280536408931,
+          "median_drift_pct": 53.7581484531197,
+          "median_m_per_km": 537.581484531197,
+          "pass_isro": 0,
+          "is_oracle": false
+        },
+        "B_lowpass": {
+          "n": 7,
+          "median_error_m": 739.4276805382326,
+          "median_drift_pct": 44.23401319116974,
+          "median_m_per_km": 442.3401319116974,
+          "pass_isro": 0,
+          "is_oracle": false
+        },
+        "C_mount": {
+          "n": 7,
+          "median_error_m": 212.76738354978045,
+          "median_drift_pct": 24.972121967591335,
+          "median_m_per_km": 249.72121967591337,
+          "pass_isro": 2,
+          "is_oracle": true
+        },
+        "D_mount_lp": {
+          "n": 7,
+          "median_error_m": 187.81696914420064,
+          "median_drift_pct": 14.39352784946807,
+          "median_m_per_km": 143.9352784946807,
+          "pass_isro": 3,
+          "is_oracle": true
+        },
+        "E_mount_lp_bias": {
+          "n": 7,
+          "median_error_m": 198.35008846621332,
+          "median_drift_pct": 15.254315565756565,
+          "median_m_per_km": 152.54315565756565,
+          "pass_isro": 3,
+          "is_oracle": true
+        },
+        "F_oracle": {
+          "n": 7,
+          "median_error_m": 87.62224159129397,
+          "median_drift_pct": 7.103966308371666,
+          "median_m_per_km": 71.03966308371666,
+          "pass_isro": 5,
+          "is_oracle": true
+        }
+      }
+    },
+    {
+      "name": "S-Y1.csv",
+      "meta": {
+        "n": 70285,
+        "mount_vector_raw": [
+          -0.0025353992471981402,
+          -0.06129642179833613,
+          -0.011508132697115522
+        ],
+        "mount_vector_lp": [
+          0.03485275441333317,
+          -0.09463340415395052,
+          -0.04492302855509536
+        ],
+        "mount_norm_lp": 0.11040051705731711,
+        "stationary_bias_rad_s": -0.00021690721147425772,
+        "can_yaw_std_rad_s": 0.13366937203754417,
+        "gyro_pitch_std_rad_s": 0.17159183314658938,
+        "mean_speed_mps": 10.564606025399913
+      },
+      "configs": {
+        "A_raw": {
+          "n": 9,
+          "median_error_m": 365.3434320942012,
+          "median_drift_pct": 49.44493100220428,
+          "median_m_per_km": 494.44931002204277,
+          "pass_isro": 0,
+          "is_oracle": false
+        },
+        "B_lowpass": {
+          "n": 9,
+          "median_error_m": 361.2201021301046,
+          "median_drift_pct": 49.304999553205135,
+          "median_m_per_km": 493.0499955320514,
+          "pass_isro": 0,
+          "is_oracle": false
+        },
+        "C_mount": {
+          "n": 9,
+          "median_error_m": 235.14601524057971,
+          "median_drift_pct": 56.432236006331735,
+          "median_m_per_km": 564.3223600633173,
+          "pass_isro": 0,
+          "is_oracle": true
+        },
+        "D_mount_lp": {
+          "n": 9,
+          "median_error_m": 232.24289923048667,
+          "median_drift_pct": 55.7216060996722,
+          "median_m_per_km": 557.216060996722,
+          "pass_isro": 0,
+          "is_oracle": true
+        },
+        "E_mount_lp_bias": {
+          "n": 9,
+          "median_error_m": 233.83609049128316,
+          "median_drift_pct": 56.2896881146858,
+          "median_m_per_km": 562.8968811468579,
+          "pass_isro": 0,
+          "is_oracle": true
+        },
+        "F_oracle": {
+          "n": 9,
+          "median_error_m": 178.74562707712226,
+          "median_drift_pct": 28.88186087097476,
+          "median_m_per_km": 288.8186087097476,
+          "pass_isro": 2,
+          "is_oracle": true
+        }
+      }
+    }
+  ]
+}

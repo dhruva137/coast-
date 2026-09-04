@@ -1,0 +1,27 @@
+{
+  "name": "external-imu-200hz",
+  "description": "Generic external / FOG-class IMU logger at 200 Hz. Columns already in SI vehicle-frame units: accel m/s^2, gyro rad/s, nanosecond monotonic timestamps. Matches the project's own log schema (lab/datasets/log_schema.py IMU_COLUMNS), so android/ logs and edge-box logs share this mapping.",
+  "has_header": true,
+  "delimiter": ",",
+  "time": { "match": "t_ns", "unit": "ns" },
+  "fields": {
+    "ax": { "match": "ax" },
+    "ay": { "match": "ay" },
+    "az": { "match": "az" },
+    "gx": { "match": "gx" },
+    "gy": { "match": "gy" },
+    "gz": { "match": "gz" },
+    "mx": { "match": "mx" },
+    "my": { "match": "my" },
+    "mz": { "match": "mz" },
+    "pressure_hpa": { "match": "pressure_hpa" },
+    "lux": { "match": "lux" }
+  },
+  "meta": {
+    "phone_model": "external-imu",
+    "vehicle": "motorcycle",
+    "mount_type": "frame",
+    "leans": true,
+    "imu_hz": 200
+  }
+}

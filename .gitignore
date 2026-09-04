@@ -31,3 +31,10 @@ IO-VNBD/
 *.pth
 .cache/
 coverage/
+.gstack/
+
+# OSM tile download cache (rebuild: python maps/osm_extract.py --region <name>)
+data/maps/overpass/
+
+# Windowed-dataset cache (rebuilt from data/raw)
+lab/models/results/speed_bakeoff/cache/

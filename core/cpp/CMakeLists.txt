@@ -21,5 +21,16 @@ add_executable(nav_golden tests/golden.cpp)
 target_link_libraries(nav_golden PRIVATE nav_core)
 target_include_directories(nav_golden PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+# Edge-deployable software engine (SIH26168 deliverable (b)):
+# a standalone CLI over the same nav_core the phone app uses.
+add_executable(idr_edge apps/idr_edge.cpp)
+target_link_libraries(idr_edge PRIVATE nav_core)
+target_include_directories(idr_edge PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+if(WIN32)
+  target_link_libraries(idr_edge PRIVATE psapi)
+endif()
+
 enable_testing()
 add_test(NAME golden COMMAND nav_golden)
+add_test(NAME edge_selftest
+         COMMAND idr_edge --synth 5 --rate 200 --bench --quiet)

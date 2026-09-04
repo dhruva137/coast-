@@ -47,6 +47,11 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+    androidResources {
+        // Keep avnet_tiny.onnx uncompressed so OrtSession maps it without a
+        // full inflate on every cold start.
+        noCompress += "onnx"
+    }
 }
 
 dependencies {
@@ -68,6 +73,11 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+
+    // On-device inference for lab/models/weights/avnet_tiny.onnx (AVNet-tiny,
+    // 20×6 @ 10 Hz). Required by the problem statement: the trained model runs
+    // on the phone, not on a laptop over the wire.
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.20.0")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20240303")

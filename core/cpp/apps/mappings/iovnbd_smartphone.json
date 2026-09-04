@@ -1,0 +1,32 @@
+{
+  "name": "iovnbd-smartphone",
+  "description": "IO-VNBD 'Synchronised V and S datasets' smartphone logs (S-*.csv). ~10 Hz. Gyro channels are remapped to the vehicle frame: [gx, gy, gz] = [raw Roll, raw Yaw, -raw Pitch], the mapping validated against GPS orientation in lab/stress/load_iovnbd.py. GPS SPEED is km/h and TIME SINCE START is milliseconds.",
+  "has_header": true,
+  "delimiter": ",",
+  "time": { "match": "time since start", "unit": "ms" },
+  "fields": {
+    "ax": { "match": "accelerometer x" },
+    "ay": { "match": "accelerometer y" },
+    "az": { "match": "accelerometer z" },
+    "gx": { "match": "gyroscope roll" },
+    "gy": { "match": "gyroscope yaw" },
+    "gz": { "match": "gyroscope pitch", "scale": -1.0 },
+    "mx": { "match": "magnetic field x" },
+    "my": { "match": "magnetic field y" },
+    "mz": { "match": "magnetic field z" },
+    "lat": { "match": "gps latitude" },
+    "lon": { "match": "gps longitude" },
+    "alt": { "match": "gps altitude" },
+    "speed": { "match": "gps speed", "scale": 0.2777777777777778 },
+    "bearing": { "match": "gps orientation" },
+    "acc_h": { "match": "gps accuracy" },
+    "n_sats": { "match": "gps satellites in range" }
+  },
+  "meta": {
+    "phone_model": "io-vnbd-smartphone",
+    "vehicle": "car",
+    "mount_type": "dash",
+    "leans": false,
+    "imu_hz": 10
+  }
+}

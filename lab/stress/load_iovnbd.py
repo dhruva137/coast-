@@ -121,6 +121,97 @@ def _col_unit_is_kmh(header_cell: str) -> bool:
     return "km" in n and "h" in n.replace(" ", "")
 
 
+def gps_path_length_m(
+    t_s: np.ndarray,
+    lat: np.ndarray,
+    lon: np.ndarray,
+    *,
+    max_step_m: float = 500.0,
+) -> float:
+    """Great-circle path length over *changed* GNSS fixes only.
+
+    IO-VNBD holds each fix for ~9 s, so differencing adjacent 10 Hz rows
+    measures quantisation noise rather than motion.
+    """
+    lat = np.asarray(lat, dtype=np.float64)
+    lon = np.asarray(lon, dtype=np.float64)
+    changed = np.ones(lat.size, dtype=bool)
+    changed[1:] = (np.abs(np.diff(lat)) > 1e-10) | (np.abs(np.diff(lon)) > 1e-10)
+    changed &= np.isfinite(lat) & np.isfinite(lon)
+    i = np.flatnonzero(changed)
+    if i.size < 2:
+        return 0.0
+    la, lo = lat[i], lon[i]
+    mean_lat = np.deg2rad((la[:-1] + la[1:]) * 0.5)
+    north = np.deg2rad(np.diff(la)) * 6_371_008.8
+    east = np.deg2rad(np.diff(lo)) * 6_371_008.8 * np.cos(mean_lat)
+    step = np.hypot(east, north)
+    return float(np.sum(step[np.isfinite(step) & (step < max_step_m)]))
+
+
+def resolve_speed_unit(
+    speed_raw: np.ndarray,
+    t_s: np.ndarray,
+    lat: np.ndarray,
+    lon: np.ndarray,
+    *,
+    header_cell: str = "",
+) -> tuple[np.ndarray, dict[str, Any]]:
+    """Decide the speed column's unit by geometry, not by its header string.
+
+    IO-VNBD smartphone tables label the column ``GPS SPEED (Kmh)`` but the
+    values are metres per second. Verified against the paired ``V-*.csv`` CAN
+    ``Indicated Vehicle Speed``: the ratio is 0.945, and integrating the column
+    as m/s reproduces the GPS polyline length (S-S1: 37 824 m of travel against
+    a 37 029 m path) while dividing by 3.6 does not (10 507 m).
+
+    Trusting the header inflated every drift figure in the repo by ~3.6x, so
+    the header is now only a tie-breaker. We integrate the column under both
+    hypotheses and keep whichever reproduces the measured GNSS path length.
+    """
+    speed_raw = np.asarray(speed_raw, dtype=np.float64)
+    t_s = np.asarray(t_s, dtype=np.float64)
+    path_m = gps_path_length_m(t_s, lat, lon)
+
+    dt = np.diff(t_s, prepend=t_s[0])
+    dt = np.clip(dt, 0.0, 0.5)
+    finite = np.isfinite(speed_raw)
+    travelled_as_mps = float(np.sum(np.where(finite, np.maximum(speed_raw, 0.0), 0.0) * dt))
+
+    info: dict[str, Any] = {
+        "header_cell": header_cell,
+        "header_says_kmh": _col_unit_is_kmh(header_cell),
+        "gps_path_length_m": path_m,
+        "integrated_as_mps_m": travelled_as_mps,
+        "integrated_as_kmh_m": travelled_as_mps / 3.6,
+    }
+
+    if path_m < 200.0 or travelled_as_mps <= 0.0:
+        # Too little motion to decide geometrically; fall back to the header.
+        divisor = 3.6 if info["header_says_kmh"] else 1.0
+        info["decision"] = "header_fallback"
+        info["divisor"] = divisor
+        info["ratio"] = float("nan")
+        return speed_raw / divisor, info
+
+    ratio_mps = travelled_as_mps / path_m
+    ratio_kmh = (travelled_as_mps / 3.6) / path_m
+    # Pick the hypothesis whose integrated distance is closest to the path.
+    if abs(np.log(max(ratio_mps, 1e-9))) <= abs(np.log(max(ratio_kmh, 1e-9))):
+        divisor, chosen, ratio = 1.0, "m/s", ratio_mps
+    else:
+        divisor, chosen, ratio = 3.6, "km/h", ratio_kmh
+    info["decision"] = chosen
+    info["divisor"] = divisor
+    info["ratio"] = float(ratio)
+    if not 0.8 <= ratio <= 1.25:
+        info["warning"] = (
+            f"speed column integrates to {ratio:.2f}x the GNSS path length "
+            f"even as {chosen}; distance-based metrics are unreliable"
+        )
+    return speed_raw / divisor, info
+
+
 def _col_unit_is_ms(header_cell: str) -> bool:
     n = _norm(header_cell)
     return "ms" in n.split() or n.endswith("ms") or "millis" in n
@@ -135,16 +226,24 @@ def find_smartphone_csvs(
     raw_dir = Path(raw_dir) if raw_dir is not None else default_raw_dir()
     if not raw_dir.is_dir():
         return []
-    out: list[Path] = []
+    # IO-VNBD ships each drive twice: once under "Synchronised V abd S
+    # datasets" (row-aligned with a V-*.csv CAN log) and once under
+    # "Unsynchronised ...". Keep one copy per basename and prefer the
+    # synchronised one, so callers get CAN ground truth wherever it exists.
+    best: dict[str, Path] = {}
     for p in sorted(raw_dir.rglob("S-*.csv")):
         if not p.is_file():
             continue
         try:
-            if p.stat().st_size > min_bytes and not _is_lfs_pointer(p):
-                out.append(p)
+            if p.stat().st_size <= min_bytes or _is_lfs_pointer(p):
+                continue
         except OSError:
             continue
-    return out
+        synced = companion_vehicle_csv(p) is not None
+        prev = best.get(p.name)
+        if prev is None or (synced and companion_vehicle_csv(prev) is None):
+            best[p.name] = p
+    return [best[k] for k in sorted(best)]
 
 
 def detect_gnss_outage(
@@ -397,11 +496,9 @@ def load_smartphone_csv(path: Path | str) -> dict[str, Any]:
     acc_h = arr[:, 11]
 
     hdr_speed = header[idx["speed"]] if "speed" in idx else ""
-    finite = speed[np.isfinite(speed)]
-    if _col_unit_is_kmh(hdr_speed) or (finite.size > 10 and float(np.nanmax(np.abs(finite))) > 80.0):
-        speed_mps = speed / 3.6
-    else:
-        speed_mps = speed.copy()
+    speed_mps, speed_unit = resolve_speed_unit(
+        speed, t_s, lat, lon, header_cell=hdr_speed
+    )
 
     # Bearing is degrees in IO-VNBD (GPS ORIENTATION / ORIENTATION Yaw).
     bearing_deg = bearing.copy()
@@ -434,6 +531,7 @@ def load_smartphone_csv(path: Path | str) -> dict[str, Any]:
         "n": int(t_s.size),
         "hz_est": hz_est,
         "header_map": {k: header[i] for k, i in idx.items()},
+        "speed_unit": speed_unit,
         "file_bytes": int(file_bytes),
         "axis_mapping": {
             "vehicle_gx": "gyro_roll_raw",
@@ -445,13 +543,122 @@ def load_smartphone_csv(path: Path | str) -> dict[str, Any]:
     }
 
 
+# --- Paired vehicle (CAN) ground truth -------------------------------------
+#
+# The Synchronised IO-VNBD release ships row-aligned pairs: S-<id>.csv is the
+# smartphone, V-<id>.csv is the same drive logged from the car. The V table
+# carries CAN yaw rate, indicated vehicle speed, wheel speeds and a true 10 Hz
+# GNSS fix. The phone table holds each GNSS fix for ~9 s (S-S1: 498 unique
+# positions across 51 746 rows) against the V table's 40 684, so scoring a
+# dead-reckon against interpolated phone GNSS measures the interpolation as
+# much as the estimator. Prefer V whenever the pair exists.
+
+_V_COLUMNS = {
+    "lat": 2,
+    "lon": 3,
+    "speed_kmh": 4,
+    "heading_deg": 5,
+    "yaw_rate_deg_s": 14,
+    "indicated_speed_kmh": 15,
+}
+
+
+def companion_vehicle_csv(s_path: Path | str) -> Path | None:
+    """Return the V-*.csv paired with this S-*.csv, if it is present and real."""
+    s_path = Path(s_path)
+    if not s_path.name.startswith("S-"):
+        return None
+    v_path = s_path.with_name("V-" + s_path.name[2:])
+    try:
+        if v_path.is_file() and v_path.stat().st_size > LFS_MIN_BYTES:
+            return v_path
+    except OSError:
+        return None
+    return None
+
+
+def load_vehicle_csv(path: Path | str, *, n_rows: int | None = None) -> dict[str, Any]:
+    """Parse one V-*.csv into SI arrays.
+
+    Columns are taken positionally: the V tables ship a fixed 29-column layout
+    documented in the IO-VNBD Data-in-Brief paper, and several headers carry
+    non-ascii unit glyphs that defeat name matching.
+    """
+    path = Path(path)
+    verify_csv_not_lfs_stub(path)
+    rows: list[list[float]] = []
+    want = max(_V_COLUMNS.values())
+    with path.open("r", newline="", encoding="utf-8", errors="ignore") as f:
+        reader = csv.reader(f)
+        next(reader)
+        for raw in reader:
+            if len(raw) <= want:
+                continue
+            try:
+                rows.append([float(raw[i]) for i in _V_COLUMNS.values()])
+            except (ValueError, IndexError):
+                rows.append([float("nan")] * len(_V_COLUMNS))
+            if n_rows is not None and len(rows) >= n_rows:
+                break
+    if len(rows) < 50:
+        raise ValueError(f"{path.name}: only {len(rows)} usable rows")
+    arr = np.asarray(rows, dtype=np.float64)
+    keys = list(_V_COLUMNS.keys())
+    out = {k: arr[:, i] for i, k in enumerate(keys)}
+    return {
+        "lat": out["lat"],
+        "lon": out["lon"],
+        "speed_mps": out["indicated_speed_kmh"] / 3.6,
+        "gnss_speed_mps": out["speed_kmh"] / 3.6,
+        "heading_deg": out["heading_deg"],
+        "yaw_rate_rad_s": np.deg2rad(out["yaw_rate_deg_s"]),
+        "path": str(path),
+        "name": path.name,
+        "n": int(arr.shape[0]),
+    }
+
+
+def attach_vehicle_truth(data: dict[str, Any]) -> dict[str, Any]:
+    """Attach paired CAN truth to a loaded S-file, in place, when available.
+
+    Adds ``truth_source`` ("can_10hz" or "phone_gnss_interpolated") plus
+    ``can_lat``/``can_lon``/``can_speed_mps``/``can_yaw_rate_rad_s`` truncated
+    to the smartphone row count. Callers that find ``truth_source == "can_10hz"``
+    should score against the CAN trajectory.
+    """
+    data["truth_source"] = "phone_gnss_interpolated"
+    v_path = companion_vehicle_csv(data.get("path", ""))
+    if v_path is None:
+        return data
+    try:
+        v = load_vehicle_csv(v_path, n_rows=data["n"])
+    except (OSError, ValueError, IoVnbdLfsError):
+        return data
+    n = min(int(data["n"]), int(v["n"]))
+    if n < 100:
+        return data
+    data["truth_source"] = "can_10hz"
+    data["can_csv"] = str(v_path)
+    data["can_n"] = n
+    data["can_lat"] = v["lat"][:n]
+    data["can_lon"] = v["lon"][:n]
+    data["can_speed_mps"] = v["speed_mps"][:n]
+    data["can_yaw_rate_rad_s"] = v["yaw_rate_rad_s"][:n]
+    data["can_heading_deg"] = v["heading_deg"][:n]
+    return data
+
+
 if __name__ == "__main__":
     csvs = find_smartphone_csvs()
     print(f"found {len(csvs)} real S-*.csv (>1 MB)")
     for p in csvs:
-        d = load_smartphone_csv(p)
+        d = attach_vehicle_truth(load_smartphone_csv(p))
+        u = d["speed_unit"]
         print(
             f"  {d['name']}: n={d['n']} hz~{d['hz_est']:.1f} "
             f"outage={100.0 * d['outage'].mean():.1f}% "
-            f"map={list(d['header_map'].keys())}"
+            f"speed={u['decision']}(ratio {u.get('ratio', float('nan')):.2f}) "
+            f"truth={d['truth_source']}"
         )
+        if "warning" in u:
+            print(f"    WARNING: {u['warning']}")

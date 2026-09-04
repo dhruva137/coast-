@@ -17,6 +17,7 @@ import `in`.sih26168.idr.MainActivity
 import `in`.sih26168.idr.R
 import `in`.sih26168.idr.data.AppMode
 import `in`.sih26168.idr.data.RecordStats
+import `in`.sih26168.idr.nav.OnnxSpeedModel
 import `in`.sih26168.idr.nav.SimpleIns
 import `in`.sih26168.idr.sensor.GnssHub
 import `in`.sih26168.idr.sensor.SensorHub
@@ -37,6 +38,7 @@ class RecordService : LifecycleService() {
     private var logger: CsvLogger? = null
     private val ins = SimpleIns()
     private val insLock = Any()
+    private var speedModel: OnnxSpeedModel? = null
     private var lastHudNs = 0L
     private var lastStatsNs = 0L
     private var startedAt = 0L
@@ -114,8 +116,18 @@ class RecordService : LifecycleService() {
             }.also { it.start() }
             publishRecord(startedAt, force = true)
         } else {
+            // Load AVNet-tiny once per arm. A failure here is reported on the
+            // HUD, never papered over — the estimator just stays in FALLBACK.
+            val model = OnnxSpeedModel(this)
+            speedModel = model
+            synchronized(insLock) { ins.setModelStatus(model.ready, model.error) }
             val hub = SensorHub(this) { frame ->
+                // Inference runs on the IMU handler thread, off the main thread,
+                // and only fires on the ~10 Hz ticks where a window closes.
+                val est = model.onImu(frame)
                 synchronized(insLock) {
+                    if (est != null) ins.onModel(est, model.hz)
+                    ins.setModelStatus(model.ready, model.error)
                     drainMarksLocked()
                     ins.onImu(frame)
                     maybePublishHudLocked(frame.tNs)
@@ -216,6 +228,12 @@ class RecordService : LifecycleService() {
         gnss = null
         sensors?.stop()
         sensors = null
+        // After the sensor thread is down, so no run() is in flight.
+        try {
+            speedModel?.close()
+        } catch (_: Exception) {
+        }
+        speedModel = null
         try {
             logger?.close()
         } catch (_: Exception) {

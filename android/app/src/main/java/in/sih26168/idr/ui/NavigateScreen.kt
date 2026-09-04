@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `in`.sih26168.idr.IdrBus
 import `in`.sih26168.idr.data.AppMode
+import `in`.sih26168.idr.data.SpeedSource
 import `in`.sih26168.idr.record.RecordService
 import `in`.sih26168.idr.ui.theme.Accent
 import `in`.sih26168.idr.ui.theme.Amber
@@ -62,7 +63,7 @@ fun NavigateScreen(bus: IdrBus, permsOk: Boolean, requestPerms: () -> Unit) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Column {
                 Text("NAVIGATE", fontFamily = IdrMono, color = Accent, letterSpacing = 3.sp, fontSize = 12.sp)
-                Text("lean-aware INS  ·  gyro + speed", color = Mute, fontFamily = IdrMono, fontSize = 11.sp)
+                Text("lean-aware INS  ·  AVNet-tiny on-device", color = Mute, fontFamily = IdrMono, fontSize = 11.sp)
             }
             val lockColor = if (hud.gnssLock) Gnss else Amber
             val lockText = if (hud.gnssLock) "GNSS LOCK  ${hud.nSats} SAT" else "GNSS OUT"
@@ -100,6 +101,50 @@ fun NavigateScreen(bus: IdrBus, permsOk: Boolean, requestPerms: () -> Unit) {
             "car-style heading Δ ${"%.1f".format(disagree)}°   ·   IMU ${"%.0f".format(hud.imuHz)} Hz   ·   ${if (hud.coordinated) "coordinated" else "not coordinated"}",
             fontFamily = IdrMono,
             color = Mute,
+            fontSize = 10.sp,
+        )
+
+        // On-device model telemetry. The problem statement asks for the trained
+        // model exported to the phone at 10 Hz — show it, and show it honestly
+        // when it is not running.
+        val srcColor = when (hud.speedSource) {
+            SpeedSource.MODEL -> Accent
+            SpeedSource.GNSS -> Gnss
+            SpeedSource.FALLBACK -> Amber
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                hud.speedSource.name,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(99.dp))
+                    .border(1.dp, srcColor.copy(alpha = 0.45f), RoundedCornerShape(99.dp))
+                    .padding(horizontal = 10.dp, vertical = 5.dp),
+                color = srcColor,
+                fontFamily = IdrMono,
+                fontSize = 11.sp,
+                letterSpacing = 1.2.sp,
+            )
+            val rateColor = if (hud.modelHz >= 9.0) Telem else Amber
+            Text(
+                "avnet_tiny.onnx  ·  ${"%.2f".format(hud.inferMs)} ms  ·  ${"%.1f".format(hud.modelHz)} Hz",
+                modifier = Modifier.padding(top = 5.dp),
+                fontFamily = IdrMono,
+                color = if (hud.modelReady) rateColor else Mute,
+                fontSize = 11.sp,
+            )
+        }
+        val modelLine = when {
+            hud.modelError != null -> "MODEL DOWN — ${hud.modelError}  ·  running FALLBACK integrator"
+            !hud.modelReady -> "model not loaded — running FALLBACK integrator"
+            hud.modelSpeedMps.isNaN() ->
+                "model armed — filling the 2.0 s / 20-sample window"
+            else ->
+                "v̂ ${"%.2f".format(hud.modelSpeedMps)} m/s  ·  σ ${"%.2f".format(kotlin.math.sqrt(hud.modelSpeedVar))}  ·  ψ̇ ${"%+.3f".format(hud.modelPsiDot)} rad/s"
+        }
+        Text(
+            modelLine,
+            fontFamily = IdrMono,
+            color = if (hud.modelError != null || !hud.modelReady) Danger else Mute,
             fontSize = 10.sp,
         )
 

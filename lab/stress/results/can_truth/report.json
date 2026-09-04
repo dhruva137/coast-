@@ -1,0 +1,1839 @@
+{
+  "pairs": {
+    "S-M": {
+      "s_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\M (Driver B)\\S-M.csv",
+      "v_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\M (Driver B)\\V-M.csv",
+      "rows": 105974,
+      "phone_gps_unique_fixes": 1052,
+      "can_gps_unique_fixes": 89981,
+      "speed_unit": {
+        "col_over_true": 0.9779777712251329,
+        "implied_unit": "m/s",
+        "n": 88902
+      },
+      "yaw_mapping": {
+        "n": 88902,
+        "per_axis": {
+          "gyro_yaw": {
+            "correlation": 0.06452077946624696,
+            "gain": 0.10911873624219731
+          },
+          "gyro_pitch": {
+            "correlation": 0.6383671067427795,
+            "gain": 0.5865390138223527
+          },
+          "gyro_roll": {
+            "correlation": -0.1256490615232997,
+            "gain": -0.25110168361874036
+          }
+        },
+        "lsq_mount_vector": [
+          0.07083224093816892,
+          0.6499132430418003,
+          0.34960562874354845
+        ],
+        "lsq_norm": 0.7413693583407699,
+        "lsq_correlation": 0.6577077964034798,
+        "residual_deg_s_rms": 7.106630768092422,
+        "true_yaw_deg_s_std": 9.433755526106658
+      },
+      "outage_60s": {
+        "A_repo_contract": {
+          "n": 8,
+          "median_final_error_m": 418.33767854744286,
+          "median_drift_pct": 60.07089546200304,
+          "median_m_per_km": 600.7089546200305,
+          "pass_isro": 0
+        },
+        "B_speed_unit_fixed": {
+          "n": 8,
+          "median_final_error_m": 124.25529771960751,
+          "median_drift_pct": 15.944638664799466,
+          "median_m_per_km": 159.44638664799464,
+          "pass_isro": 0
+        },
+        "C_sign_flipped": {
+          "n": 8,
+          "median_final_error_m": 370.30798553892663,
+          "median_drift_pct": 52.201019720581044,
+          "median_m_per_km": 522.0101972058103,
+          "pass_isro": 0
+        },
+        "D_lsq_mount": {
+          "n": 8,
+          "median_final_error_m": 120.17261705763241,
+          "median_drift_pct": 22.017784806422217,
+          "median_m_per_km": 220.17784806422216,
+          "pass_isro": 4
+        },
+        "E_oracle_can": {
+          "n": 8,
+          "median_final_error_m": 160.6620087015268,
+          "median_drift_pct": 25.451491580751703,
+          "median_m_per_km": 254.51491580751707,
+          "pass_isro": 2
+        }
+      }
+    },
+    "S-S1": {
+      "s_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\S (Driver A)\\S1\\S-S1.csv",
+      "v_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\S (Driver A)\\S1\\V-S1.csv",
+      "rows": 51746,
+      "phone_gps_unique_fixes": 498,
+      "can_gps_unique_fixes": 40684,
+      "speed_unit": {
+        "col_over_true": 0.9447930629606474,
+        "implied_unit": "m/s",
+        "n": 39148
+      },
+      "yaw_mapping": {
+        "n": 39148,
+        "per_axis": {
+          "gyro_yaw": {
+            "correlation": 0.05542012569771964,
+            "gain": 0.06148045315511802
+          },
+          "gyro_pitch": {
+            "correlation": 0.9078541265240134,
+            "gain": 0.8564434239062757
+          },
+          "gyro_roll": {
+            "correlation": -0.28013685704177743,
+            "gain": -0.6163162103254599
+          }
+        },
+        "lsq_mount_vector": [
+          0.0287680954279854,
+          0.943583372456309,
+          0.4306320751285432
+        ],
+        "lsq_norm": 1.0376035698763235,
+        "lsq_correlation": 0.9244044204978591,
+        "residual_deg_s_rms": 2.7246345965465855,
+        "true_yaw_deg_s_std": 7.143508633835083
+      },
+      "outage_60s": {
+        "A_repo_contract": {
+          "n": 8,
+          "median_final_error_m": 242.46364581625056,
+          "median_drift_pct": 56.768069976034,
+          "median_m_per_km": 567.68069976034,
+          "pass_isro": 0
+        },
+        "B_speed_unit_fixed": {
+          "n": 8,
+          "median_final_error_m": 129.81234867544572,
+          "median_drift_pct": 23.541956553305912,
+          "median_m_per_km": 235.41956553305914,
+          "pass_isro": 0
+        },
+        "C_sign_flipped": {
+          "n": 8,
+          "median_final_error_m": 435.5230501882256,
+          "median_drift_pct": 78.04038938562381,
+          "median_m_per_km": 780.4038938562381,
+          "pass_isro": 1
+        },
+        "D_lsq_mount": {
+          "n": 8,
+          "median_final_error_m": 138.73216262788526,
+          "median_drift_pct": 22.515680237102995,
+          "median_m_per_km": 225.15680237102993,
+          "pass_isro": 0
+        },
+        "E_oracle_can": {
+          "n": 8,
+          "median_final_error_m": 44.02730263804955,
+          "median_drift_pct": 10.459968105844272,
+          "median_m_per_km": 104.59968105844271,
+          "pass_isro": 4
+        }
+      }
+    },
+    "S-S2": {
+      "s_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\S (Driver A)\\S2\\S-S2.csv",
+      "v_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\S (Driver A)\\S2\\V-S2.csv",
+      "rows": 93876,
+      "phone_gps_unique_fixes": 896,
+      "can_gps_unique_fixes": 75718,
+      "speed_unit": {
+        "col_over_true": 0.961464256729997,
+        "implied_unit": "m/s",
+        "n": 69668
+      },
+      "yaw_mapping": {
+        "n": 69668,
+        "per_axis": {
+          "gyro_yaw": {
+            "correlation": 0.00017239821725954408,
+            "gain": -4.699752010663966e-05
+          },
+          "gyro_pitch": {
+            "correlation": -0.004767119538547878,
+            "gain": -0.0037929678364965152
+          },
+          "gyro_roll": {
+            "correlation": -0.0023010509933716456,
+            "gain": -0.005661137363735326
+          }
+        },
+        "lsq_mount_vector": [
+          -0.00024746661236913945,
+          -0.0065082723314702495,
+          -0.012406266732161133
+        ],
+        "lsq_norm": 0.014011934295247988,
+        "lsq_correlation": 0.007008841531492907,
+        "residual_deg_s_rms": 7.786986721235554,
+        "true_yaw_deg_s_std": 7.78717796933851
+      },
+      "outage_60s": {
+        "A_repo_contract": {
+          "n": 7,
+          "median_final_error_m": 298.6104030842767,
+          "median_drift_pct": 53.759701666581435,
+          "median_m_per_km": 537.5970166658144,
+          "pass_isro": 0
+        },
+        "B_speed_unit_fixed": {
+          "n": 7,
+          "median_final_error_m": 160.58084836012705,
+          "median_drift_pct": 28.221409820289995,
+          "median_m_per_km": 282.21409820289995,
+          "pass_isro": 1
+        },
+        "C_sign_flipped": {
+          "n": 7,
+          "median_final_error_m": 299.55356684153634,
+          "median_drift_pct": 62.592229404949045,
+          "median_m_per_km": 625.9222940494903,
+          "pass_isro": 1
+        },
+        "D_lsq_mount": {
+          "n": 7,
+          "median_final_error_m": 104.93387352981995,
+          "median_drift_pct": 23.96172099003106,
+          "median_m_per_km": 239.6172099003106,
+          "pass_isro": 1
+        },
+        "E_oracle_can": {
+          "n": 7,
+          "median_final_error_m": 21.246116754990396,
+          "median_drift_pct": 4.626659502788013,
+          "median_m_per_km": 46.26659502788013,
+          "pass_isro": 6
+        }
+      }
+    },
+    "S-S3a": {
+      "s_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\S (Driver A)\\S3a\\S-S3a.csv",
+      "v_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\S (Driver A)\\S3a\\V-S3a.csv",
+      "rows": 24621,
+      "phone_gps_unique_fixes": 243,
+      "can_gps_unique_fixes": 21422,
+      "speed_unit": {
+        "col_over_true": 0.9399029847228709,
+        "implied_unit": "m/s",
+        "n": 21121
+      },
+      "yaw_mapping": {
+        "n": 21121,
+        "per_axis": {
+          "gyro_yaw": {
+            "correlation": -0.00022274216600036697,
+            "gain": -0.0030734609728666233
+          },
+          "gyro_pitch": {
+            "correlation": 0.22351992387381941,
+            "gain": 0.21381416450687804
+          },
+          "gyro_roll": {
+            "correlation": -0.011075511584538181,
+            "gain": -0.037557144564325205
+          }
+        },
+        "lsq_mount_vector": [
+          -0.02405146188319234,
+          0.2157079209479914,
+          -0.09483648399247528
+        ],
+        "lsq_norm": 0.23685932254078282,
+        "lsq_correlation": 0.2252172893102254,
+        "residual_deg_s_rms": 7.068511910286554,
+        "true_yaw_deg_s_std": 7.254702995962725
+      },
+      "outage_60s": {
+        "A_repo_contract": {
+          "n": 9,
+          "median_final_error_m": 366.65513581689294,
+          "median_drift_pct": 60.98727709818224,
+          "median_m_per_km": 609.8727709818224,
+          "pass_isro": 0
+        },
+        "B_speed_unit_fixed": {
+          "n": 9,
+          "median_final_error_m": 113.09222021408071,
+          "median_drift_pct": 28.959015468798466,
+          "median_m_per_km": 289.59015468798464,
+          "pass_isro": 2
+        },
+        "C_sign_flipped": {
+          "n": 9,
+          "median_final_error_m": 217.09110521876983,
+          "median_drift_pct": 40.548047764053635,
+          "median_m_per_km": 405.4804776405364,
+          "pass_isro": 0
+        },
+        "D_lsq_mount": {
+          "n": 9,
+          "median_final_error_m": 127.47321783305223,
+          "median_drift_pct": 30.82281615978678,
+          "median_m_per_km": 308.22816159786777,
+          "pass_isro": 2
+        },
+        "E_oracle_can": {
+          "n": 9,
+          "median_final_error_m": 38.563907842773375,
+          "median_drift_pct": 7.052224457350875,
+          "median_m_per_km": 70.52224457350876,
+          "pass_isro": 7
+        }
+      }
+    },
+    "S-S3b": {
+      "s_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\S (Driver A)\\S3b\\S-S3b.csv",
+      "v_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\S (Driver A)\\S3b\\V-S3b.csv",
+      "rows": 6813,
+      "phone_gps_unique_fixes": 71,
+      "can_gps_unique_fixes": 5977,
+      "speed_unit": {
+        "col_over_true": 0.9752480595480381,
+        "implied_unit": "m/s",
+        "n": 4927
+      },
+      "yaw_mapping": {
+        "n": 4927,
+        "per_axis": {
+          "gyro_yaw": {
+            "correlation": -0.0005904815085581411,
+            "gain": 0.001284654586475779
+          },
+          "gyro_pitch": {
+            "correlation": 0.35503678764402424,
+            "gain": 0.18068078201842125
+          },
+          "gyro_roll": {
+            "correlation": -0.05644123441947351,
+            "gain": -0.06567562308828055
+          }
+        },
+        "lsq_mount_vector": [
+          -0.026081915721278798,
+          0.21189223658101977,
+          -0.22669976683019954
+        ],
+        "lsq_norm": 0.3114022648149265,
+        "lsq_correlation": 0.3984880689283713,
+        "residual_deg_s_rms": 9.891265411819926,
+        "true_yaw_deg_s_std": 10.78415790393037
+      },
+      "outage_60s": {
+        "A_repo_contract": {
+          "n": 7,
+          "median_final_error_m": 151.67862280198352,
+          "median_drift_pct": 40.321425699977645,
+          "median_m_per_km": 403.21425699977647,
+          "pass_isro": 0
+        },
+        "B_speed_unit_fixed": {
+          "n": 7,
+          "median_final_error_m": 62.2577196216757,
+          "median_drift_pct": 17.172209654714482,
+          "median_m_per_km": 171.72209654714482,
+          "pass_isro": 2
+        },
+        "C_sign_flipped": {
+          "n": 7,
+          "median_final_error_m": 189.2005952262554,
+          "median_drift_pct": 41.666723335224525,
+          "median_m_per_km": 416.66723335224526,
+          "pass_isro": 1
+        },
+        "D_lsq_mount": {
+          "n": 7,
+          "median_final_error_m": 53.81136215402303,
+          "median_drift_pct": 14.470321497040045,
+          "median_m_per_km": 144.70321497040044,
+          "pass_isro": 1
+        },
+        "E_oracle_can": {
+          "n": 7,
+          "median_final_error_m": 4.736568012381108,
+          "median_drift_pct": 1.4286776953649374,
+          "median_m_per_km": 14.286776953649373,
+          "pass_isro": 6
+        }
+      }
+    },
+    "S-S3c": {
+      "s_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\S (Driver A)\\S3c\\S-S3c.csv",
+      "v_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\S (Driver A)\\S3c\\V-S3c.csv",
+      "rows": 37183,
+      "phone_gps_unique_fixes": 385,
+      "can_gps_unique_fixes": 32898,
+      "speed_unit": {
+        "col_over_true": 0.9777736609547292,
+        "implied_unit": "m/s",
+        "n": 31920
+      },
+      "yaw_mapping": {
+        "n": 31920,
+        "per_axis": {
+          "gyro_yaw": {
+            "correlation": 0.04677813669381536,
+            "gain": 0.1762196866170618
+          },
+          "gyro_pitch": {
+            "correlation": 0.9466631277872845,
+            "gain": 0.9473614479215696
+          },
+          "gyro_roll": {
+            "correlation": 0.24674832903725488,
+            "gain": 1.1985153842534
+          }
+        },
+        "lsq_mount_vector": [
+          0.0017464997184169562,
+          0.9371396701142294,
+          0.23248598971518802
+        ],
+        "lsq_norm": 0.9655483141598475,
+        "lsq_correlation": 0.9478206145710957,
+        "residual_deg_s_rms": 2.107538667663707,
+        "true_yaw_deg_s_std": 6.610763050449168
+      },
+      "outage_60s": {
+        "A_repo_contract": {
+          "n": 9,
+          "median_final_error_m": 296.439731357399,
+          "median_drift_pct": 64.1283222151374,
+          "median_m_per_km": 641.283222151374,
+          "pass_isro": 0
+        },
+        "B_speed_unit_fixed": {
+          "n": 9,
+          "median_final_error_m": 48.474181034910494,
+          "median_drift_pct": 6.730194952397864,
+          "median_m_per_km": 67.30194952397864,
+          "pass_isro": 5
+        },
+        "C_sign_flipped": {
+          "n": 9,
+          "median_final_error_m": 397.79919627160393,
+          "median_drift_pct": 57.42491211400908,
+          "median_m_per_km": 574.2491211400909,
+          "pass_isro": 0
+        },
+        "D_lsq_mount": {
+          "n": 9,
+          "median_final_error_m": 55.412671156754556,
+          "median_drift_pct": 9.622469886312675,
+          "median_m_per_km": 96.22469886312676,
+          "pass_isro": 5
+        },
+        "E_oracle_can": {
+          "n": 9,
+          "median_final_error_m": 100.07277336506522,
+          "median_drift_pct": 5.74622352335677,
+          "median_m_per_km": 57.462235233567704,
+          "pass_isro": 6
+        }
+      }
+    },
+    "S-S4": {
+      "s_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\S (Driver A)\\S4\\S-S4.csv",
+      "v_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\S (Driver A)\\S4\\V-S4.csv",
+      "rows": 94600,
+      "phone_gps_unique_fixes": 899,
+      "can_gps_unique_fixes": 73791,
+      "speed_unit": {
+        "col_over_true": 0.9203448173034151,
+        "implied_unit": "m/s",
+        "n": 70341
+      },
+      "yaw_mapping": {
+        "n": 70341,
+        "per_axis": {
+          "gyro_yaw": {
+            "correlation": 0.0004358435403394428,
+            "gain": 0.00013471591137828687
+          },
+          "gyro_pitch": {
+            "correlation": 0.11407622897234675,
+            "gain": 0.10125194054038403
+          },
+          "gyro_roll": {
+            "correlation": -0.008281767692368085,
+            "gain": -0.015578268472395488
+          }
+        },
+        "lsq_mount_vector": [
+          -0.00249473618624562,
+          0.1118940485548396,
+          0.05655655907011224
+        ],
+        "lsq_norm": 0.1253999449141939,
+        "lsq_correlation": 0.11886838055852002,
+        "residual_deg_s_rms": 6.696769815538288,
+        "true_yaw_deg_s_std": 6.7445730617742905
+      },
+      "outage_60s": {
+        "A_repo_contract": {
+          "n": 8,
+          "median_final_error_m": 308.98387430598103,
+          "median_drift_pct": 69.07108519913066,
+          "median_m_per_km": 690.7108519913065,
+          "pass_isro": 0
+        },
+        "B_speed_unit_fixed": {
+          "n": 8,
+          "median_final_error_m": 322.98802922775,
+          "median_drift_pct": 51.780867971419895,
+          "median_m_per_km": 517.8086797141989,
+          "pass_isro": 1
+        },
+        "C_sign_flipped": {
+          "n": 8,
+          "median_final_error_m": 537.180368839595,
+          "median_drift_pct": 73.59055875573085,
+          "median_m_per_km": 735.9055875573085,
+          "pass_isro": 0
+        },
+        "D_lsq_mount": {
+          "n": 8,
+          "median_final_error_m": 331.02160785704706,
+          "median_drift_pct": 50.63805057464915,
+          "median_m_per_km": 506.3805057464915,
+          "pass_isro": 1
+        },
+        "E_oracle_can": {
+          "n": 8,
+          "median_final_error_m": 23.550303782531664,
+          "median_drift_pct": 3.9747499154261745,
+          "median_m_per_km": 39.747499154261746,
+          "pass_isro": 6
+        }
+      }
+    },
+    "S-Vfa01": {
+      "s_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Vf (Driver E)\\V-Vfa01\\S-Vfa01.csv",
+      "v_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Vf (Driver E)\\V-Vfa01\\V-Vfa01.csv",
+      "rows": 11486,
+      "phone_gps_unique_fixes": 123,
+      "can_gps_unique_fixes": 10942,
+      "speed_unit": {
+        "col_over_true": 0.9945434238519549,
+        "implied_unit": "m/s",
+        "n": 10469
+      },
+      "yaw_mapping": {
+        "n": 10469,
+        "per_axis": {
+          "gyro_yaw": {
+            "correlation": -0.003870999612273825,
+            "gain": -0.003328608289573051
+          },
+          "gyro_pitch": {
+            "correlation": -0.005435139612950738,
+            "gain": -0.0006398348114365883
+          },
+          "gyro_roll": {
+            "correlation": -0.006997128532512982,
+            "gain": -0.002619620302823149
+          }
+        },
+        "lsq_mount_vector": [
+          -0.012111440461564368,
+          -0.014543712231125074,
+          -0.0206690950034961
+        ],
+        "lsq_norm": 0.028025310770432913,
+        "lsq_correlation": 0.030982513931708387,
+        "residual_deg_s_rms": 3.556633690545686,
+        "true_yaw_deg_s_std": 3.558324655184488
+      },
+      "outage_60s": {
+        "A_repo_contract": {
+          "n": 9,
+          "median_final_error_m": 875.5060812369529,
+          "median_drift_pct": 72.09243283482867,
+          "median_m_per_km": 720.9243283482867,
+          "pass_isro": 0
+        },
+        "B_speed_unit_fixed": {
+          "n": 9,
+          "median_final_error_m": 315.06899706574495,
+          "median_drift_pct": 25.55978560731649,
+          "median_m_per_km": 255.59785607316488,
+          "pass_isro": 2
+        },
+        "C_sign_flipped": {
+          "n": 9,
+          "median_final_error_m": 560.6905430819253,
+          "median_drift_pct": 45.93377181773271,
+          "median_m_per_km": 459.33771817732713,
+          "pass_isro": 1
+        },
+        "D_lsq_mount": {
+          "n": 9,
+          "median_final_error_m": 298.2792834548115,
+          "median_drift_pct": 24.43610421688206,
+          "median_m_per_km": 244.36104216882063,
+          "pass_isro": 2
+        },
+        "E_oracle_can": {
+          "n": 9,
+          "median_final_error_m": 129.13936659266523,
+          "median_drift_pct": 10.476354558250634,
+          "median_m_per_km": 104.76354558250634,
+          "pass_isro": 4
+        }
+      }
+    },
+    "S-Vfa02": {
+      "s_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Vf (Driver E)\\V-Vfa02\\S-Vfa02.csv",
+      "v_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Vf (Driver E)\\V-Vfa02\\V-Vfa02.csv",
+      "rows": 67523,
+      "phone_gps_unique_fixes": 745,
+      "can_gps_unique_fixes": 66215,
+      "speed_unit": {
+        "col_over_true": 0.9951773205637676,
+        "implied_unit": "m/s",
+        "n": 65626
+      },
+      "yaw_mapping": {
+        "n": 65626,
+        "per_axis": {
+          "gyro_yaw": {
+            "correlation": 0.0018377624863501736,
+            "gain": 0.0014459363770967183
+          },
+          "gyro_pitch": {
+            "correlation": 0.010312646029323528,
+            "gain": 0.0016567632992486908
+          },
+          "gyro_roll": {
+            "correlation": -0.004817162890563791,
+            "gain": -0.001061272000918763
+          }
+        },
+        "lsq_mount_vector": [
+          0.00683731615973249,
+          0.008537126964343531,
+          0.010131093168325075
+        ],
+        "lsq_norm": 0.014908738305394707,
+        "lsq_correlation": 0.018464169862163645,
+        "residual_deg_s_rms": 2.399133773012036,
+        "true_yaw_deg_s_std": 2.3995426749941218
+      },
+      "outage_60s": {
+        "A_repo_contract": {
+          "n": 10,
+          "median_final_error_m": 1216.4444699324174,
+          "median_drift_pct": 76.05177271338269,
+          "median_m_per_km": 760.5177271338268,
+          "pass_isro": 0
+        },
+        "B_speed_unit_fixed": {
+          "n": 10,
+          "median_final_error_m": 544.3371844484574,
+          "median_drift_pct": 34.95067961619114,
+          "median_m_per_km": 349.5067961619114,
+          "pass_isro": 1
+        },
+        "C_sign_flipped": {
+          "n": 10,
+          "median_final_error_m": 502.8063730855683,
+          "median_drift_pct": 31.032046763266052,
+          "median_m_per_km": 310.32046763266055,
+          "pass_isro": 1
+        },
+        "D_lsq_mount": {
+          "n": 10,
+          "median_final_error_m": 344.0733950157957,
+          "median_drift_pct": 21.27279923215595,
+          "median_m_per_km": 212.7279923215595,
+          "pass_isro": 3
+        },
+        "E_oracle_can": {
+          "n": 10,
+          "median_final_error_m": 74.37282847560466,
+          "median_drift_pct": 4.612866835536899,
+          "median_m_per_km": 46.12866835536899,
+          "pass_isro": 7
+        }
+      }
+    },
+    "S-Vta1a": {
+      "s_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Vta (Driver E)\\Vta01a\\S-Vta1a.csv",
+      "v_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Vta (Driver E)\\Vta01a\\V-Vta1a.csv",
+      "rows": 25676,
+      "phone_gps_unique_fixes": 2425,
+      "can_gps_unique_fixes": 25361,
+      "speed_unit": {
+        "col_over_true": 0.9740780706573041,
+        "implied_unit": "m/s",
+        "n": 25035
+      },
+      "yaw_mapping": {
+        "n": 25035,
+        "per_axis": {
+          "gyro_yaw": {
+            "correlation": -0.0015680499193624481,
+            "gain": -0.0014311336992380208
+          },
+          "gyro_pitch": {
+            "correlation": -0.011767955894909627,
+            "gain": -0.0024196865976699707
+          },
+          "gyro_roll": {
+            "correlation": -0.0027398234468224373,
+            "gain": -0.0010980079980210753
+          }
+        },
+        "lsq_mount_vector": [
+          -0.013398453394183522,
+          -0.01591179649234427,
+          -0.02243833926289673
+        ],
+        "lsq_norm": 0.030597105906388276,
+        "lsq_correlation": 0.03287040004324445,
+        "residual_deg_s_rms": 4.259296150702678,
+        "true_yaw_deg_s_std": 4.261598807518221
+      },
+      "outage_60s": {
+        "A_repo_contract": {
+          "n": 10,
+          "median_final_error_m": 771.1513634914415,
+          "median_drift_pct": 74.39622470048135,
+          "median_m_per_km": 743.9622470048137,
+          "pass_isro": 0
+        },
+        "B_speed_unit_fixed": {
+          "n": 10,
+          "median_final_error_m": 350.7883971753131,
+          "median_drift_pct": 36.59522087810953,
+          "median_m_per_km": 365.95220878109524,
+          "pass_isro": 0
+        },
+        "C_sign_flipped": {
+          "n": 10,
+          "median_final_error_m": 400.5952427434814,
+          "median_drift_pct": 39.3141446985063,
+          "median_m_per_km": 393.141446985063,
+          "pass_isro": 1
+        },
+        "D_lsq_mount": {
+          "n": 10,
+          "median_final_error_m": 265.70411195547524,
+          "median_drift_pct": 28.84913223802613,
+          "median_m_per_km": 288.4913223802613,
+          "pass_isro": 2
+        },
+        "E_oracle_can": {
+          "n": 10,
+          "median_final_error_m": 90.56908886598981,
+          "median_drift_pct": 9.000060413461554,
+          "median_m_per_km": 90.00060413461554,
+          "pass_isro": 6
+        }
+      }
+    },
+    "S-Vta2": {
+      "s_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Vta (Driver E)\\Vta02\\S-Vta2.csv",
+      "v_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Vta (Driver E)\\Vta02\\V-Vta2.csv",
+      "rows": 10991,
+      "phone_gps_unique_fixes": 989,
+      "can_gps_unique_fixes": 10406,
+      "speed_unit": {
+        "col_over_true": 0.9894969142944611,
+        "implied_unit": "m/s",
+        "n": 9629
+      },
+      "yaw_mapping": {
+        "n": 9629,
+        "per_axis": {
+          "gyro_yaw": {
+            "correlation": -0.00039860242284999836,
+            "gain": 0.0009113912107746638
+          },
+          "gyro_pitch": {
+            "correlation": 0.20565195748536902,
+            "gain": 0.05329541174301244
+          },
+          "gyro_roll": {
+            "correlation": 0.004837596402768864,
+            "gain": 0.0024797456595697888
+          }
+        },
+        "lsq_mount_vector": [
+          0.18129882091262675,
+          0.27448354117118073,
+          0.378001475417198
+        ],
+        "lsq_norm": 0.5010943945563137,
+        "lsq_correlation": 0.4702376270177076,
+        "residual_deg_s_rms": 4.283793009994686,
+        "true_yaw_deg_s_std": 4.853934650389916
+      },
+      "outage_60s": {
+        "A_repo_contract": {
+          "n": 9,
+          "median_final_error_m": 360.976699562413,
+          "median_drift_pct": 70.4513350514352,
+          "median_m_per_km": 704.5133505143519,
+          "pass_isro": 0
+        },
+        "B_speed_unit_fixed": {
+          "n": 9,
+          "median_final_error_m": 106.33634963991281,
+          "median_drift_pct": 21.30772336047448,
+          "median_m_per_km": 213.0772336047448,
+          "pass_isro": 1
+        },
+        "C_sign_flipped": {
+          "n": 9,
+          "median_final_error_m": 185.46300678746564,
+          "median_drift_pct": 40.09651748682374,
+          "median_m_per_km": 400.96517486823745,
+          "pass_isro": 3
+        },
+        "D_lsq_mount": {
+          "n": 9,
+          "median_final_error_m": 82.43678297589125,
+          "median_drift_pct": 13.119612607668076,
+          "median_m_per_km": 131.19612607668074,
+          "pass_isro": 3
+        },
+        "E_oracle_can": {
+          "n": 9,
+          "median_final_error_m": 27.440485580010233,
+          "median_drift_pct": 4.7142459362235885,
+          "median_m_per_km": 47.14245936223588,
+          "pass_isro": 8
+        }
+      }
+    },
+    "S-Vta16": {
+      "s_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Vta (Driver E)\\Vta16\\S-Vta16.csv",
+      "v_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Vta (Driver E)\\Vta16\\V-Vta16.csv",
+      "rows": 11335,
+      "phone_gps_unique_fixes": 121,
+      "can_gps_unique_fixes": 10960,
+      "speed_unit": {
+        "col_over_true": 0.9887698341346627,
+        "implied_unit": "m/s",
+        "n": 10050
+      },
+      "yaw_mapping": {
+        "n": 10050,
+        "per_axis": {
+          "gyro_yaw": {
+            "correlation": 0.0061677333504191415,
+            "gain": 0.00707628819450523
+          },
+          "gyro_pitch": {
+            "correlation": 0.14793959352161665,
+            "gain": 0.042345795786781416
+          },
+          "gyro_roll": {
+            "correlation": -0.015409625467650621,
+            "gain": -0.0071647803282187264
+          }
+        },
+        "lsq_mount_vector": [
+          0.13198298160423488,
+          0.18334792082670492,
+          0.24357845098098777
+        ],
+        "lsq_norm": 0.3322144326890644,
+        "lsq_correlation": 0.29576085386854634,
+        "residual_deg_s_rms": 4.6439928211397765,
+        "true_yaw_deg_s_std": 4.861485611820525
+      },
+      "outage_60s": {
+        "A_repo_contract": {
+          "n": 8,
+          "median_final_error_m": 631.5381603797117,
+          "median_drift_pct": 69.89698146911175,
+          "median_m_per_km": 698.9698146911173,
+          "pass_isro": 0
+        },
+        "B_speed_unit_fixed": {
+          "n": 8,
+          "median_final_error_m": 102.05526040655765,
+          "median_drift_pct": 15.230327330167245,
+          "median_m_per_km": 152.30327330167248,
+          "pass_isro": 2
+        },
+        "C_sign_flipped": {
+          "n": 8,
+          "median_final_error_m": 299.5202973000313,
+          "median_drift_pct": 37.65662813559467,
+          "median_m_per_km": 376.5662813559468,
+          "pass_isro": 0
+        },
+        "D_lsq_mount": {
+          "n": 8,
+          "median_final_error_m": 102.19138783786448,
+          "median_drift_pct": 15.831288140770983,
+          "median_m_per_km": 158.31288140770982,
+          "pass_isro": 3
+        },
+        "E_oracle_can": {
+          "n": 8,
+          "median_final_error_m": 8.889183120617872,
+          "median_drift_pct": 1.1030227685749638,
+          "median_m_per_km": 11.030227685749638,
+          "pass_isro": 8
+        }
+      }
+    },
+    "S-Vta29": {
+      "s_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Vta (Driver E)\\Vta29\\S-Vta29.csv",
+      "v_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Vta (Driver E)\\Vta29\\V-Vta29.csv",
+      "rows": 23705,
+      "phone_gps_unique_fixes": 246,
+      "can_gps_unique_fixes": 21400,
+      "speed_unit": {
+        "col_over_true": 0.9339889926747975,
+        "implied_unit": "m/s",
+        "n": 19813
+      },
+      "yaw_mapping": {
+        "n": 19813,
+        "per_axis": {
+          "gyro_yaw": {
+            "correlation": -0.003099537992833826,
+            "gain": -0.0023400830161097895
+          },
+          "gyro_pitch": {
+            "correlation": 0.02216143449093996,
+            "gain": 0.004557006429217843
+          },
+          "gyro_roll": {
+            "correlation": 0.007649044194956382,
+            "gain": 0.002985801878430881
+          }
+        },
+        "lsq_mount_vector": [
+          0.01709985015819921,
+          0.027786255866718644,
+          0.04656745021118876
+        ],
+        "lsq_norm": 0.05685954897548138,
+        "lsq_correlation": 0.06195629142515972,
+        "residual_deg_s_rms": 4.986504296782735,
+        "true_yaw_deg_s_std": 4.996102340913771
+      },
+      "outage_60s": {
+        "A_repo_contract": {
+          "n": 6,
+          "median_final_error_m": 621.9208156586574,
+          "median_drift_pct": 72.51098244796057,
+          "median_m_per_km": 725.1098244796058,
+          "pass_isro": 0
+        },
+        "B_speed_unit_fixed": {
+          "n": 6,
+          "median_final_error_m": 507.27762852878476,
+          "median_drift_pct": 70.92781043456804,
+          "median_m_per_km": 709.2781043456805,
+          "pass_isro": 0
+        },
+        "C_sign_flipped": {
+          "n": 6,
+          "median_final_error_m": 690.7273021010178,
+          "median_drift_pct": 110.30620777950624,
+          "median_m_per_km": 1103.0620777950626,
+          "pass_isro": 0
+        },
+        "D_lsq_mount": {
+          "n": 6,
+          "median_final_error_m": 384.4104031221166,
+          "median_drift_pct": 53.88445661047615,
+          "median_m_per_km": 538.8445661047615,
+          "pass_isro": 0
+        },
+        "E_oracle_can": {
+          "n": 6,
+          "median_final_error_m": 53.311437433568614,
+          "median_drift_pct": 5.808051273316619,
+          "median_m_per_km": 58.08051273316619,
+          "pass_isro": 4
+        }
+      }
+    },
+    "S-Vta30": {
+      "s_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Vta (Driver E)\\Vta30\\S-Vta30.csv",
+      "v_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Vta (Driver E)\\Vta30\\V-Vta30.csv",
+      "rows": 17136,
+      "phone_gps_unique_fixes": 156,
+      "can_gps_unique_fixes": 13358,
+      "speed_unit": {
+        "col_over_true": 0.9633826067353549,
+        "implied_unit": "m/s",
+        "n": 9993
+      },
+      "yaw_mapping": {
+        "n": 9993,
+        "per_axis": {
+          "gyro_yaw": {
+            "correlation": 0.0037335022729175806,
+            "gain": 0.0022479971381001774
+          },
+          "gyro_pitch": {
+            "correlation": 0.01970231406852795,
+            "gain": 0.003860054409271047
+          },
+          "gyro_roll": {
+            "correlation": -0.00882310798740716,
+            "gain": -0.003183176083839854
+          }
+        },
+        "lsq_mount_vector": [
+          0.012867356676455687,
+          0.012265779828559734,
+          0.015533742743499048
+        ],
+        "lsq_norm": 0.02360752816927348,
+        "lsq_correlation": 0.030515854094666325,
+        "residual_deg_s_rms": 3.379911411402455,
+        "true_yaw_deg_s_std": 3.3814862270025654
+      },
+      "outage_60s": {
+        "A_repo_contract": {
+          "n": 4,
+          "median_final_error_m": 499.263200662136,
+          "median_drift_pct": 71.6709495546832,
+          "median_m_per_km": 716.709495546832,
+          "pass_isro": 0
+        },
+        "B_speed_unit_fixed": {
+          "n": 4,
+          "median_final_error_m": 150.25684865466252,
+          "median_drift_pct": 21.502839560216387,
+          "median_m_per_km": 215.02839560216384,
+          "pass_isro": 0
+        },
+        "C_sign_flipped": {
+          "n": 4,
+          "median_final_error_m": 300.1197701421099,
+          "median_drift_pct": 68.6974483412594,
+          "median_m_per_km": 686.974483412594,
+          "pass_isro": 0
+        },
+        "D_lsq_mount": {
+          "n": 4,
+          "median_final_error_m": 129.09540345575016,
+          "median_drift_pct": 21.563899281768126,
+          "median_m_per_km": 215.63899281768124,
+          "pass_isro": 0
+        },
+        "E_oracle_can": {
+          "n": 4,
+          "median_final_error_m": 41.21392130917964,
+          "median_drift_pct": 5.15487394985131,
+          "median_m_per_km": 51.5487394985131,
+          "pass_isro": 3
+        }
+      }
+    },
+    "S-Vtb1": {
+      "s_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Vtb (Driver E)\\Vtb01\\S-Vtb1.csv",
+      "v_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Vtb (Driver E)\\Vtb01\\V-Vtb1.csv",
+      "rows": 32459,
+      "phone_gps_unique_fixes": 277,
+      "can_gps_unique_fixes": 29325,
+      "speed_unit": {
+        "col_over_true": 0.864929629591938,
+        "implied_unit": "m/s",
+        "n": 28357
+      },
+      "yaw_mapping": {
+        "n": 28357,
+        "per_axis": {
+          "gyro_yaw": {
+            "correlation": -0.0011212890524722047,
+            "gain": -0.0010695793962004923
+          },
+          "gyro_pitch": {
+            "correlation": 0.12709181716062476,
+            "gain": 0.02912683877392463
+          },
+          "gyro_roll": {
+            "correlation": -0.009618285338701656,
+            "gain": -0.004004537898699676
+          }
+        },
+        "lsq_mount_vector": [
+          0.09803206016145877,
+          0.13328239403059303,
+          0.1917171446150631
+        ],
+        "lsq_norm": 0.25323890877465716,
+        "lsq_correlation": 0.26337433574943153,
+        "residual_deg_s_rms": 4.052117191363386,
+        "true_yaw_deg_s_std": 4.200418314213371
+      },
+      "outage_60s": {
+        "A_repo_contract": {
+          "n": 10,
+          "median_final_error_m": 572.3632454741661,
+          "median_drift_pct": 80.54944003887667,
+          "median_m_per_km": 805.4944003887667,
+          "pass_isro": 0
+        },
+        "B_speed_unit_fixed": {
+          "n": 10,
+          "median_final_error_m": 300.73377177224984,
+          "median_drift_pct": 60.64216776438475,
+          "median_m_per_km": 606.4216776438475,
+          "pass_isro": 2
+        },
+        "C_sign_flipped": {
+          "n": 10,
+          "median_final_error_m": 552.1645166138825,
+          "median_drift_pct": 58.96866122828111,
+          "median_m_per_km": 589.686612282811,
+          "pass_isro": 0
+        },
+        "D_lsq_mount": {
+          "n": 10,
+          "median_final_error_m": 227.13426805484653,
+          "median_drift_pct": 46.533763413299575,
+          "median_m_per_km": 465.33763413299573,
+          "pass_isro": 2
+        },
+        "E_oracle_can": {
+          "n": 10,
+          "median_final_error_m": 144.36015620822218,
+          "median_drift_pct": 16.993173255376387,
+          "median_m_per_km": 169.93173255376385,
+          "pass_isro": 2
+        }
+      }
+    },
+    "S-Vtb2": {
+      "s_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Vtb (Driver E)\\Vtb02\\S-Vtb2.csv",
+      "v_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Vtb (Driver E)\\Vtb02\\V-Vtb2.csv",
+      "rows": 5712,
+      "phone_gps_unique_fixes": 55,
+      "can_gps_unique_fixes": 4656,
+      "speed_unit": {
+        "col_over_true": 0.9477093002059008,
+        "implied_unit": "m/s",
+        "n": 3843
+      },
+      "yaw_mapping": {
+        "n": 3843,
+        "per_axis": {
+          "gyro_yaw": {
+            "correlation": -0.007449581587933768,
+            "gain": -0.005492486767289382
+          },
+          "gyro_pitch": {
+            "correlation": 0.16925583061960503,
+            "gain": 0.03194198480190167
+          },
+          "gyro_roll": {
+            "correlation": -0.036465336893197316,
+            "gain": -0.012599664861772709
+          }
+        },
+        "lsq_mount_vector": [
+          0.09095072015720612,
+          0.1272950405953196,
+          0.1801628655781024
+        ],
+        "lsq_norm": 0.2386099725296323,
+        "lsq_correlation": 0.30702655032866644,
+        "residual_deg_s_rms": 4.069947881105935,
+        "true_yaw_deg_s_std": 4.276497038565464
+      },
+      "outage_60s": {
+        "A_repo_contract": {
+          "n": 7,
+          "median_final_error_m": 530.2368022459781,
+          "median_drift_pct": 77.26495553488998,
+          "median_m_per_km": 772.6495553488998,
+          "pass_isro": 0
+        },
+        "B_speed_unit_fixed": {
+          "n": 7,
+          "median_final_error_m": 389.95767826614,
+          "median_drift_pct": 63.279649347421724,
+          "median_m_per_km": 632.7964934742173,
+          "pass_isro": 0
+        },
+        "C_sign_flipped": {
+          "n": 7,
+          "median_final_error_m": 412.33758621114043,
+          "median_drift_pct": 56.41241078174557,
+          "median_m_per_km": 564.1241078174558,
+          "pass_isro": 0
+        },
+        "D_lsq_mount": {
+          "n": 7,
+          "median_final_error_m": 275.342306487877,
+          "median_drift_pct": 45.78951837662759,
+          "median_m_per_km": 457.89518376627586,
+          "pass_isro": 0
+        },
+        "E_oracle_can": {
+          "n": 7,
+          "median_final_error_m": 32.372829129769414,
+          "median_drift_pct": 7.7597471004680445,
+          "median_m_per_km": 77.59747100468046,
+          "pass_isro": 4
+        }
+      }
+    },
+    "S-Vtb3": {
+      "s_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Vtb (Driver E)\\Vtb03\\S-Vtb3.csv",
+      "v_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Vtb (Driver E)\\Vtb03\\V-Vtb3.csv",
+      "rows": 8240,
+      "phone_gps_unique_fixes": 33,
+      "can_gps_unique_fixes": 3822,
+      "speed_unit": {
+        "col_over_true": 0.969739877705141,
+        "implied_unit": "m/s",
+        "n": 440
+      },
+      "yaw_mapping": {
+        "n": 440,
+        "per_axis": {
+          "gyro_yaw": {
+            "correlation": -0.004156748549133303,
+            "gain": -0.0012086249380855569
+          },
+          "gyro_pitch": {
+            "correlation": 0.11610201122680067,
+            "gain": 0.007741986195125095
+          },
+          "gyro_roll": {
+            "correlation": -0.06099610466444447,
+            "gain": -0.006241589062229944
+          }
+        },
+        "lsq_mount_vector": [
+          0.01954874233525185,
+          0.025726680346132118,
+          0.031486588631492826
+        ],
+        "lsq_norm": 0.04511563667034947,
+        "lsq_correlation": 0.1617726513750296,
+        "residual_deg_s_rms": 2.1636068865786933,
+        "true_yaw_deg_s_std": 2.1923679447390967
+      },
+      "outage_60s": {
+        "A_repo_contract": {
+          "n": 0
+        },
+        "B_speed_unit_fixed": {
+          "n": 0
+        },
+        "C_sign_flipped": {
+          "n": 0
+        },
+        "D_lsq_mount": {
+          "n": 0
+        },
+        "E_oracle_can": {
+          "n": 0
+        }
+      }
+    },
+    "S-Vtb5": {
+      "s_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Vtb (Driver E)\\Vtb05\\S-Vtb5.csv",
+      "v_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Vtb (Driver E)\\Vtb05\\V-Vtb5.csv",
+      "rows": 64388,
+      "phone_gps_unique_fixes": 698,
+      "can_gps_unique_fixes": 61783,
+      "speed_unit": {
+        "col_over_true": 0.9597182305572665,
+        "implied_unit": "m/s",
+        "n": 60612
+      },
+      "yaw_mapping": {
+        "n": 60612,
+        "per_axis": {
+          "gyro_yaw": {
+            "correlation": 0.0028478827721972206,
+            "gain": 0.0014666060756354795
+          },
+          "gyro_pitch": {
+            "correlation": -0.009658473308749395,
+            "gain": -0.0016043617551275671
+          },
+          "gyro_roll": {
+            "correlation": 0.002732051193348335,
+            "gain": 0.0006623391889070797
+          }
+        },
+        "lsq_mount_vector": [
+          -0.0030725889643669507,
+          -0.005581562954463883,
+          -0.0075718116120127455
+        ],
+        "lsq_norm": 0.00989580613423708,
+        "lsq_correlation": 0.015000620533556677,
+        "residual_deg_s_rms": 2.6427825801443072,
+        "true_yaw_deg_s_std": 2.6430792862752583
+      },
+      "outage_60s": {
+        "A_repo_contract": {
+          "n": 10,
+          "median_final_error_m": 929.8046414710284,
+          "median_drift_pct": 76.01830737085437,
+          "median_m_per_km": 760.1830737085438,
+          "pass_isro": 0
+        },
+        "B_speed_unit_fixed": {
+          "n": 10,
+          "median_final_error_m": 509.38292581738426,
+          "median_drift_pct": 42.62701263225569,
+          "median_m_per_km": 426.2701263225569,
+          "pass_isro": 1
+        },
+        "C_sign_flipped": {
+          "n": 10,
+          "median_final_error_m": 557.4279092432032,
+          "median_drift_pct": 52.20764517143441,
+          "median_m_per_km": 522.0764517143441,
+          "pass_isro": 0
+        },
+        "D_lsq_mount": {
+          "n": 10,
+          "median_final_error_m": 469.4996078960183,
+          "median_drift_pct": 38.61639634613246,
+          "median_m_per_km": 386.16396346132467,
+          "pass_isro": 1
+        },
+        "E_oracle_can": {
+          "n": 10,
+          "median_final_error_m": 47.42882442641023,
+          "median_drift_pct": 4.994693906794857,
+          "median_m_per_km": 49.94693906794857,
+          "pass_isro": 7
+        }
+      }
+    },
+    "S-Vw1": {
+      "s_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Vw (Driver E)\\Vw01\\S-Vw1.csv",
+      "v_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Vw (Driver E)\\Vw01\\V-Vw1.csv",
+      "rows": 20475,
+      "phone_gps_unique_fixes": 1,
+      "can_gps_unique_fixes": 155,
+      "speed_unit": {
+        "col_over_true": NaN,
+        "implied_unit": "unknown",
+        "n": 0
+      },
+      "yaw_mapping": {
+        "n": 0,
+        "per_axis": {
+          "gyro_yaw": {
+            "correlation": NaN,
+            "gain": NaN
+          },
+          "gyro_pitch": {
+            "correlation": NaN,
+            "gain": NaN
+          },
+          "gyro_roll": {
+            "correlation": NaN,
+            "gain": NaN
+          }
+        },
+        "lsq_mount_vector": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lsq_norm": 0.0,
+        "lsq_correlation": NaN,
+        "residual_deg_s_rms": NaN,
+        "true_yaw_deg_s_std": NaN
+      },
+      "outage_60s": {
+        "A_repo_contract": {
+          "n": 0
+        },
+        "B_speed_unit_fixed": {
+          "n": 0
+        },
+        "C_sign_flipped": {
+          "n": 0
+        },
+        "D_lsq_mount": {
+          "n": 0
+        },
+        "E_oracle_can": {
+          "n": 0
+        }
+      }
+    },
+    "S-Vw2": {
+      "s_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Vw (Driver E)\\Vw02\\S-Vw2.csv",
+      "v_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Vw (Driver E)\\Vw02\\V-Vw2.csv",
+      "rows": 52712,
+      "phone_gps_unique_fixes": 563,
+      "can_gps_unique_fixes": 49909,
+      "speed_unit": {
+        "col_over_true": 0.9974395559919903,
+        "implied_unit": "m/s",
+        "n": 48425
+      },
+      "yaw_mapping": {
+        "n": 48425,
+        "per_axis": {
+          "gyro_yaw": {
+            "correlation": 0.0065545851307619,
+            "gain": 0.004617791960164485
+          },
+          "gyro_pitch": {
+            "correlation": 0.10354494613086324,
+            "gain": 0.024722435691601798
+          },
+          "gyro_roll": {
+            "correlation": -0.013667259377055789,
+            "gain": -0.0043020863436243895
+          }
+        },
+        "lsq_mount_vector": [
+          0.015093649750783145,
+          0.0738946096886024,
+          0.08531436720461008
+        ],
+        "lsq_norm": 0.11387173861566027,
+        "lsq_correlation": 0.16870569504350147,
+        "residual_deg_s_rms": 3.752441227433215,
+        "true_yaw_deg_s_std": 3.8070086580650644
+      },
+      "outage_60s": {
+        "A_repo_contract": {
+          "n": 9,
+          "median_final_error_m": 1030.776346649364,
+          "median_drift_pct": 77.84516658380859,
+          "median_m_per_km": 778.4516658380859,
+          "pass_isro": 0
+        },
+        "B_speed_unit_fixed": {
+          "n": 9,
+          "median_final_error_m": 602.6452577415859,
+          "median_drift_pct": 45.8782555077967,
+          "median_m_per_km": 458.78255507796706,
+          "pass_isro": 0
+        },
+        "C_sign_flipped": {
+          "n": 9,
+          "median_final_error_m": 499.1107903536564,
+          "median_drift_pct": 40.90817655437371,
+          "median_m_per_km": 409.08176554373716,
+          "pass_isro": 1
+        },
+        "D_lsq_mount": {
+          "n": 9,
+          "median_final_error_m": 305.7821799378128,
+          "median_drift_pct": 25.608044242486343,
+          "median_m_per_km": 256.08044242486346,
+          "pass_isro": 0
+        },
+        "E_oracle_can": {
+          "n": 9,
+          "median_final_error_m": 54.864900041698405,
+          "median_drift_pct": 4.029503691693859,
+          "median_m_per_km": 40.29503691693859,
+          "pass_isro": 8
+        }
+      }
+    },
+    "S-Vw4": {
+      "s_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Vw (Driver E)\\Vw04\\S-Vw4.csv",
+      "v_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Vw (Driver E)\\Vw04\\V-Vw4.csv",
+      "rows": 126526,
+      "phone_gps_unique_fixes": 1316,
+      "can_gps_unique_fixes": 117525,
+      "speed_unit": {
+        "col_over_true": 0.9908385704229746,
+        "implied_unit": "m/s",
+        "n": 112813
+      },
+      "yaw_mapping": {
+        "n": 112813,
+        "per_axis": {
+          "gyro_yaw": {
+            "correlation": 0.0075631143794346435,
+            "gain": 0.004807454864380615
+          },
+          "gyro_pitch": {
+            "correlation": 0.24399662253440377,
+            "gain": 0.06629124974562235
+          },
+          "gyro_roll": {
+            "correlation": -0.027560735952362036,
+            "gain": -0.011127156118995809
+          }
+        },
+        "lsq_mount_vector": [
+          0.04707456869431897,
+          0.2236842493487715,
+          0.28001794655405604
+        ],
+        "lsq_norm": 0.36147020460451473,
+        "lsq_correlation": 0.4270369096698197,
+        "residual_deg_s_rms": 4.905684986975632,
+        "true_yaw_deg_s_std": 5.425235520941152
+      },
+      "outage_60s": {
+        "A_repo_contract": {
+          "n": 10,
+          "median_final_error_m": 855.6229847232094,
+          "median_drift_pct": 76.31400447583246,
+          "median_m_per_km": 763.1400447583246,
+          "pass_isro": 0
+        },
+        "B_speed_unit_fixed": {
+          "n": 10,
+          "median_final_error_m": 381.53726565952104,
+          "median_drift_pct": 37.487013006580256,
+          "median_m_per_km": 374.8701300658025,
+          "pass_isro": 0
+        },
+        "C_sign_flipped": {
+          "n": 10,
+          "median_final_error_m": 714.4752184686376,
+          "median_drift_pct": 74.53700759531552,
+          "median_m_per_km": 745.3700759531553,
+          "pass_isro": 0
+        },
+        "D_lsq_mount": {
+          "n": 10,
+          "median_final_error_m": 283.4663901591873,
+          "median_drift_pct": 30.700180655244417,
+          "median_m_per_km": 307.0018065524441,
+          "pass_isro": 0
+        },
+        "E_oracle_can": {
+          "n": 10,
+          "median_final_error_m": 66.67163679756231,
+          "median_drift_pct": 7.444240279884098,
+          "median_m_per_km": 74.44240279884099,
+          "pass_isro": 6
+        }
+      }
+    },
+    "S-Vw14b": {
+      "s_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Vw (Driver E)\\Vw14b\\S-Vw14b.csv",
+      "v_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Vw (Driver E)\\Vw14b\\V-Vw14b.csv",
+      "rows": 19588,
+      "phone_gps_unique_fixes": 218,
+      "can_gps_unique_fixes": 19149,
+      "speed_unit": {
+        "col_over_true": 1.0016579728983737,
+        "implied_unit": "m/s",
+        "n": 19422
+      },
+      "yaw_mapping": {
+        "n": 19422,
+        "per_axis": {
+          "gyro_yaw": {
+            "correlation": 0.008436534327004629,
+            "gain": 0.000860316297387431
+          },
+          "gyro_pitch": {
+            "correlation": 0.04857094624157845,
+            "gain": 0.0027528944043050774
+          },
+          "gyro_roll": {
+            "correlation": -0.022101504171680365,
+            "gain": -0.0017210649838403892
+          }
+        },
+        "lsq_mount_vector": [
+          0.0011204744280292002,
+          0.005730015080550194,
+          0.005096237607398654
+        ],
+        "lsq_norm": 0.007749849902950661,
+        "lsq_correlation": 0.05963753586591866,
+        "residual_deg_s_rms": 0.7824859939364242,
+        "true_yaw_deg_s_std": 0.7838812222446543
+      },
+      "outage_60s": {
+        "A_repo_contract": {
+          "n": 10,
+          "median_final_error_m": 1071.230889585313,
+          "median_drift_pct": 76.04646588861029,
+          "median_m_per_km": 760.4646588861028,
+          "pass_isro": 0
+        },
+        "B_speed_unit_fixed": {
+          "n": 10,
+          "median_final_error_m": 480.08841064835383,
+          "median_drift_pct": 38.24819887464323,
+          "median_m_per_km": 382.4819887464323,
+          "pass_isro": 1
+        },
+        "C_sign_flipped": {
+          "n": 10,
+          "median_final_error_m": 652.5131160878306,
+          "median_drift_pct": 49.7272818191813,
+          "median_m_per_km": 497.27281819181303,
+          "pass_isro": 0
+        },
+        "D_lsq_mount": {
+          "n": 10,
+          "median_final_error_m": 293.82489031054365,
+          "median_drift_pct": 20.25291986800189,
+          "median_m_per_km": 202.5291986800189,
+          "pass_isro": 1
+        },
+        "E_oracle_can": {
+          "n": 10,
+          "median_final_error_m": 90.25817164342219,
+          "median_drift_pct": 7.720991341883377,
+          "median_m_per_km": 77.20991341883376,
+          "pass_isro": 8
+        }
+      }
+    },
+    "S-Vw14c": {
+      "s_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Vw (Driver E)\\Vw14c\\S-Vw14c.csv",
+      "v_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Vw (Driver E)\\Vw14c\\V-Vw14c.csv",
+      "rows": 15826,
+      "phone_gps_unique_fixes": 157,
+      "can_gps_unique_fixes": 13869,
+      "speed_unit": {
+        "col_over_true": 0.9877991466441071,
+        "implied_unit": "m/s",
+        "n": 10604
+      },
+      "yaw_mapping": {
+        "n": 10604,
+        "per_axis": {
+          "gyro_yaw": {
+            "correlation": 0.024972883774067294,
+            "gain": 0.011848904120297809
+          },
+          "gyro_pitch": {
+            "correlation": 0.14665970519593108,
+            "gain": 0.03470160478158694
+          },
+          "gyro_roll": {
+            "correlation": -0.03231663730657092,
+            "gain": -0.011428269424962618
+          }
+        },
+        "lsq_mount_vector": [
+          0.024831513958133565,
+          0.1010730095119314,
+          0.11915778128834423
+        ],
+        "lsq_norm": 0.15821167522914623,
+        "lsq_correlation": 0.2304421452968202,
+        "residual_deg_s_rms": 3.2981399310237816,
+        "true_yaw_deg_s_std": 3.3893201957253214
+      },
+      "outage_60s": {
+        "A_repo_contract": {
+          "n": 8,
+          "median_final_error_m": 487.5517841023962,
+          "median_drift_pct": 73.11318871579708,
+          "median_m_per_km": 731.1318871579708,
+          "pass_isro": 0
+        },
+        "B_speed_unit_fixed": {
+          "n": 8,
+          "median_final_error_m": 192.10667997018584,
+          "median_drift_pct": 22.34763740615866,
+          "median_m_per_km": 223.47637406158657,
+          "pass_isro": 0
+        },
+        "C_sign_flipped": {
+          "n": 8,
+          "median_final_error_m": 369.1737119887713,
+          "median_drift_pct": 76.5604173519256,
+          "median_m_per_km": 765.6041735192559,
+          "pass_isro": 1
+        },
+        "D_lsq_mount": {
+          "n": 8,
+          "median_final_error_m": 142.7686840156063,
+          "median_drift_pct": 20.152837620391264,
+          "median_m_per_km": 201.52837620391261,
+          "pass_isro": 1
+        },
+        "E_oracle_can": {
+          "n": 8,
+          "median_final_error_m": 41.86456466460744,
+          "median_drift_pct": 8.268491342796487,
+          "median_m_per_km": 82.68491342796487,
+          "pass_isro": 6
+        }
+      }
+    },
+    "S-Vw16a": {
+      "s_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Vw (Driver E)\\Vw16a\\S-Vw16a.csv",
+      "v_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Vw (Driver E)\\Vw16a\\V-Vw16a.csv",
+      "rows": 5879,
+      "phone_gps_unique_fixes": 61,
+      "can_gps_unique_fixes": 5582,
+      "speed_unit": {
+        "col_over_true": 0.956194329556223,
+        "implied_unit": "m/s",
+        "n": 5149
+      },
+      "yaw_mapping": {
+        "n": 5149,
+        "per_axis": {
+          "gyro_yaw": {
+            "correlation": -0.0015283957660906726,
+            "gain": -0.00041640925150048045
+          },
+          "gyro_pitch": {
+            "correlation": 0.003843835620857966,
+            "gain": 0.00071070274793359
+          },
+          "gyro_roll": {
+            "correlation": -0.01706263248231991,
+            "gain": -0.004228330438327116
+          }
+        },
+        "lsq_mount_vector": [
+          -0.004028868385918528,
+          -0.007671374144498623,
+          -0.01437694121820456
+        ],
+        "lsq_norm": 0.016786250341504053,
+        "lsq_correlation": 0.02917938493757059,
+        "residual_deg_s_rms": 2.725874563810668,
+        "true_yaw_deg_s_std": 2.727035749677954
+      },
+      "outage_60s": {
+        "A_repo_contract": {
+          "n": 9,
+          "median_final_error_m": 805.9173123374452,
+          "median_drift_pct": 77.58379297630398,
+          "median_m_per_km": 775.8379297630398,
+          "pass_isro": 0
+        },
+        "B_speed_unit_fixed": {
+          "n": 9,
+          "median_final_error_m": 328.4690855623732,
+          "median_drift_pct": 40.62635139594693,
+          "median_m_per_km": 406.2635139594693,
+          "pass_isro": 1
+        },
+        "C_sign_flipped": {
+          "n": 9,
+          "median_final_error_m": 600.4130651886412,
+          "median_drift_pct": 50.143639354408165,
+          "median_m_per_km": 501.4363935440816,
+          "pass_isro": 0
+        },
+        "D_lsq_mount": {
+          "n": 9,
+          "median_final_error_m": 209.70937598975044,
+          "median_drift_pct": 20.406422042781145,
+          "median_m_per_km": 204.06422042781145,
+          "pass_isro": 1
+        },
+        "E_oracle_can": {
+          "n": 9,
+          "median_final_error_m": 61.19339032755308,
+          "median_drift_pct": 7.317462391897006,
+          "median_m_per_km": 73.17462391897006,
+          "pass_isro": 7
+        }
+      }
+    },
+    "S-Y1": {
+      "s_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Y (Driver D)\\Y1\\S-Y1.csv",
+      "v_csv": "data\\raw\\IO-VNBD\\Synchronised V abd S datasets\\Categorised IOVNB Dataset\\Y (Driver D)\\Y1\\V-Y1.csv",
+      "rows": 70285,
+      "phone_gps_unique_fixes": 699,
+      "can_gps_unique_fixes": 58974,
+      "speed_unit": {
+        "col_over_true": 0.8146264765017953,
+        "implied_unit": "unknown",
+        "n": 51400
+      },
+      "yaw_mapping": {
+        "n": 51400,
+        "per_axis": {
+          "gyro_yaw": {
+            "correlation": -0.004794803684338796,
+            "gain": -0.0046131806956208315
+          },
+          "gyro_pitch": {
+            "correlation": 0.06690548057739963,
+            "gain": 0.05861083033125357
+          },
+          "gyro_roll": {
+            "correlation": -0.013115623429798376,
+            "gain": -0.018068856560934158
+          }
+        },
+        "lsq_mount_vector": [
+          0.0025353992471981402,
+          0.06129642179833613,
+          0.011508132697115522
+        ],
+        "lsq_norm": 0.06241888089990599,
+        "lsq_correlation": 0.06752637019876372,
+        "residual_deg_s_rms": 7.641474216792284,
+        "true_yaw_deg_s_std": 7.658690867915302
+      },
+      "outage_60s": {
+        "A_repo_contract": {
+          "n": 8,
+          "median_final_error_m": 357.4459949215536,
+          "median_drift_pct": 63.0537000644822,
+          "median_m_per_km": 630.537000644822,
+          "pass_isro": 0
+        },
+        "B_speed_unit_fixed": {
+          "n": 8,
+          "median_final_error_m": 496.74959921104903,
+          "median_drift_pct": 75.30007400402289,
+          "median_m_per_km": 753.000740040229,
+          "pass_isro": 0
+        },
+        "C_sign_flipped": {
+          "n": 8,
+          "median_final_error_m": 677.1948710647973,
+          "median_drift_pct": 81.6849674702986,
+          "median_m_per_km": 816.849674702986,
+          "pass_isro": 0
+        },
+        "D_lsq_mount": {
+          "n": 8,
+          "median_final_error_m": 500.50019816525935,
+          "median_drift_pct": 75.82373765920785,
+          "median_m_per_km": 758.2373765920786,
+          "pass_isro": 0
+        },
+        "E_oracle_can": {
+          "n": 8,
+          "median_final_error_m": 41.23332510836826,
+          "median_drift_pct": 6.353690962578073,
+          "median_m_per_km": 63.53690962578074,
+          "pass_isro": 5
+        }
+      }
+    }
+  }
+}
