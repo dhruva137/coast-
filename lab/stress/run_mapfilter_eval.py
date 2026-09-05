@@ -84,13 +84,26 @@ def _in_coverage(data: dict[str, Any], graph: MapGraph) -> bool:
     )
 
 
+_EDGE_AT_CACHE: dict[tuple[int, int], int] = {}
+
+
 def _true_edge_at(graph: MapGraph, lat: float, lon: float, radius_m: float = 60.0) -> int:
-    """Edge whose centreline is closest to a true position, or -1."""
+    """Edge whose centreline is closest to a true position, or -1.
+
+    Memoised on a ~1 m lat/lon grid. Building a corridor calls this once every
+    10 samples along the route, and consecutive calls land on the same road, so
+    the cache hits almost every time.
+    """
+    key = (int(lat * 1e5), int(lon * 1e5))
+    hit = _EDGE_AT_CACHE.get(key)
+    if hit is not None:
+        return hit
     best, best_d = -1, radius_m
     for e in graph.nearby_edges(lat, lon, radius_m):
         _, _, d, _, _ = graph.project(int(e), lat, lon)
         if math.isfinite(d) and d < best_d:
             best, best_d = int(e), d
+    _EDGE_AT_CACHE[key] = best
     return best
 
 
@@ -157,8 +170,14 @@ def run_segment(
     if not pf.seed_from_fix(float(cla[i0 - 1]), float(clo[i0 - 1]), heading0):
         return None
     st = None
+    last = i1 - 1
     for k in range(i0, i1):
-        st = pf.step(float(v[k]), float(gz[k]), float(t[k] - t[k - 1]))
+        # Position is only needed at the end; deriving lat/lon for every
+        # particle on every step was pure reporting cost.
+        st = pf.step(
+            float(v[k]), float(gz[k]), float(t[k] - t[k - 1]),
+            want_position=(k == last),
+        )
         if not st.on_graph:
             break
     if st is None or not st.on_graph:

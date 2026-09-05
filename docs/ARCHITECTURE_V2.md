@@ -142,15 +142,60 @@ time constant from the filter's own covariance rather than fixing it — small
 drift snaps fast, large drift eases in — which is only possible because layer 4
 produces a real uncertainty.
 
-## 7. What would falsify this design
+## 7. What would falsify this design — and what the test returned
 
-Stated in advance, so the evaluation cannot be tuned into agreement:
+Stated in advance, so the evaluation could not be tuned into agreement.
+Measured on 43 forced 60 s outages across 8 drives with CAN ground truth
+(`lab/stress/run_mapfilter_eval.py`).
 
-- If the road-constrained filter does not beat free DR on the same segments
-  scored against CAN truth, the design is wrong and section 2 is refuted.
-- If branch-decision accuracy at junctions is near chance, the gyro carries no
-  usable turn evidence and the map cannot be used this way at all.
-- If posterior spread does not correlate with actual error, the uncertainty is
-  decorative and must not be shown to a user as if it meant something.
+### Test 1 — must beat free DR. **PASSED.**
 
-All three are measurable on the existing harness with CAN ground truth.
+| scenario | | median error | PASS_ISRO |
+|---|---|---:|---:|
+| junctions live | free DR | 252.7 m | 8/43 |
+| junctions live | **map-in-loop PF** | **125.2 m** | **17/43** |
+| corridor (tunnel-like) | **map-in-loop PF** | **122.7 m** | **17/43** |
+
+**2.02x on median error, pass count doubled.** Helped 28, hurt 15 — the
+discrete failure mode is real and shows up as the 15.
+
+Note the corridor and junctions numbers are nearly identical (2.06x vs 2.02x).
+That is informative: on these drives, removing branch ambiguity buys almost
+nothing, so the residual error is **along-track**, i.e. speed error — exactly
+what section 2 predicted. It also means a better speed model now pays off,
+which it did not for free DR.
+
+### Test 2 — branch accuracy must beat chance. **WEAK PASS.**
+
+Correct-edge rate 26% with junctions live, 37% in corridor mode. Above chance
+for a cloud spread over several candidate edges, but poor. The gyro carries
+*some* usable turn evidence, not a lot. This is the number the alignment engine
+and a better yaw model should move.
+
+### Test 3 — posterior spread must predict error. **FAILED.**
+
+Spread-vs-error correlation is **-0.23**: slightly *anti*-correlated. The filter
+is marginally more confident when it is more wrong — the collapse-onto-a-wrong-
+branch mode, where resampling shrinks the cloud precisely because every particle
+has committed to the same mistake.
+
+**Consequence, and it is a hard rule: the UI must not draw this spread as a
+confidence radius.** It would tell a user "trust me" at the moment it is most
+wrong. Until the correlation is meaningfully positive, the app shows a
+time-and-distance-based uncertainty model instead, and the filter's own spread
+stays a diagnostic. Writing this test before running it is the only reason we
+know; the number looks fine in isolation.
+
+## 8. What this means for the roadmap
+
+The architecture is validated, the uncertainty is not, and the residual error is
+along-track. In priority order:
+
+1. **Fix the confidence signal** (test 3). Resampling collapse is the suspect —
+   candidate fixes are branch-stratified resampling that cannot drop a
+   hypothesis entirely, and reporting multi-modality (how many distinct edges
+   hold weight) rather than a single scalar spread.
+2. **Better speed** now genuinely pays, because corridor ≈ junctions says
+   along-track dominates. This is where the blueprint's TCN velocity head
+   belongs.
+3. **Alignment engine** to lift branch accuracy off 26%.

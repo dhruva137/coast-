@@ -100,12 +100,33 @@ class RoadParticleFilter:
         self.speed_scale = np.ones(self.n, dtype=np.float64)
         self.w = np.full(self.n, 1.0 / self.n, dtype=np.float64)
         self.alive = False
+        self._geom_cache: dict[int, tuple] = {}
 
     # --- geometry helpers ------------------------------------------------
 
-    def _edge_seg_bearings(self, edge: int) -> tuple[np.ndarray, np.ndarray]:
+    def _geom(self, edge: int) -> tuple[np.ndarray, np.ndarray, np.ndarray, float]:
+        """Cached (seg lengths, seg bearings, cumulative length, total) for an edge.
+
+        Slicing and re-running cumsum per particle per timestep was the single
+        biggest cost in this filter: 400 particles x 600 steps is 240 000
+        repetitions of work that depends only on the edge. Particles cluster on
+        a handful of edges, so caching collapses it.
+        """
+        hit = self._geom_cache.get(edge)
+        if hit is not None:
+            return hit
         a, b = int(self.g.seg_ptr[edge]), int(self.g.seg_ptr[edge + 1])
-        return self.g.seg_len_m[a:b], self.g.seg_bearing_deg[a:b]
+        lens = np.asarray(self.g.seg_len_m[a:b], dtype=np.float64)
+        bears = np.asarray(self.g.seg_bearing_deg[a:b], dtype=np.float64)
+        cum = np.cumsum(lens) if lens.size else np.zeros(1)
+        total = float(cum[-1]) if lens.size else 0.0
+        out = (lens, bears, cum, total)
+        self._geom_cache[edge] = out
+        return out
+
+    def _edge_seg_bearings(self, edge: int) -> tuple[np.ndarray, np.ndarray]:
+        lens, bears, _, _ = self._geom(edge)
+        return lens, bears
 
     def _pos_on_edge(self, edge: int, s: float, forward: bool) -> tuple[float, float, float]:
         """(lat, lon, bearing_deg) at arc length ``s`` along ``edge``."""
@@ -134,7 +155,7 @@ class RoadParticleFilter:
         return lat, lon, bear
 
     def _edge_length(self, edge: int) -> float:
-        return float(self.g.edge_len_m[edge])
+        return self._geom(edge)[3]
 
     def _expected_yaw_rate(self, edge: int, s: float, forward: bool, v: float) -> float:
         """Road curvature at ``s`` expressed as a yaw rate for speed ``v``.
@@ -210,25 +231,53 @@ class RoadParticleFilter:
         self.alive = True
         return True
 
-    def step(self, v_mps: float, yaw_rate_rad_s: float, dt: float) -> FilterState:
-        """Advance one sample: propagate along the graph, weight by turn evidence."""
+    def step(
+        self, v_mps: float, yaw_rate_rad_s: float, dt: float, *, want_position: bool = True
+    ) -> FilterState:
+        """Advance one sample: propagate along the graph, weight by turn evidence.
+
+        Vectorised by grouping particles on the same edge. The per-particle
+        Python loop this replaces made a 60 s segment take ~6 s, which was too
+        slow to gather enough segments to conclude anything. Only the junction
+        crossings -- a handful of particles per step -- still loop.
+
+        ``want_position=False`` skips deriving lat/lon for every particle, which
+        is pure reporting cost. Callers that only need the final fix should pass
+        False on intermediate steps.
+        """
         if not self.alive:
             return FilterState(float("nan"), float("nan"), -1, float("inf"), 0.0, False)
 
         logw = np.log(np.maximum(self.w, 1e-300))
-        for i in range(self.n):
-            e = int(self.edge[i])
-            fwd = bool(self.forward[i])
-            v = max(v_mps, 0.0) * float(self.speed_scale[i])
+        v_all = max(v_mps, 0.0) * self.speed_scale
 
-            expected = self._expected_yaw_rate(e, float(self.s[i]), fwd, v)
-            logw[i] += -0.5 * ((yaw_rate_rad_s - expected) / self.yaw_sigma) ** 2
+        # --- expected yaw rate from road curvature, grouped by edge ---------
+        uniq, inv = np.unique(self.edge, return_inverse=True)
+        expected = np.zeros(self.n, dtype=np.float64)
+        totals = np.zeros(self.n, dtype=np.float64)
+        for gi, e in enumerate(uniq):
+            m = inv == gi
+            lens, bears, cum, total = self._geom(int(e))
+            totals[m] = total
+            if lens.size < 2:
+                continue
+            fwd = self.forward[m]
+            walk = np.where(fwd, self.s[m], total - self.s[m])
+            k = np.clip(np.searchsorted(cum, walk, side="left"), 0, lens.size - 2)
+            d = (bears[k + 1] - bears[k] + 180.0) % 360.0 - 180.0
+            kappa = np.radians(d) / np.maximum(lens[k], 1.0)
+            ev = kappa * v_all[m]
+            expected[m] = np.where(fwd, ev, -ev)
 
-            self.s[i] += v * dt
-            total = self._edge_length(e)
-            # Junction: choose a branch. The measured turn rate selects it --
-            # this is the "which ramp did you take" decision, and it is where
-            # heading information is actually worth spending.
+        logw += -0.5 * ((yaw_rate_rad_s - expected) / self.yaw_sigma) ** 2
+        self.s += v_all * dt
+
+        # --- junction crossings: only the few particles that ran off an edge -
+        crossed = np.flatnonzero(self.s > totals)
+        for i in crossed:
+            i = int(i)
+            e, fwd = int(self.edge[i]), bool(self.forward[i])
+            total = totals[i]
             guard = 0
             while self.s[i] > total and guard < 4:
                 guard += 1
@@ -239,19 +288,18 @@ class RoadParticleFilter:
                     logw[i] -= 20.0  # dead end: implausible, not impossible
                     break
                 _, _, cur_bear = self._pos_on_edge(e, total, fwd)
-                scores = []
-                for ne, nfwd in nbrs:
+                scores = np.empty(len(nbrs))
+                for j, (ne, nfwd) in enumerate(nbrs):
                     _, _, nb = self._pos_on_edge(ne, 0.0, nfwd)
                     turn = (nb - cur_bear + 180.0) % 360.0 - 180.0
                     turn_rate = math.radians(turn) / max(dt * 4.0, 1e-3)
-                    scores.append(
+                    scores[j] = (
                         -0.5 * ((yaw_rate_rad_s - turn_rate) / (self.yaw_sigma * 6.0)) ** 2
                         - abs(turn) / JUNCTION_TURN_PENALTY_DEG
                     )
-                sc = np.array(scores)
-                p = np.exp(sc - sc.max())
-                p /= p.sum()
-                j = int(self.rng.choice(len(nbrs), p=p))
+                pr = np.exp(scores - scores.max())
+                pr /= pr.sum()
+                j = int(self.rng.choice(len(nbrs), p=pr))
                 e, fwd = nbrs[j]
                 self.edge[i], self.forward[i] = e, fwd
                 self.s[i] = overshoot
@@ -276,19 +324,26 @@ class RoadParticleFilter:
             )
             self.w = np.full(self.n, 1.0 / self.n)
 
+        best = int(self.edge[int(np.argmax(self.w))])
+        if not want_position:
+            return FilterState(float("nan"), float("nan"), best, float("nan"), ess, True)
+        return self._position(best, ess)
+
+    def _position(self, best_edge: int, ess: float) -> FilterState:
+        """Weighted mean position of the cloud, plus its spread in metres."""
         lats = np.empty(self.n)
         lons = np.empty(self.n)
-        for i in range(self.n):
-            lats[i], lons[i], _ = self._pos_on_edge(
-                int(self.edge[i]), float(self.s[i]), bool(self.forward[i])
-            )
+        uniq, inv = np.unique(self.edge, return_inverse=True)
+        for gi, e in enumerate(uniq):
+            m = np.flatnonzero(inv == gi)
+            for i in m:
+                lats[i], lons[i], _ = self._pos_on_edge(
+                    int(e), float(self.s[i]), bool(self.forward[i])
+                )
         lat = float(np.sum(self.w * lats))
         lon = float(np.sum(self.w * lons))
-        # Posterior spread in metres: tells a caller whether the cloud has split
-        # across branches (large) or is confidently on one road (small).
         clat = math.cos(math.radians(lat))
         dx = (lons - lon) * EARTH_R_M * math.radians(1.0) * clat
         dy = (lats - lat) * EARTH_R_M * math.radians(1.0)
         spread = float(np.sqrt(np.sum(self.w * (dx**2 + dy**2))))
-        best = int(self.edge[int(np.argmax(self.w))])
-        return FilterState(lat, lon, best, spread, ess, True)
+        return FilterState(lat, lon, best_edge, spread, ess, True)
