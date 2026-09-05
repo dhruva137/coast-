@@ -21,7 +21,11 @@ class IdrApplication : Application() {
                     NotificationManager.IMPORTANCE_LOW,
                 ).apply {
                     setShowBadge(false)
-                    description = "Foreground IMU/GNSS logging for SIH26168"
+                    // Shown in Android's own notification settings, so it has to
+                    // be readable by somebody who is not on this project.
+                    description = "The ongoing notice that appears while the app " +
+                        "is tracking with the screen off. Turning it off does not " +
+                        "stop tracking, it only hides it."
                 },
             )
         }

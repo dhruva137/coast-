@@ -70,7 +70,7 @@ class RelativeModeTest {
         val hud = ins.snapshot(i.toLong() * dtNs, AppMode.NAVIGATE)
         assertTrue("lat should be NaN, was ${hud.lat}", hud.lat.isNaN())
         assertTrue("lon should be NaN, was ${hud.lon}", hud.lon.isNaN())
-        hud.insTrail.forEach {
+        ins.trackSnapshot().ins.forEach {
             assertTrue("trail point leaked a coordinate", it.lat.isNaN() && it.lon.isNaN())
         }
     }

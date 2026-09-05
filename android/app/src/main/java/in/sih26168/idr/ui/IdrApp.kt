@@ -55,7 +55,9 @@ fun IdrApp(bus: IdrBus) {
     val prefs = remember { Prefs(ctx) }
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var onboarding by remember { mutableStateOf(!prefs.onboardingDone) }
-    val (permsOk, request) = rememberPermissionGate(autoRequest = prefs.onboardingDone)
+    // No autoRequest argument any more: nothing asks for a permission until the
+    // user presses something that explains it. See Permissions.kt.
+    val (permsOk, request) = rememberPermissionGate()
 
     // Run the hardware self-check once per process, whether or not the user
     // opens a screen that shows it, so Diagnostics has real numbers to quote.

@@ -51,6 +51,9 @@ fun HelpScreen(bus: IdrBus, onReplayOnboarding: () -> Unit) {
         Header("MOUNT CALIBRATION")
         CalibrationCard(bus = bus)
 
+        Header("PRIVACY")
+        PrivacyNote()
+
         Header("QUICK ANSWERS")
         Qa(
             "Do I need a handlebar mount?",
@@ -67,9 +70,19 @@ fun HelpScreen(bus: IdrBus, onReplayOnboarding: () -> Unit) {
         )
         Qa(
             "Does it need the internet?",
-            "No. There is no server and no map download. The trained model runs on the " +
-                "phone. The map is a metre grid rather than street tiles precisely so that " +
-                "it cannot go blank when the network does.",
+            "No, and it cannot use it: the app does not hold the internet permission, so " +
+                "Android blocks any connection at the operating-system level. There is no " +
+                "server and no map download. The trained model runs on the phone. The map " +
+                "is a metre grid rather than street tiles precisely so that it cannot go " +
+                "blank when the network does.",
+        )
+        Qa(
+            "What does it record, and where does it go?",
+            "Navigating on the DRIVE tab records nothing at all. The RECORD tab is a " +
+                "research tool: it writes raw sensor and GPS readings to CSV files in this " +
+                "app's own folder on the phone, and the RECORD tab lists every file by " +
+                "name before you start. Nothing is uploaded, ever. Uninstalling the app " +
+                "deletes the lot.",
         )
         Qa(
             "What does the accuracy figure mean?",

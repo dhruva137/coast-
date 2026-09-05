@@ -106,6 +106,14 @@ fun DiagnosticsPanel(bus: IdrBus, hud: HudState) {
             "%.2f Hz (target 10.0)".format(hud.modelHz),
             if (hud.modelHz >= 9.0) Telem else Amber,
         )
+        // Backpressure, not an error: a window is dropped rather than queued
+        // when the previous inference has not finished. A climbing number means
+        // this phone cannot sustain 10 Hz.
+        Kv(
+            "windows dropped (backpressure)",
+            hud.modelDropped.toString(),
+            if (hud.modelDropped == 0L) Telem else Amber,
+        )
         Kv(
             "model speed",
             if (hud.modelSpeedMps.isNaN()) "-- (window filling)" else "%.2f m/s".format(hud.modelSpeedMps),

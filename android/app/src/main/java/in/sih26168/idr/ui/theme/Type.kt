@@ -4,36 +4,26 @@ import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.googlefonts.Font
-import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.unit.sp
-import `in`.sih26168.idr.R
 
 /**
- * IBM Plex via Play Services downloadable fonts. If GMS/network is missing,
- * Compose falls back to the platform default; we still set [FontFamily.Monospace]
- * as the HUD family so the instrument look holds offline at the venue.
+ * Platform fonts only.
+ *
+ * This used to pull IBM Plex through Play Services downloadable fonts. That is a
+ * network fetch, and it was the ONLY thing in the app that needed the INTERNET
+ * permission. Keeping it would have meant either shipping a privacy note that
+ * was not quite true, or explaining a network permission in an app whose entire
+ * pitch is that it works with the phone offline. The instrument look comes from
+ * the monospace family, which every Android device already has, so it also
+ * cannot fail to arrive at a venue with no wifi.
+ *
+ * If the team ever wants Plex specifically, bundle the .ttf files in
+ * `res/font/` -- that is offline and needs no permission. Do not put the
+ * downloadable-font provider back.
  */
-private val provider = GoogleFont.Provider(
-    providerAuthority = "com.google.android.gms.fonts",
-    providerPackage = "com.google.android.gms",
-    certificates = R.array.com_google_android_gms_fonts_certs,
-)
+val IdrMono: FontFamily = FontFamily.Monospace
 
-private val plexSans = FontFamily(
-    Font(googleFont = GoogleFont("IBM Plex Sans"), fontProvider = provider, weight = FontWeight.Normal),
-    Font(googleFont = GoogleFont("IBM Plex Sans"), fontProvider = provider, weight = FontWeight.Medium),
-    Font(googleFont = GoogleFont("IBM Plex Sans"), fontProvider = provider, weight = FontWeight.SemiBold),
-    Font(googleFont = GoogleFont("IBM Plex Sans"), fontProvider = provider, weight = FontWeight.Bold),
-)
-
-val IdrMono: FontFamily = FontFamily(
-    Font(googleFont = GoogleFont("IBM Plex Mono"), fontProvider = provider, weight = FontWeight.Normal),
-    Font(googleFont = GoogleFont("IBM Plex Mono"), fontProvider = provider, weight = FontWeight.Medium),
-    Font(googleFont = GoogleFont("IBM Plex Mono"), fontProvider = provider, weight = FontWeight.SemiBold),
-)
-
-val IdrSans: FontFamily = plexSans
+val IdrSans: FontFamily = FontFamily.SansSerif
 
 val IdrTypography = Typography(
     displayLarge = TextStyle(fontFamily = IdrSans, fontWeight = FontWeight.Bold, fontSize = 28.sp, letterSpacing = 0.4.sp, color = Text),

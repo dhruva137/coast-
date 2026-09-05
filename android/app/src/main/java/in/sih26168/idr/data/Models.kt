@@ -1,5 +1,7 @@
 package `in`.sih26168.idr.data
 
+import androidx.compose.runtime.Immutable
+
 /**
  * Frozen sensor / log types. Field names match bible §5.8 and core/ts types.
  * Do not rename columns.
@@ -33,8 +35,50 @@ data class GnssFix(
 
 enum class MountType { handlebar, pocket, tankbag, frame, dash }
 
-enum class VehicleKind { car, scooter, motorcycle, bicycle }
+/**
+ * What the phone is riding in.
+ *
+ * ## Schema compatibility
+ *
+ * These names are written verbatim into `meta.json` as `vehicle`, and they are
+ * the second path component of every session directory
+ * (`data/<rider>/<vehicle>/<timestamp>/`). The original four -- `car`,
+ * `scooter`, `motorcycle`, `bicycle` -- are UNCHANGED and still spelled the
+ * same way, so every log already on a phone, and every script in `lab/` that
+ * reads one, keeps working. The change is purely ADDITIVE: six new values that
+ * no existing log can contain.
+ *
+ * A reader that meets an unknown value should fall back to [other], which is
+ * what [`in`.sih26168.idr.data.Prefs] does.
+ *
+ * The motion model behind each value lives in
+ * [`in`.sih26168.idr.nav.VehicleProfile] -- this enum is only the identifier.
+ */
+enum class VehicleKind {
+    /** Underground / elevated metro. GNSS is absent for the whole journey. */
+    metro_rail,
 
+    /** Suburban or mainline train. */
+    train,
+
+    bus,
+    car,
+
+    /** Three-wheeler. Rigid: it tips, it does not lean. */
+    auto_rickshaw,
+
+    scooter,
+    motorcycle,
+    bicycle,
+
+    /** On foot. Holonomic -- no lateral constraint to violate. */
+    walking,
+
+    /** Unknown. Keeps the pre-profile estimator behaviour exactly. */
+    other,
+}
+
+@Immutable
 data class SessionConfig(
     val phoneModel: String,
     val mountType: MountType,
@@ -42,11 +86,20 @@ data class SessionConfig(
     val rider: String,
     val routeId: String,
     val notes: String,
+    /**
+     * Whether the vehicle rolls into a turn.
+     *
+     * Kept as a stored field because it is a frozen `meta.json` column, but it
+     * is no longer set by hand anywhere: it is derived from [vehicle] through
+     * `VehicleProfile.of(vehicle).leans`. Use `IdrBus.setVehicle` so the two
+     * cannot drift apart.
+     */
     val leans: Boolean = true,
     val loopClosureLat: Double? = null,
     val loopClosureLon: Double? = null,
 )
 
+@Immutable
 data class SensorReport(
     val accelUncal: Boolean = false,
     val gyroUncal: Boolean = false,
@@ -66,6 +119,7 @@ data class SensorReport(
  * meaningful when an absolute origin exists; they are [Double.NaN] otherwise
  * and the UI must not render them as a position.
  */
+@Immutable
 data class TrailPoint(
     val east: Double,
     val north: Double,
@@ -144,6 +198,20 @@ enum class LocationStatus {
     UNKNOWN,
 }
 
+/**
+ * The live telemetry frame. Published at [`in`.sih26168.idr.record.RecordService]'s
+ * HUD rate, currently 10 Hz.
+ *
+ * PERFORMANCE, and the reason this is annotated: this used to carry `insTrail`
+ * and `gnssTrail`. A `List` is an unstable type to the Compose compiler, so
+ * `HudState` was inferred unstable and EVERY composable that took one was
+ * unskippable -- the whole Drive screen, map included, recomposed on every
+ * single 20 Hz telemetry frame even when the only field that moved was a
+ * fraction of a metre. The track now lives in [TrackSnapshot] on its own
+ * lower-rate flow, and everything left here is a primitive or an enum, so
+ * `@Immutable` is a promise the compiler can actually use to skip.
+ */
+@Immutable
 data class HudState(
     val tNs: Long = 0L,
     /** [Double.NaN] whenever there is no absolute origin. Never render NaN as 0. */
@@ -176,6 +244,12 @@ data class HudState(
     val modelSpeedVar: Double = Double.NaN,
     val inferMs: Double = 0.0,
     val modelHz: Double = 0.0,
+    /**
+     * Inference windows skipped because the previous one had not finished.
+     * Backpressure working as designed, not an error -- but a number that keeps
+     * climbing means the phone cannot sustain 10 Hz.
+     */
+    val modelDropped: Long = 0L,
     val modelError: String? = null,
     val mode: AppMode = AppMode.IDLE,
 
@@ -211,10 +285,78 @@ data class HudState(
     val mountApplied: Boolean = false,
     val mountNote: String = "raw device axes -- not calibrated",
 
-    val insTrail: List<TrailPoint> = emptyList(),
-    val gnssTrail: List<TrailPoint> = emptyList(),
+    // ---- Vehicle profile block -------------------------------------------
+    /** The profile the estimator is actually running, not the one in prefs. */
+    val vehicle: VehicleKind = VehicleKind.other,
+    val profileLabel: String = "",
+    /**
+     * True when the coordinated-turn lean solver is running. False for cars,
+     * buses and rail, where a body-y gyro rate is pitch or bogie yaw and
+     * feeding it to the lean solver would fabricate a turn.
+     */
+    val leanSolverActive: Boolean = true,
+
+    // ---- Zero-velocity updates -------------------------------------------
+    /** True while a stop is confirmed. Drives the STOPPED banner. */
+    val stationary: Boolean = false,
+    /** Seconds the current stop has lasted. 0 while moving. */
+    val stoppedForSec: Double = 0.0,
+    /** Confirmed stops that produced an update, this session. */
+    val zuptCount: Long = 0L,
+    /** Plain-English statement of what the last update did. */
+    val zuptNote: String = "",
+    /** Magnitude of the current gyro bias estimate, deg/s. */
+    val gyroBiasDegS: Double = 0.0,
+    /** True once at least one ZUPT has refined the bias. */
+    val gyroBiasEstimated: Boolean = false,
+
+    // ---- Profile plausibility --------------------------------------------
+    /**
+     * Non-null when the motion does not match the selected profile -- e.g.
+     * sustained lateral acceleration a metro cannot produce. The UI shows this
+     * verbatim. The estimator does NOT silently correct for it.
+     */
+    val profileViolation: String? = null,
+    /** Low-passed lateral specific force, m/s^2. NaN when not measurable. */
+    val lateralAccelMps2: Double = Double.NaN,
+    /** Ticks where the yaw rate was clipped to the profile limit. */
+    val yawClampCount: Long = 0L,
+    /** Ticks where speed or longitudinal accel was clipped. */
+    val speedClampCount: Long = 0L,
 )
 
+/**
+ * The track, on its own flow and its own (slower) clock.
+ *
+ * Split out of [HudState] for two reasons, both measured off the code rather
+ * than guessed:
+ *
+ *  1. The lists made [HudState] unstable to Compose -- see the note there.
+ *  2. `snapshot()` used to `toList()` both deques on every HUD frame. At the old
+ *     20 Hz HUD rate with the old 4000-point cap that is up to 160 000 element
+ *     copies a second into a `StateFlow` the whole screen collected, purely so
+ *     the speed readout could change.
+ *
+ * [version] increments only when a point is actually appended, so the map can
+ * `remember` its built `Path` against it and rebuild once per new point instead
+ * of once per animation frame. The bounding box is maintained incrementally by
+ * the estimator so the camera never has to scan the whole track in composition.
+ *
+ * The lists inside are never mutated after construction, which is what makes
+ * the `@Immutable` promise true.
+ */
+@Immutable
+data class TrackSnapshot(
+    val ins: List<TrailPoint> = emptyList(),
+    val gnss: List<TrailPoint> = emptyList(),
+    val version: Long = 0L,
+    val minEast: Double = 0.0,
+    val maxEast: Double = 0.0,
+    val minNorth: Double = 0.0,
+    val maxNorth: Double = 0.0,
+)
+
+@Immutable
 data class RecordStats(
     val running: Boolean = false,
     val sessionDir: String? = null,
@@ -232,6 +374,7 @@ enum class AppMode { IDLE, RECORD, NAVIGATE }
 // ---------------------------------------------------------------------------
 
 /** One sensor as the platform actually describes it. No interpretation here. */
+@Immutable
 data class SensorSpec(
     val present: Boolean = false,
     val name: String = "",
@@ -249,6 +392,7 @@ data class SensorSpec(
 
 enum class FindingLevel { OK, WARN, FAIL }
 
+@Immutable
 data class Finding(
     val level: FindingLevel,
     val title: String,
@@ -269,6 +413,7 @@ enum class DeviceVerdict {
     UNKNOWN,
 }
 
+@Immutable
 data class DeviceCheck(
     val verdict: DeviceVerdict = DeviceVerdict.UNKNOWN,
     val probed: Boolean = false,
@@ -297,6 +442,7 @@ data class DeviceCheck(
  * vector into vehicle axes is three dot products -- see
  * [`in`.sih26168.idr.nav.rotateToVehicle].
  */
+@Immutable
 data class MountRotation(
     val fx: Double, val fy: Double, val fz: Double,
     val rx: Double, val ry: Double, val rz: Double,
@@ -305,6 +451,7 @@ data class MountRotation(
 
 enum class MountQuality { GOOD, WEAK, REJECTED }
 
+@Immutable
 data class MountResult(
     val quality: MountQuality,
     val rotation: MountRotation?,

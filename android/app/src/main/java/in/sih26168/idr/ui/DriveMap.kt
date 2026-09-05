@@ -12,7 +12,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -23,12 +26,15 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import `in`.sih26168.idr.data.HudState
 import `in`.sih26168.idr.data.NavMode
+import `in`.sih26168.idr.data.TrackSnapshot
+import `in`.sih26168.idr.data.TrailPoint
 import `in`.sih26168.idr.ui.theme.Accent
 import `in`.sih26168.idr.ui.theme.Amber
 import `in`.sih26168.idr.ui.theme.Bg
@@ -67,32 +73,50 @@ import kotlin.math.sin
  *    read as perfect accuracy.
  *  * The camera is smoothed, and only the camera. Positions are drawn where the
  *    estimator put them.
+ *
+ * ## Why this file is written the way it is
+ *
+ * This composable was the largest single source of the app feeling laggy, for
+ * three compounding reasons, all now fixed and each marked in place:
+ *
+ *  1. **The camera springs were read in composition.** `val cx by
+ *     animateFloatAsState(...)` makes the READING composable recompose on every
+ *     animation frame. Five springs run here, and while the vehicle is moving
+ *     they never settle, so the whole map subtree -- `BoxWithConstraints`, its
+ *     content lambda, and all four `Text` overlays -- was recomposed at the
+ *     display refresh rate for the whole ride. They are now held as [State] and
+ *     read inside the draw lambda, so they invalidate the DRAW phase only.
+ *  2. **The track `Path` was rebuilt from scratch on every draw**, in screen
+ *     coordinates, from a list that grew at the full IMU rate. It is now built
+ *     once per new point, in metres, and the camera is applied as a canvas
+ *     transform -- which is a matrix multiply, not a rebuild.
+ *  3. **The camera bounds were recomputed by scanning every point, in
+ *     composition.** [TrackSnapshot] now carries a bounding box the estimator
+ *     maintains incrementally.
  */
 @Composable
 fun DriveMap(
     hud: HudState,
+    track: TrackSnapshot,
+    navMode: NavMode,
     modifier: Modifier = Modifier,
     onLongPress: () -> Unit = {},
 ) {
-    val pts = hud.insTrail
+    val empty = track.ins.isEmpty()
 
-    // ---- Camera: fit the track, then follow it with a critically damped spring.
-    var minE = -30f
-    var maxE = 30f
-    var minN = -30f
-    var maxN = 30f
-    if (pts.isNotEmpty()) {
-        minE = Float.POSITIVE_INFINITY; maxE = Float.NEGATIVE_INFINITY
-        minN = Float.POSITIVE_INFINITY; maxN = Float.NEGATIVE_INFINITY
-        pts.forEach { p ->
-            val e = p.east.toFloat()
-            val n = p.north.toFloat()
-            minE = min(minE, e); maxE = max(maxE, e)
-            minN = min(minN, n); maxN = max(maxN, n)
-        }
-        // Always keep the origin marker in frame; it is the anchor of the story.
-        minE = min(minE, 0f); maxE = max(maxE, 0f)
-        minN = min(minN, 0f); maxN = max(maxN, 0f)
+    // ---- Camera target: O(1), from the bounds the estimator already keeps ----
+    val minE: Float
+    val maxE: Float
+    val minN: Float
+    val maxN: Float
+    if (empty) {
+        minE = -30f; maxE = 30f; minN = -30f; maxN = 30f
+    } else {
+        // The origin marker is the anchor of the story and stays in frame.
+        minE = min(0.0, track.minEast).toFloat()
+        maxE = max(0.0, track.maxEast).toFloat()
+        minN = min(0.0, track.minNorth).toFloat()
+        maxN = max(0.0, track.maxNorth).toFloat()
     }
     val targetCx = (minE + maxE) / 2f
     val targetCy = (minN + maxN) / 2f
@@ -100,17 +124,22 @@ fun DriveMap(
     val targetSpan = max(60f, max(maxE - minE, maxN - minN) * 1.25f)
 
     val camSpring = spring<Float>(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 120f)
-    val cx by animateFloatAsState(targetCx, camSpring, label = "camX")
-    val cy by animateFloatAsState(targetCy, camSpring, label = "camY")
-    val span by animateFloatAsState(targetSpan, camSpring, label = "camSpan")
+    // Deliberately NOT `by`. See point 1 in the class note: delegating here
+    // would subscribe this composable to every animation frame.
+    val cxState = animateFloatAsState(targetCx, camSpring, label = "camX")
+    val cyState = animateFloatAsState(targetCy, camSpring, label = "camY")
+    val spanState = animateFloatAsState(targetSpan, camSpring, label = "camSpan")
 
     // Heading is animated through its cosine and sine so the icon does not spin
     // the long way round when the bearing wraps through 360.
     val hdgRad = (hud.headingDeg * Math.PI / 180.0).toFloat()
     val iconSpring = spring<Float>(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 300f)
-    val hc by animateFloatAsState(cos(hdgRad), iconSpring, label = "hc")
-    val hs by animateFloatAsState(sin(hdgRad), iconSpring, label = "hs")
-    val drawHeadingDeg = (atan2(hs, hc) * 180.0 / Math.PI).toFloat()
+    val hcState = animateFloatAsState(cos(hdgRad), iconSpring, label = "hc")
+    val hsState = animateFloatAsState(sin(hdgRad), iconSpring, label = "hs")
+
+    // ---- Cached geometry, in METRES. Rebuilt once per appended point. -------
+    val insPath = remember(track.version) { worldPath(track.ins) }
+    val gnssPath = remember(track.version) { worldPath(track.gnss) }
 
     BoxWithConstraints(
         modifier
@@ -119,20 +148,36 @@ fun DriveMap(
                 detectTapGestures(onLongPress = { onLongPress() })
             },
     ) {
-        // Recompute the scale outside the DrawScope so the scale bar can be
-        // labelled with a real number rather than drawn as an unlabelled stick.
         val density = LocalDensity.current
         val wPx = with(density) { maxWidth.toPx() }
         val hPx = with(density) { maxHeight.toPx() }
-        val pad = 24f
-        val scale = if (span > 0f) (min(wPx, hPx) - 2 * pad) / span else 1f
-        val barMetres = niceStep(90f / scale)
-        val barPx = barMetres * scale
+        val viewPx = min(wPx, hPx)
+
+        // The scale bar label is the one thing outside the Canvas that depends
+        // on the zoom spring. derivedStateOf keeps it from recomposing on every
+        // frame: niceStep is quantised to 1/2/5 x 10^n, so the value it reads
+        // changes a handful of times over a whole ride.
+        val barMetres by remember(viewPx) {
+            derivedStateOf { niceStep(90f / scaleFor(spanState.value, viewPx)) }
+        }
+        val barVisible by remember(viewPx) {
+            derivedStateOf {
+                val px = barMetres * scaleFor(spanState.value, viewPx)
+                px.isFinite() && px >= 12f
+            }
+        }
 
         Canvas(Modifier.fillMaxSize()) {
             val w = size.width
             val h = size.height
             if (w <= 0f || h <= 0f) return@Canvas
+
+            // Reading the springs HERE keeps them in the draw phase.
+            val cx = cxState.value
+            val cy = cyState.value
+            val scale = scaleFor(spanState.value, min(w, h))
+            val drawHeadingDeg =
+                (atan2(hsState.value, hcState.value) * 180.0 / Math.PI).toFloat()
 
             fun px(e: Float, n: Float) = Offset(
                 w / 2f + (e - cx) * scale,
@@ -142,47 +187,41 @@ fun DriveMap(
             drawMetreGrid(w, h, scale, cx, cy)
 
             // ---- Track ---------------------------------------------------
-            if (pts.size >= 2) {
-                val path = Path()
-                var started = false
-                pts.forEach { p ->
-                    val o = px(p.east.toFloat(), p.north.toFloat())
-                    if (!started) {
-                        path.moveTo(o.x, o.y)
-                        started = true
-                    } else {
-                        path.lineTo(o.x, o.y)
+            // The paths are in metres; the camera is a transform, so panning and
+            // zooming costs a matrix, not a rebuild of thousands of segments.
+            // Stroke widths are divided by the scale so they stay constant on
+            // screen rather than growing with zoom.
+            if (track.ins.size >= 2 || track.gnss.size >= 2) {
+                withTransform({
+                    translate(w / 2f - cx * scale, h / 2f + cy * scale)
+                    scale(scale, -scale, pivot = Offset.Zero)
+                }) {
+                    if (track.ins.size >= 2) {
+                        drawPath(
+                            insPath,
+                            Accent,
+                            style = Stroke(width = 7f / scale, cap = StrokeCap.Round),
+                        )
+                    }
+                    // GNSS track over the top, so a judge can see the two diverge.
+                    if (track.gnss.size >= 2) {
+                        drawPath(
+                            gnssPath,
+                            Telem.copy(alpha = 0.7f),
+                            style = Stroke(
+                                width = 4f / scale,
+                                cap = StrokeCap.Round,
+                                pathEffect = PathEffect.dashPathEffect(
+                                    floatArrayOf(12f / scale, 10f / scale),
+                                ),
+                            ),
+                        )
                     }
                 }
-                drawPath(path, Accent, style = Stroke(width = 7f, cap = StrokeCap.Round))
-            }
-            // GNSS track over the top, so a judge can see the two diverge.
-            val g = hud.gnssTrail
-            if (g.size >= 2) {
-                val path = Path()
-                var started = false
-                g.forEach { p ->
-                    val o = px(p.east.toFloat(), p.north.toFloat())
-                    if (!started) {
-                        path.moveTo(o.x, o.y)
-                        started = true
-                    } else {
-                        path.lineTo(o.x, o.y)
-                    }
-                }
-                drawPath(
-                    path,
-                    Telem.copy(alpha = 0.7f),
-                    style = Stroke(
-                        width = 4f,
-                        cap = StrokeCap.Round,
-                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 10f)),
-                    ),
-                )
             }
 
             // ---- Origin marker -------------------------------------------
-            if (pts.isNotEmpty()) {
+            if (!empty) {
                 val o = px(0f, 0f)
                 drawCircle(Mute, 9f, o, style = Stroke(width = 3f))
                 drawLine(Mute, Offset(o.x - 14f, o.y), Offset(o.x + 14f, o.y), 2f)
@@ -190,7 +229,7 @@ fun DriveMap(
             }
 
             // ---- Vehicle + uncertainty -----------------------------------
-            if (pts.isNotEmpty() || hud.navMode != NavMode.IDLE) {
+            if (!empty || navMode != NavMode.IDLE) {
                 val here = px(hud.east.toFloat(), hud.north.toFloat())
                 val r = hud.uncertaintyM
                 if (r.isFinite() && r > 0.0) {
@@ -198,7 +237,7 @@ fun DriveMap(
                     // Do not paint the whole viewport when the circle grows huge;
                     // the number beside the map still tells the truth.
                     if (rp in 2f..(max(w, h) * 1.5f)) {
-                        val modelled = hud.navMode != NavMode.GNSS
+                        val modelled = navMode != NavMode.GNSS
                         val tint = if (modelled) Amber else Telem
                         drawCircle(tint.copy(alpha = 0.10f), rp, here)
                         drawCircle(
@@ -219,12 +258,12 @@ fun DriveMap(
                 drawVehicle(here, drawHeadingDeg)
             }
 
-            drawScaleBar(h, barPx)
+            drawScaleBar(h, barMetres * scale)
             if (hud.headingReferenced) drawNorthArrow(w)
         }
 
         // ---- Overlays ----------------------------------------------------
-        if (barPx.isFinite() && barPx >= 12f) {
+        if (barVisible) {
             Text(
                 if (barMetres >= 1000f) "%.0f km".format(barMetres / 1000f) else "%.0f m".format(barMetres),
                 modifier = Modifier
@@ -236,7 +275,7 @@ fun DriveMap(
             )
         }
 
-        if (!hud.headingReferenced && hud.navMode != NavMode.IDLE) {
+        if (!hud.headingReferenced && navMode != NavMode.IDLE) {
             Text(
                 "UP = THE WAY YOU WERE FACING AT START (no north reference yet)",
                 modifier = Modifier
@@ -251,9 +290,9 @@ fun DriveMap(
             )
         }
 
-        if (pts.isEmpty()) {
+        if (empty) {
             Text(
-                if (hud.navMode == NavMode.IDLE) {
+                if (navMode == NavMode.IDLE) {
                     "Press START to begin tracking"
                 } else {
                     "Waiting for motion"
@@ -266,7 +305,7 @@ fun DriveMap(
         }
 
         Text(
-            if (hud.navMode == NavMode.RELATIVE) {
+            if (navMode == NavMode.RELATIVE) {
                 "displacement from your start · offline"
             } else {
                 "metre grid · no basemap · offline"
@@ -279,6 +318,33 @@ fun DriveMap(
             fontSize = 9.sp,
         )
     }
+}
+
+/** Pixels per metre for a given span across the shorter viewport edge. */
+private const val MAP_PAD_PX = 24f
+
+private fun scaleFor(span: Float, viewPx: Float): Float =
+    if (span > 0f) (viewPx - 2 * MAP_PAD_PX) / span else 1f
+
+/**
+ * A polyline in METRES (east = +x, north = +y). Built once per track version
+ * and reused across every animation frame; the camera is applied as a transform.
+ */
+private fun worldPath(points: List<TrailPoint>): Path {
+    val path = Path()
+    if (points.size < 2) return path
+    var started = false
+    points.forEach { p ->
+        val x = p.east.toFloat()
+        val y = p.north.toFloat()
+        if (!started) {
+            path.moveTo(x, y)
+            started = true
+        } else {
+            path.lineTo(x, y)
+        }
+    }
+    return path
 }
 
 /** Grid whose spacing is a round number of metres for the current zoom. */

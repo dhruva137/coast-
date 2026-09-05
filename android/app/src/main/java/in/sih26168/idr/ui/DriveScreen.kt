@@ -24,6 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -78,6 +79,9 @@ fun DriveScreen(
 ) {
     val ctx = LocalContext.current
     val hud by bus.hud.collectAsStateWithLifecycle()
+    // Separate flow: see the note on TrackSnapshot. The map's geometry must not
+    // be re-delivered every time the speed readout ticks.
+    val track by bus.track.collectAsStateWithLifecycle()
     val mode by bus.mode.collectAsStateWithLifecycle()
     // Before arming, the HUD carries no location state, so fall back to the
     // standalone gate reading. Otherwise a denied permission would show as
@@ -90,8 +94,22 @@ fun DriveScreen(
     // on the HUD and must not be presented as the current state.
     val navMode = if (live) hud.navMode else NavMode.IDLE
     val prefs = remember { Prefs(ctx) }
+    // Asked for at START, where the reason is visible: tracking continues with
+    // the screen off, and the ongoing notice is how the user sees that.
+    val (notifsOk, requestNotifs) = rememberNotificationGate()
     var showDiagnostics by remember { mutableStateOf(prefs.diagnosticsOpen) }
     var showOriginDialog by remember { mutableStateOf(false) }
+
+    // PERFORMANCE. The big readouts are strings rounded to the nearest whole
+    // km/h and metre, so their VALUE changes perhaps twice a second even though
+    // the underlying double changes ten times a second. derivedStateOf means
+    // BigStat is only recomposed when the text it would print actually differs;
+    // formatting in the call arguments recomposed it on every frame.
+    val speedText by remember {
+        derivedStateOf { if (hud.speedMps.isFinite()) "%.0f".format(hud.speedMps * 3.6) else "--" }
+    }
+    val distText by remember { derivedStateOf { distanceValue(hud.distanceM) } }
+    val distUnit by remember { derivedStateOf { distanceUnit(hud.distanceM) } }
 
     val view = LocalView.current
     DisposableEffect(live) {
@@ -107,7 +125,9 @@ fun DriveScreen(
             .padding(top = 8.dp, bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        ModeHeader(hud = hud, navMode = navMode, onOpenHelp = onOpenHelp)
+        // Narrow parameters, so this skips on every frame where the mode did
+        // not change -- which is nearly all of them.
+        ModeHeader(navMode = navMode, origin = hud.originSource, onOpenHelp = onOpenHelp)
 
         // A missing or software-fused gyroscope is surfaced on the primary
         // screen, not buried in Help. Failures are shown, never hidden.
@@ -134,9 +154,13 @@ fun DriveScreen(
         )
 
         DriveMap(
+            hud = hud,
+            track = track,
             // The completed track stays on screen after STOP, but the mode
-            // badge on it must read IDLE rather than the last live mode.
-            hud = if (live) hud else hud.copy(navMode = NavMode.IDLE),
+            // badge on it must read IDLE rather than the last live mode. This
+            // used to be `hud.copy(navMode = ...)`, which allocated a whole
+            // HudState on every recomposition of this screen.
+            navMode = navMode,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(300.dp)
@@ -150,14 +174,14 @@ fun DriveScreen(
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             BigStat(
                 label = "SPEED",
-                value = if (hud.speedMps.isFinite()) "%.0f".format(hud.speedMps * 3.6) else "--",
+                value = speedText,
                 unit = "km/h",
                 modifier = Modifier.weight(1f),
             )
             BigStat(
                 label = "DISTANCE",
-                value = distanceValue(hud.distanceM),
-                unit = distanceUnit(hud.distanceM),
+                value = distText,
+                unit = distUnit,
                 modifier = Modifier.weight(1f),
             )
         }
@@ -170,7 +194,10 @@ fun DriveScreen(
                     RecordService.stop(ctx)
                 } else {
                     // Deliberately does NOT gate on the location permission. The
-                    // whole product claim is that it runs without it.
+                    // whole product claim is that it runs without it. The
+                    // notification ask is fire-and-forget for the same reason:
+                    // tracking starts either way, the notice is just visible.
+                    if (!notifsOk) requestNotifs()
                     RecordService.start(ctx, AppMode.NAVIGATE)
                 }
             },
@@ -192,7 +219,12 @@ fun DriveScreen(
             }
         }
 
-        LoopClosureLine(hud)
+        LoopClosureLine(
+            closureM = hud.loopClosureM,
+            driftPct = hud.driftPct,
+            loopMarked = hud.loopMarked,
+            loopDistanceM = hud.loopDistanceM,
+        )
 
         TextButton(
             onClick = {
@@ -241,7 +273,7 @@ fun DriveScreen(
 // ---------------------------------------------------------------------------
 
 @Composable
-private fun ModeHeader(hud: HudState, navMode: NavMode, onOpenHelp: () -> Unit) {
+private fun ModeHeader(navMode: NavMode, origin: OriginSource, onOpenHelp: () -> Unit) {
     Row(
         Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -257,7 +289,7 @@ private fun ModeHeader(hud: HudState, navMode: NavMode, onOpenHelp: () -> Unit) 
                 letterSpacing = 1.5.sp,
             )
             Text(
-                modeSubtitle(navMode, hud.originSource),
+                modeSubtitle(navMode, origin),
                 fontFamily = IdrSans,
                 color = Mute,
                 fontSize = 13.sp,
@@ -443,15 +475,20 @@ private fun AccuracyCard(hud: HudState) {
 }
 
 @Composable
-private fun LoopClosureLine(hud: HudState) {
-    val closure = hud.loopClosureM
+private fun LoopClosureLine(
+    closureM: Double?,
+    driftPct: Double?,
+    loopMarked: Boolean,
+    loopDistanceM: Double,
+) {
+    val closure = closureM
     val text = when {
-        closure != null && hud.driftPct != null ->
+        closure != null && driftPct != null ->
             "Returned to your mark %.1f m away after %.0f m travelled: %.1f%% drift."
-                .format(closure, hud.loopDistanceM, hud.driftPct)
-        hud.loopMarked ->
+                .format(closure, loopDistanceM, driftPct)
+        loopMarked ->
             "Mark set. Ride back to it and press CLOSE LOOP to measure real drift. " +
-                "%.0f m out so far.".format(hud.loopDistanceM)
+                "%.0f m out so far.".format(loopDistanceM)
         else -> ""
     }
     if (text.isBlank()) return

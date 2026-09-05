@@ -232,6 +232,8 @@ private fun PagePermissions(bus: IdrBus, permsOk: Boolean, requestPerms: () -> U
         )
     }
 
+    PrivacyNote()
+
     Spacer(Modifier.height(4.dp))
     Text(
         "YOUR PHONE",

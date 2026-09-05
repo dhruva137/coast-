@@ -1,39 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Logging + live INS must outlive the activity (screen-off). -->
+    <!--
+        PERMISSIONS. Every one of these is justified in android/README.md and is
+        actually reached by code in this app. Nothing is declared "to match the
+        problem statement" or "in case we need it later".
+
+        Deliberately ABSENT, and each absence is load-bearing:
+          * ACCESS_BACKGROUND_LOCATION - the foreground service covers the only
+            real case (screen off, still riding). Play reviews this one by hand
+            and it would be a lie here.
+          * INTERNET - the app makes no network call of any kind. Without the
+            permission that claim is enforced by the platform, not by our word.
+          * BODY_SENSORS - the IMU is not a body sensor. Accelerometer and
+            gyroscope need no runtime grant at all.
+    -->
+
+    <!-- Live dead reckoning and CSV logging must survive the screen going off. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- API 34+: one per declared foregroundServiceType on the service below. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <!-- API 33+: the ongoing notification that says tracking is running. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- The CPU must stay awake to integrate the IMU with the screen off. -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
+    <!-- Optional at runtime. The app arms and navigates without either. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
-    <!-- Declared per bible §5.4. IMU itself is not a Body Sensor; we still
-         request it so the permission sheet matches the problem statement. -->
-    <uses-permission android:name="android.permission.BODY_SENSORS" />
-    <!-- API 31+: required to sample faster than 200 Hz (SENSOR_DELAY_FASTEST). -->
+    <!-- API 31+: required to sample above 200 Hz (SENSOR_DELAY_FASTEST).
+         Normal-level, granted at install, not shown to the user. -->
     <uses-permission android:name="android.permission.HIGH_SAMPLING_RATE_SENSORS" />
-
-    <!-- Downloadable IBM Plex; system monospace is the offline fallback. -->
-    <uses-permission android:name="android.permission.INTERNET" />
 
     <uses-feature android:name="android.hardware.sensor.accelerometer" android:required="true" />
     <uses-feature android:name="android.hardware.sensor.gyroscope" android:required="true" />
     <uses-feature android:name="android.hardware.sensor.barometer" android:required="false" />
     <uses-feature android:name="android.hardware.sensor.light" android:required="false" />
-    <uses-feature android:name="android.hardware.location.gps" android:required="true" />
+    <!-- Not required: the whole point is that it works without a fix. -->
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
 
     <application
         android:name=".IdrApplication"
         android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:localeConfig="@xml/locales_config"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.IDR">
+        android:theme="@style/Theme.IDR"
+        android:usesCleartextTraffic="false">
 
         <activity
             android:name=".MainActivity"
@@ -46,15 +65,23 @@
             </intent-filter>
         </activity>
 
+        <!--
+            location  - GNSS is sampled while the service runs, whenever the user
+                        has granted it. RecordService drops this type at runtime
+                        when the permission is absent rather than crashing.
+            dataSync  - RECORD mode streams IMU and GNSS rows to CSV files in the
+                        app's own external files directory for the whole session.
+
+            This used to declare specialUse, which requires a written
+            justification reviewed by hand on every Play submission. The two
+            standard types describe what the service does accurately, so the
+            special case was not needed.
+        -->
         <service
             android:name=".record.RecordService"
             android:exported="false"
-            android:foregroundServiceType="location|specialUse"
-            android:stopWithTask="false">
-            <property
-                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="Uncalibrated IMU plus GNSS logging and live dead-reckoning; must continue while the screen is off." />
-        </service>
+            android:foregroundServiceType="location|dataSync"
+            android:stopWithTask="false" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

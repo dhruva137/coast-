@@ -48,6 +48,7 @@ class RecordService : LifecycleService() {
     private val insLock = Any()
     private var speedModel: OnnxSpeedModel? = null
     private var lastHudNs = 0L
+    private var lastTrackNs = 0L
     private var lastStatsNs = 0L
     private var lastLocationCheckNs = 0L
     private var startedAt = 0L
@@ -95,6 +96,7 @@ class RecordService : LifecycleService() {
         bus.setMode(mode)
         startedAt = SystemClock.elapsedRealtimeNanos()
         lastHudNs = 0L
+        lastTrackNs = 0L
         lastStatsNs = 0L
         lastLocationCheckNs = 0L
         lastFixLat = Double.NaN
@@ -142,7 +144,7 @@ class RecordService : LifecycleService() {
             speedModel = model
             val prefs = Prefs(this)
             synchronized(insLock) {
-                ins.setModelStatus(model.ready, model.error)
+                ins.setModelStatus(model.ready, model.error, model.droppedWindows)
                 applyMountLocked(prefs)
             }
             val hub = SensorHub(this) { frame ->
@@ -151,7 +153,7 @@ class RecordService : LifecycleService() {
                 val est = model.onImu(frame)
                 synchronized(insLock) {
                     if (est != null) ins.onModel(est, model.hz)
-                    ins.setModelStatus(model.ready, model.error)
+                    ins.setModelStatus(model.ready, model.error, model.droppedWindows)
                     drainMarksLocked()
                     drainOriginLocked()
                     ins.onImu(frame)
@@ -179,6 +181,7 @@ class RecordService : LifecycleService() {
             ).also { it.start() }
             synchronized(insLock) {
                 bus.publishHud(ins.snapshot(SystemClock.elapsedRealtimeNanos(), AppMode.NAVIGATE))
+                bus.publishTrack(ins.trackSnapshot())
             }
         }
         startInForeground()
@@ -255,10 +258,26 @@ class RecordService : LifecycleService() {
         }
     }
 
+    /**
+     * Push telemetry to the UI at [HUD_PERIOD_NS], and the track at the slower
+     * [TRACK_PERIOD_NS].
+     *
+     * PERFORMANCE. This used to publish at 20 Hz, and each frame carried a full
+     * copy of both trails, so the Compose tree that collected it re-ran 20 times
+     * a second with two freshly allocated lists behind it. 10 Hz is past the
+     * point a human reads a changing number, and the track -- the only part that
+     * is expensive to draw -- moves at 4 Hz, which is still faster than the
+     * camera spring settles.
+     */
     private fun maybePublishHudLocked(tNs: Long, force: Boolean = false) {
-        if (!force && lastHudNs != 0L && tNs - lastHudNs < 50_000_000L) return
+        if (!force && lastHudNs != 0L && tNs - lastHudNs < HUD_PERIOD_NS) return
         lastHudNs = tNs
         bus.publishHud(ins.snapshot(tNs, AppMode.NAVIGATE))
+        if (force || lastTrackNs == 0L || tNs - lastTrackNs >= TRACK_PERIOD_NS) {
+            lastTrackNs = tNs
+            // No-ops unless the estimator actually appended a point.
+            bus.publishTrack(ins.trackSnapshot())
+        }
     }
 
     private fun publishRecord(tNs: Long, force: Boolean = false) {
@@ -339,29 +358,43 @@ class RecordService : LifecycleService() {
             Intent(this, MainActivity::class.java),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
-        val text = when (bus.mode.value) {
-            AppMode.NAVIGATE -> getString(R.string.notif_navigate)
-            else -> getString(R.string.notif_record)
+        val navigating = bus.mode.value == AppMode.NAVIGATE
+        val usingGnss = LocationGate.hasPermission(this)
+        // Say what is being collected and where it goes, in the notification
+        // itself. A user who pulls the shade down mid-ride should not have to
+        // open the app to find out what it is doing with the sensors.
+        val title = if (navigating) {
+            getString(R.string.notif_navigate_title)
+        } else {
+            getString(R.string.notif_record_title)
+        }
+        val text = when {
+            navigating && usingGnss -> getString(R.string.notif_navigate_gnss)
+            navigating -> getString(R.string.notif_navigate_imu)
+            usingGnss -> getString(R.string.notif_record_gnss)
+            else -> getString(R.string.notif_record_imu)
         }
         val notif: Notification = NotificationCompat.Builder(this, IdrApplication.CHANNEL_ID)
-            .setContentTitle("IDR · SIH26168")
+            .setContentTitle(title)
             .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
             .setSmallIcon(R.drawable.ic_stat_idr)
             .setContentIntent(pending)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
+            .setShowWhen(false)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .build()
         // FOREGROUND_SERVICE_TYPE_LOCATION requires the location permission to
-        // be held. Without it the start throws and kills the app, so fall back
-        // to the special-use type only and keep running sensors-only.
-        val canUseLocationType = LocationGate.hasPermission(this)
+        // actually be held; declaring it without the grant throws and kills the
+        // app. Without location we are still a legitimate dataSync service --
+        // the IMU stream is what we are keeping alive for.
         if (Build.VERSION.SDK_INT >= 34) {
-            val type = if (canUseLocationType) {
+            val type = if (usingGnss) {
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION or
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
             } else {
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
             }
             startForeground(IdrApplication.NOTIF_ID, notif, type)
         } else {
@@ -370,6 +403,12 @@ class RecordService : LifecycleService() {
     }
 
     companion object {
+        /** 10 Hz. Fast enough to read as live, slow enough to skip most frames. */
+        private const val HUD_PERIOD_NS = 100_000_000L
+
+        /** 4 Hz. The map path is rebuilt at most this often. */
+        private const val TRACK_PERIOD_NS = 250_000_000L
+
         const val ACTION_START_RECORD = "in.sih26168.idr.START_RECORD"
         const val ACTION_START_NAVIGATE = "in.sih26168.idr.START_NAVIGATE"
         const val ACTION_STOP = "in.sih26168.idr.STOP"

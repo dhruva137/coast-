@@ -10,7 +10,9 @@ import `in`.sih26168.idr.data.OriginSource
 import `in`.sih26168.idr.data.RecordStats
 import `in`.sih26168.idr.data.SensorReport
 import `in`.sih26168.idr.data.SessionConfig
+import `in`.sih26168.idr.data.TrackSnapshot
 import `in`.sih26168.idr.data.VehicleKind
+import `in`.sih26168.idr.nav.VehicleProfile
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -39,6 +41,17 @@ class IdrBus {
     private val _hud = MutableStateFlow(HudState())
     val hud: StateFlow<HudState> = _hud.asStateFlow()
 
+    /**
+     * The map track, deliberately a SEPARATE flow from [hud].
+     *
+     * It changes far less often than the telemetry and it is the only piece of
+     * state that is expensive to diff or to draw. Keeping it here means a speed
+     * readout ticking at 10 Hz cannot invalidate the map, and the map's cached
+     * `Path` survives every HUD frame that did not add a point.
+     */
+    private val _track = MutableStateFlow(TrackSnapshot())
+    val track: StateFlow<TrackSnapshot> = _track.asStateFlow()
+
     private val _record = MutableStateFlow(RecordStats())
     val record: StateFlow<RecordStats> = _record.asStateFlow()
 
@@ -57,6 +70,20 @@ class IdrBus {
         _config.value = c
     }
 
+    /**
+     * Change the vehicle, keeping `leans` consistent with the profile.
+     *
+     * Use this rather than `setConfig(cfg.copy(vehicle = ...))`. `leans` is not
+     * a free choice: it is a property of the vehicle, and the caller that set it
+     * by hand got it wrong once already -- `v != VehicleKind.car` was correct
+     * when the enum held four values and silently marked metro, train, bus and
+     * walking as leaning vehicles the moment it held ten. Deriving it from
+     * [VehicleProfile] removes the chance to disagree.
+     */
+    fun setVehicle(v: VehicleKind) {
+        _config.update { it.copy(vehicle = v, leans = VehicleProfile.of(v).leans) }
+    }
+
     fun setMode(m: AppMode) {
         _mode.value = m
         _hud.update { it.copy(mode = m) }
@@ -64,6 +91,11 @@ class IdrBus {
 
     fun publishHud(h: HudState) {
         _hud.value = h
+    }
+
+    /** No-ops when the estimator has not appended a point since the last call. */
+    fun publishTrack(t: TrackSnapshot) {
+        if (_track.value.version != t.version) _track.value = t
     }
 
     fun publishRecord(s: RecordStats) {

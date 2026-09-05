@@ -9,7 +9,10 @@ import `in`.sih26168.idr.data.NavMode
 import `in`.sih26168.idr.data.OriginSource
 import `in`.sih26168.idr.data.SensorFrame
 import `in`.sih26168.idr.data.SpeedSource
+import `in`.sih26168.idr.data.TrackSnapshot
 import `in`.sih26168.idr.data.TrailPoint
+import `in`.sih26168.idr.data.VehicleKind
+import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -44,11 +47,46 @@ import kotlin.math.sin
  * accel-integrator fallback otherwise -- [speedSource] says which, every tick.
  * The coordinated-turn solver supplies the yaw rate; car-style yaw = omega_z is
  * kept only so Diagnostics can show the heading disagreement.
+ *
+ * ## Vehicle profile
+ *
+ * Everything above is shaped by [VehicleProfile]. The profile decides whether
+ * the lean solver runs at all, how fast the vehicle may plausibly go, turn and
+ * accelerate, how much sideways motion it is physically capable of, and how
+ * still it has to be before a stop counts. The default is
+ * [VehicleKind.other], which leaves every limit wide and the lean solver on --
+ * i.e. exactly the behaviour that shipped before profiles existed.
+ *
+ * ## Zero-velocity updates
+ *
+ * See [ZuptDetector]. A confirmed stop zeroes velocity outright and refreshes
+ * the gyro bias from the stationary mean, which bounds drift by the interval
+ * between stops rather than by the length of the journey. In a metro that
+ * interval is one station.
  */
 class SimpleIns(
-    private val trailCap: Int = 4000,
+    profile: VehicleProfile = VehicleProfile.default(),
+    private val trailCap: Int = 1500,
     private val gnssTimeoutNs: Long = 2_000_000_000L,
     private val modelStaleNs: Long = 500_000_000L,
+    /**
+     * Minimum spacing between retained INS trail points, metres.
+     *
+     * PERFORMANCE + CORRECTNESS. The old code appended one point per IMU sample.
+     * `SensorHub` runs at `SENSOR_DELAY_FASTEST`, so on a real phone that is
+     * 200-500 points a second, and the 4000-point cap it kept meant the entire
+     * visible track was the last 8-20 SECONDS of the ride -- the rest was
+     * silently dropped off the front. Decimating by distance keeps the drawn
+     * line geometrically identical to the eye (2 m is well under a pixel at any
+     * zoom that fits a route) while making the cap mean roughly 3 km of track,
+     * and cuts the map's per-frame path work by two orders of magnitude.
+     */
+    private val trailMinStepM: Double = 2.0,
+    /**
+     * Retain a point at least this often even when standing still, so a
+     * stationary pause is still visible in the track's timing.
+     */
+    private val trailMinStepNs: Long = 1_000_000_000L,
 ) {
     // ---- Absolute anchor ---------------------------------------------------
     private var originLat: Double = Double.NaN
@@ -109,6 +147,39 @@ class SimpleIns(
     var headingReferenced: Boolean = false
         private set
 
+    // ---- Vehicle profile ---------------------------------------------------
+    var profile: VehicleProfile = profile
+        private set
+
+    /** True when the coordinated-turn solver is running for this profile. */
+    val leanSolverActive: Boolean get() = profile.leans
+
+    private var yawClampCount: Long = 0L
+    private var speedClampCount: Long = 0L
+    /** Fraction of recent ticks where the yaw rate hit the profile limit. */
+    private var yawClampDuty: Double = 0.0
+    /** Low-passed |lateral specific force|, m/s^2. NaN until measurable. */
+    private var lateralFiltered: Double = Double.NaN
+    private var lateralViolation: String? = null
+    private var turnViolation: String? = null
+
+    // ---- Zero-velocity updates ---------------------------------------------
+    private val zupt = ZuptDetector(profile)
+    /** Gyro bias estimate in the integration frame, rad/s. */
+    private var biasX: Double = 0.0
+    private var biasY: Double = 0.0
+    private var biasZ: Double = 0.0
+    private var gyroBiasEstimated: Boolean = false
+    private var zuptNote: String = ""
+
+    /** True while a stop is confirmed. */
+    var stationary: Boolean = false
+
+        private set
+
+    /** Confirmed stops that produced an update, this session. */
+    val zuptCount: Long get() = zupt.updates
+
     // ---- Mount rotation ----------------------------------------------------
     private var mount: MountRotation? = null
     private var mountNote: String = "raw device axes -- not calibrated"
@@ -121,6 +192,7 @@ class SimpleIns(
     private var modelLatencyMs: Double = 0.0
     private var modelHz: Double = 0.0
     private var modelReady: Boolean = false
+    private var modelDropped: Long = 0L
     private var modelError: String? = null
 
     // ---- GNSS bookkeeping --------------------------------------------------
@@ -147,6 +219,21 @@ class SimpleIns(
     private val insTrail = ArrayDeque<TrailPoint>()
     private val gnssTrail = ArrayDeque<TrailPoint>()
 
+    // ---- Track publishing --------------------------------------------------
+    /** Bumped only when a point is actually appended. Drives the map's cache. */
+    private var trackVersion: Long = 0L
+    private var lastTrackVersion: Long = -1L
+    private var cachedTrack: TrackSnapshot = TrackSnapshot()
+    private var lastKeptEast: Double = Double.NaN
+    private var lastKeptNorth: Double = Double.NaN
+    private var lastKeptNs: Long = 0L
+    // Bounds maintained incrementally: the map used to rescan every point in
+    // composition, every frame, just to place the camera.
+    private var minEast = 0.0
+    private var maxEast = 0.0
+    private var minNorth = 0.0
+    private var maxNorth = 0.0
+
     fun reset() {
         originLat = Double.NaN
         originLon = Double.NaN
@@ -170,6 +257,7 @@ class SimpleIns(
         modelTNs = 0L
         modelLatencyMs = 0.0
         modelHz = 0.0
+        modelDropped = 0L
         lastTns = 0L
         lastGnssNs = 0L
         lastAccH = Double.NaN
@@ -186,6 +274,53 @@ class SimpleIns(
         lastClosureM = null
         insTrail.clear()
         gnssTrail.clear()
+        trackVersion += 1
+        lastTrackVersion = -1L
+        cachedTrack = TrackSnapshot()
+        lastKeptEast = Double.NaN
+        lastKeptNorth = Double.NaN
+        lastKeptNs = 0L
+        minEast = 0.0
+        maxEast = 0.0
+        minNorth = 0.0
+        maxNorth = 0.0
+        zupt.reset()
+        biasX = 0.0
+        biasY = 0.0
+        biasZ = 0.0
+        gyroBiasEstimated = false
+        stationary = false
+        zuptNote = ""
+        yawClampCount = 0L
+        speedClampCount = 0L
+        yawClampDuty = 0.0
+        lateralFiltered = Double.NaN
+        lateralViolation = null
+        turnViolation = null
+    }
+
+    /**
+     * Choose the motion model.
+     *
+     * The gyro bias is deliberately NOT cleared: it is a property of the phone,
+     * not of the vehicle, and throwing away a good estimate because the user
+     * corrected the vehicle picker would be a regression. The stationary
+     * detector IS reset, because its thresholds have just changed and the
+     * statistics in its window were gathered under the old ones.
+     */
+    fun setProfile(p: VehicleProfile) {
+        if (p.kind == profile.kind) return
+        profile = p
+        zupt.setProfile(p)
+        stationary = false
+        zuptNote = ""
+        lateralFiltered = Double.NaN
+        lateralViolation = null
+        turnViolation = null
+        yawClampDuty = 0.0
+        // A non-leaning profile must not carry a lean angle forward from a
+        // leaning one; it would bias every subsequent yaw-rate projection.
+        if (!p.leans) lean = 0.0
     }
 
     /**
@@ -218,9 +353,9 @@ class SimpleIns(
         // silently switching to a different, untested convention.
         val m = mount
         val fwdAcc: Double
-        val gxV: Double
-        val gyV: Double
-        val gzV: Double
+        var gxV: Double
+        var gyV: Double
+        var gzV: Double
         if (m != null) {
             val a = rotateToVehicle(m, frame.ax, frame.ay, frame.az)
             val g = rotateToVehicle(m, frame.gx, frame.gy, frame.gz)
@@ -235,6 +370,57 @@ class SimpleIns(
             gxV = frame.gx
             gyV = frame.gy
             gzV = frame.gz
+        }
+
+        // Subtract the ZUPT-estimated gyro bias before anything integrates it.
+        // Estimating a bias and then not applying it would be worse than not
+        // estimating one, because Diagnostics would report a correction that
+        // never reached the heading. The bias is measured in the same frame the
+        // detector saw, so it is removed here, after rotation, only once a stop
+        // has actually produced an estimate.
+        if (gyroBiasEstimated) {
+            gxV -= biasX
+            gyV -= biasY
+            gzV -= biasZ
+        }
+
+        // ---- Zero-velocity update ------------------------------------------
+        //
+        // A confirmed stop is free information and the only bounded correction
+        // available with no GNSS: velocity is exactly zero, so whatever the
+        // integrator currently holds is pure accumulated error, and the gyro
+        // mean over a stationary window is pure bias. Applying both caps drift
+        // at every station instead of letting it compound across the journey.
+        //
+        // This runs on the *raw* device axes deliberately: the accelerometer is
+        // used through its magnitude, which no mount rotation can change, so an
+        // uncalibrated phone gets the same stationary decision as a calibrated
+        // one. It also runs before the speed branch below, so a stop overrides
+        // the model and the fallback alike.
+        // The gyro handed over is the BIAS-CORRECTED signal, because
+        // ZuptEvent's deltas are defined as a residual on top of whatever the
+        // caller has already removed. Feeding raw samples here makes each stop
+        // re-report the full bias, so the running estimate double-counts and
+        // grows without limit -- measured as heading drift getting worse, not
+        // better, after a stop. The accelerometer stays raw: the detector uses
+        // it through its magnitude, which no correction or rotation changes.
+        val zev = zupt.update(
+            frame.tNs, frame.ax, frame.ay, frame.az, gxV, gyV, gzV,
+        )
+        stationary = zupt.stopped
+        if (zev != null) {
+            speed = 0.0
+            biasX += zev.biasDeltaX
+            biasY += zev.biasDeltaY
+            biasZ += zev.biasDeltaZ
+            gyroBiasEstimated = true
+            zuptNote = if (zev.firstOfThisStop) {
+                "STOPPED - velocity zeroed, gyro bias re-estimated"
+            } else {
+                "STOPPED %.0f s - bias refreshed".format(zev.stillForSec)
+            }
+        } else if (!stationary) {
+            zuptNote = ""
         }
 
         val lock = gnssLock(frame.tNs)
@@ -280,7 +466,7 @@ class SimpleIns(
         north += vn * dt
         distanceM += speed * dt
         if (!lock) distanceSinceFixM += speed * dt
-        push(insTrail, point(east, north, fromGnss = false, tNs = frame.tNs))
+        pushInsDecimated(east, north, frame.tNs, fromGnss = false)
     }
 
     /**
@@ -298,9 +484,10 @@ class SimpleIns(
     }
 
     /** Session health from [OnnxSpeedModel]; `error` non-null means no model ran. */
-    fun setModelStatus(ready: Boolean, error: String?) {
+    fun setModelStatus(ready: Boolean, error: String?, dropped: Long = 0L) {
         modelReady = ready
         modelError = error
+        modelDropped = dropped
     }
 
     fun onGnss(fix: GnssFix) {
@@ -340,8 +527,10 @@ class SimpleIns(
         distanceSinceFixM = 0.0
         armed = true
         if (armedAtNs == 0L) armedAtNs = fix.tNs
+        // A fix is a real discontinuity in the track and is never decimated
+        // away: it is the point a judge is looking for on the map.
         push(gnssTrail, point(east, north, fromGnss = true, tNs = fix.tNs))
-        push(insTrail, point(east, north, fromGnss = true, tNs = fix.tNs))
+        pushInsDecimated(east, north, fix.tNs, fromGnss = true)
     }
 
     /**
@@ -508,6 +697,7 @@ class SimpleIns(
             modelSpeedVar = modelSpeedVar,
             inferMs = modelLatencyMs,
             modelHz = modelHz,
+            modelDropped = modelDropped,
             modelError = modelError,
             mode = mode,
             navMode = navMode,
@@ -522,8 +712,6 @@ class SimpleIns(
             headingReferenced = headingReferenced,
             mountApplied = mount != null,
             mountNote = mountNote,
-            insTrail = insTrail.toList(),
-            gnssTrail = gnssTrail.toList(),
         )
     }
 
@@ -562,6 +750,55 @@ class SimpleIns(
     private fun push(buf: ArrayDeque<TrailPoint>, p: TrailPoint) {
         buf.addLast(p)
         while (buf.size > trailCap) buf.removeFirst()
+        trackVersion += 1
+        if (p.east < minEast) minEast = p.east
+        if (p.east > maxEast) maxEast = p.east
+        if (p.north < minNorth) minNorth = p.north
+        if (p.north > maxNorth) maxNorth = p.north
+    }
+
+    /**
+     * True when this sample is far enough from the last retained one to be
+     * worth keeping. Pure and side-effect free so it can be unit tested.
+     */
+    internal fun shouldKeepTrailPoint(e: Double, n: Double, tNs: Long): Boolean {
+        if (lastKeptEast.isNaN() || lastKeptNorth.isNaN()) return true
+        val de = e - lastKeptEast
+        val dn = n - lastKeptNorth
+        if (de * de + dn * dn >= trailMinStepM * trailMinStepM) return true
+        return lastKeptNs != 0L && tNs - lastKeptNs >= trailMinStepNs
+    }
+
+    /** Append to the INS trail only if [shouldKeepTrailPoint] says it earns a slot. */
+    private fun pushInsDecimated(e: Double, n: Double, tNs: Long, fromGnss: Boolean) {
+        if (!fromGnss && !shouldKeepTrailPoint(e, n, tNs)) return
+        lastKeptEast = e
+        lastKeptNorth = n
+        lastKeptNs = tNs
+        push(insTrail, point(e, n, fromGnss = fromGnss, tNs = tNs))
+    }
+
+    /**
+     * The track for the map, as an immutable snapshot.
+     *
+     * Rebuilt only when [trackVersion] moved. The previous design copied both
+     * deques into fresh lists inside every HUD frame whether or not a point had
+     * been added, which is the single largest allocation source the app had.
+     */
+    fun trackSnapshot(): TrackSnapshot {
+        if (trackVersion != lastTrackVersion) {
+            lastTrackVersion = trackVersion
+            cachedTrack = TrackSnapshot(
+                ins = insTrail.toList(),
+                gnss = gnssTrail.toList(),
+                version = trackVersion,
+                minEast = minEast,
+                maxEast = maxEast,
+                minNorth = minNorth,
+                maxNorth = maxNorth,
+            )
+        }
+        return cachedTrack
     }
 
     companion object {

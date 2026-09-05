@@ -1,11 +1,13 @@
-.gradle/
+# Release signing. NEVER commit the keystore or the passwords that open it.
+# app/build.gradle.kts reads this file and falls back to debug signing when it
+# is absent, so a teammate without the keystore can still build a release APK.
+keystore.properties
+*.jks
+*.keystore
+
+# Local SDK path and Gradle state.
 local.properties
-**/build/
-*.iml
-.idea/
-.cxx/
-captures/
-*.apk
-*.ap_
-*.aab
+.gradle/
+app/build/
 .tools/
+dist/

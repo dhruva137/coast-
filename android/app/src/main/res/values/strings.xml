@@ -1,6 +1,17 @@
 <resources>
-    <string name="app_name">IDR · SIH26168</string>
-    <string name="channel_record">IDR logging</string>
-    <string name="notif_record">RECORD · raw IMU/GNSS to disk</string>
-    <string name="notif_navigate">Navigating · tracking from motion sensors</string>
+    <string name="app_name">IDR Navigator</string>
+    <string name="channel_record">Tracking in progress</string>
+
+    <!--
+        Foreground-service notification. It must be specific about what is being
+        read and where it is written, because that is the only place a user sees
+        it while the screen is off.
+    -->
+    <string name="notif_navigate_title">Navigating without GPS</string>
+    <string name="notif_navigate_gnss">Reading the motion sensors and GPS to keep your position live. Nothing is recorded to disk and nothing is sent off this phone.</string>
+    <string name="notif_navigate_imu">Reading the motion sensors only to keep your position live. Nothing is recorded to disk and nothing is sent off this phone.</string>
+
+    <string name="notif_record_title">Recording a ride log</string>
+    <string name="notif_record_gnss">Writing raw motion-sensor and GPS readings to CSV files in this app\'s own storage on your phone. Nothing is uploaded.</string>
+    <string name="notif_record_imu">Writing raw motion-sensor readings to CSV files in this app\'s own storage on your phone. No location is being recorded and nothing is uploaded.</string>
 </resources>

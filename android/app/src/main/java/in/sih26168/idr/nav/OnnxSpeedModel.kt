@@ -6,6 +6,10 @@ import ai.onnxruntime.OrtSession
 import android.content.Context
 import `in`.sih26168.idr.data.SensorFrame
 import java.nio.FloatBuffer
+import java.util.concurrent.Executors
+import java.util.concurrent.ThreadFactory
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.exp
 import kotlin.math.max
 import kotlin.math.min
@@ -52,6 +56,21 @@ data class SpeedEstimate(
  * Failure is loud: if the asset is missing or the session will not build,
  * [ready] stays false, [error] carries the reason and [onImu] returns null
  * forever. There is no constant stand-in pretending to be a model.
+ *
+ * ## Threading and backpressure
+ *
+ * [onImu] is called from the IMU handler thread at the full sensor rate. It only
+ * does bin arithmetic there. When a 100 ms bin closes and the window is full it
+ * hands a COPY of the window to a single background thread and returns
+ * immediately; the completed estimate is picked up by a later [onImu] call.
+ *
+ * `OrtSession.run` used to be called inline on that handler thread. It never
+ * touched the main thread, so it was not the source of UI jank directly -- but a
+ * slow window stalled the sensor looper, so IMU samples backed up and arrived in
+ * bursts, which shows up as a stuttering speed readout and a jittery track. If
+ * an inference is still running when the next window closes, that window is
+ * DROPPED ([droppedWindows] counts them). Queueing would be worse: stale speed
+ * is wrong speed, and this is a live navigation display.
  */
 class OnnxSpeedModel(context: Context) : AutoCloseable {
 
@@ -94,6 +113,25 @@ class OnnxSpeedModel(context: Context) : AutoCloseable {
     private var runs = 0
     private var hzWindowNs = 0L
 
+    // ---- Backpressure ------------------------------------------------------
+    /** One thread, below the IMU thread in priority. Never touches the main thread. */
+    private val worker = Executors.newSingleThreadExecutor(
+        ThreadFactory { r ->
+            Thread(r, "idr-onnx").apply {
+                isDaemon = true
+                priority = Thread.NORM_PRIORITY - 1
+            }
+        },
+    )
+    private val inFlight = AtomicBoolean(false)
+    private val completed = AtomicReference<SpeedEstimate?>(null)
+    private val closed = AtomicBoolean(false)
+
+    /** Windows skipped because the previous inference had not finished. */
+    @Volatile
+    var droppedWindows: Long = 0L
+        private set
+
     init {
         try {
             val bytes = context.assets.open(ASSET).use { it.readBytes() }
@@ -122,15 +160,23 @@ class OnnxSpeedModel(context: Context) : AutoCloseable {
         hz = 0.0
         lastLatencyMs = 0.0
         last = null
+        completed.set(null)
+        droppedWindows = 0L
     }
 
     /**
-     * Feed one raw IMU frame. Returns a fresh estimate on the ~10 Hz ticks where
-     * a bin closed and the 2.0 s window is full, null otherwise (including every
-     * tick after a load or inference failure — check [error]).
+     * Feed one raw IMU frame, cheaply, on the caller's thread.
+     *
+     * Returns the newest COMPLETED estimate the moment one is available, and
+     * null otherwise — including on the tick that dispatched the window that
+     * will produce it. In practice that is a delay of one inference, ~1 frame at
+     * 10 Hz, which the estimator's own staleness window already tolerates.
      */
     fun onImu(frame: SensorFrame): SpeedEstimate? {
         if (session == null) return null
+        // Drain first, so a result that landed while we were away is picked up
+        // even on a tick where no bin closes.
+        val ready = completed.getAndSet(null)
 
         if (binStartNs == 0L) binStartNs = frame.tNs
         // A backwards or absurd jump (clock change, resumed logger) restarts the bin.
@@ -149,7 +195,7 @@ class OnnxSpeedModel(context: Context) : AutoCloseable {
         binSum[5] += frame.gz
         binN += 1
 
-        if (frame.tNs - binStartNs < BIN_NS) return null
+        if (frame.tNs - binStartNs < BIN_NS) return ready
 
         val n = binN.toDouble()
         val base = ringHead * CHANNELS
@@ -160,14 +206,21 @@ class OnnxSpeedModel(context: Context) : AutoCloseable {
         binSum.fill(0.0)
         binStartNs = frame.tNs
 
-        if (ringCount < WINDOW) return null
-        return runWindow(frame.tNs)
+        if (ringCount < WINDOW) return ready
+        dispatchWindow(frame.tNs)
+        return ready
     }
 
-    private fun runWindow(tNs: Long): SpeedEstimate? {
-        val s = session ?: return null
-        val e = env ?: return null
-
+    /**
+     * Transpose the ring into the model layout and hand a COPY to the worker.
+     *
+     * The copy matters: [ring] keeps being written by the IMU thread while the
+     * worker runs, and feeding a tensor a buffer that is mutating underneath it
+     * is exactly the kind of silent-garbage bug the contract note above warns
+     * about. 120 floats per window at 10 Hz is nothing.
+     */
+    private fun dispatchWindow(tNs: Long) {
+        if (closed.get()) return
         // Oldest → newest, transposed into the (1, 6, 20) channel-major layout
         // torch.onnx.export baked in from `train_avnet.py`'s (N, 6, T) tensors.
         val oldest = ringHead // ring is full, so head points at the oldest sample
@@ -175,11 +228,35 @@ class OnnxSpeedModel(context: Context) : AutoCloseable {
             val base = ((oldest + t) % WINDOW) * CHANNELS
             for (c in 0 until CHANNELS) input[c * WINDOW + t] = ring[base + c]
         }
+        if (!inFlight.compareAndSet(false, true)) {
+            // Previous inference still running. Drop this window rather than
+            // queue it: a queued window would be delivered as current speed.
+            droppedWindows += 1
+            return
+        }
+        val window = input.copyOf()
+        try {
+            worker.execute {
+                try {
+                    runWindow(tNs, window)?.let { completed.set(it) }
+                } finally {
+                    inFlight.set(false)
+                }
+            }
+        } catch (_: Throwable) {
+            // Executor shut down between the closed check and here.
+            inFlight.set(false)
+        }
+    }
+
+    private fun runWindow(tNs: Long, window: FloatArray): SpeedEstimate? {
+        val s = session ?: return null
+        val e = env ?: return null
 
         val out: FloatArray
         val t0 = System.nanoTime()
         try {
-            OnnxTensor.createTensor(e, FloatBuffer.wrap(input), SHAPE).use { tensor ->
+            OnnxTensor.createTensor(e, FloatBuffer.wrap(window), SHAPE).use { tensor ->
                 s.run(mapOf(inputName to tensor)).use { result ->
                     @Suppress("UNCHECKED_CAST")
                     out = (result[0].value as Array<FloatArray>)[0]
@@ -228,6 +305,16 @@ class OnnxSpeedModel(context: Context) : AutoCloseable {
     }
 
     override fun close() {
+        closed.set(true)
+        // Stop accepting work, then wait briefly for an in-flight run so the
+        // session is never closed out from under OrtSession.run.
+        try {
+            worker.shutdown()
+            worker.awaitTermination(2, java.util.concurrent.TimeUnit.SECONDS)
+        } catch (_: InterruptedException) {
+            Thread.currentThread().interrupt()
+        } catch (_: Throwable) {
+        }
         try {
             session?.close()
         } catch (_: Throwable) {

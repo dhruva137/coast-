@@ -52,6 +52,7 @@ fun RecordScreen(bus: IdrBus, permsOk: Boolean, requestPerms: () -> Unit) {
     val stats by bus.record.collectAsStateWithLifecycle()
     val sensors by bus.sensors.collectAsStateWithLifecycle()
     val mode by bus.mode.collectAsStateWithLifecycle()
+    val (notifsOk, requestNotifs) = rememberNotificationGate()
     val recording = mode == AppMode.RECORD
     val fieldColors = OutlinedTextFieldDefaults.colors(
         focusedBorderColor = Accent,
@@ -72,7 +73,8 @@ fun RecordScreen(bus: IdrBus, permsOk: Boolean, requestPerms: () -> Unit) {
     ) {
         Text("RECORD", fontFamily = IdrMono, color = Accent, letterSpacing = 3.sp, fontSize = 12.sp)
         Text(
-            "Raw uncalibrated IMU + GNSS → frozen CSV. Any session without meta.json is worthless.",
+            "Raw uncalibrated IMU + GNSS → frozen CSV, written to this phone only. " +
+                "Any session without meta.json is worthless.",
             color = Mute,
             fontFamily = IdrSans,
             fontSize = 13.sp,
@@ -117,7 +119,7 @@ fun RecordScreen(bus: IdrBus, permsOk: Boolean, requestPerms: () -> Unit) {
         Text("VEHICLE", fontFamily = IdrMono, color = Mute, fontSize = 10.sp, letterSpacing = 1.5.sp)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             VehicleKind.entries.forEach { v ->
-                Chip(v.name, cfg.vehicle == v, enabled = !recording) { bus.setConfig(cfg.copy(vehicle = v, leans = v != VehicleKind.car)) }
+                Chip(v.name, cfg.vehicle == v, enabled = !recording) { bus.setVehicle(v) }
             }
         }
         Text("MOUNT", fontFamily = IdrMono, color = Mute, fontSize = 10.sp, letterSpacing = 1.5.sp)
@@ -139,13 +141,22 @@ fun RecordScreen(bus: IdrBus, permsOk: Boolean, requestPerms: () -> Unit) {
         }
 
         Spacer(Modifier.height(4.dp))
+        // Named before the button that starts it, not buried in a settings
+        // screen: a research logger that writes a GPS trace of somebody's
+        // commute has to say so where they can see it.
+        RecordDataDisclosure(sessionDir = stats.sessionDir)
         Button(
             onClick = {
                 if (!permsOk) {
                     requestPerms()
                     return@Button
                 }
-                if (recording) RecordService.stop(ctx) else RecordService.start(ctx, AppMode.RECORD)
+                if (recording) {
+                    RecordService.stop(ctx)
+                } else {
+                    if (!notifsOk) requestNotifs()
+                    RecordService.start(ctx, AppMode.RECORD)
+                }
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -164,7 +175,12 @@ fun RecordScreen(bus: IdrBus, permsOk: Boolean, requestPerms: () -> Unit) {
         }
 
         if (!permsOk) {
-            Text("Location, body sensors and notifications are required.", color = Danger, fontSize = 12.sp)
+            Text(
+                "Field logging needs location and notifications. Navigation on the " +
+                    "DRIVE tab does not.",
+                color = Danger,
+                fontSize = 12.sp,
+            )
         }
 
         val hz = if (stats.imuHz.isFinite()) "%.0f".format(stats.imuHz) else "—"
@@ -173,12 +189,6 @@ fun RecordScreen(bus: IdrBus, permsOk: Boolean, requestPerms: () -> Unit) {
             fontFamily = IdrMono,
             color = Telem,
             fontSize = 12.sp,
-        )
-        Text(
-            stats.sessionDir ?: "data/<rider>/<vehicle>/<YYYYMMDD_HHMMSS>/",
-            fontFamily = IdrMono,
-            color = Mute,
-            fontSize = 10.sp,
         )
         stats.qualitySummary?.let { q ->
             Text(
