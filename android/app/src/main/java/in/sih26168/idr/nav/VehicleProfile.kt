@@ -65,6 +65,17 @@ data class VehicleProfile(
     val oneLine: String,
     /** True only for single-track vehicles that roll into a turn. */
     val leans: Boolean,
+    /**
+     * True when forward speed comes from counting footsteps rather than from
+     * integrating forward acceleration.
+     *
+     * A gait never produces the sustained forward launch the vehicle
+     * integrator assumes -- it produces a per-step oscillation whose mean
+     * forward acceleration is ~0. Integrating it yields noise. Step counting
+     * times a step-length model is the standard pedestrian answer and is what
+     * [StepDetector] implements.
+     */
+    val usesSteps: Boolean = false,
     /** Plausible maximum roll, degrees. 0 when [leans] is false. */
     val maxLeanDeg: Double,
     /** Largest sustained lateral specific force in the body frame, m/s^2. */
@@ -481,9 +492,10 @@ data class VehicleProfile(
         val WALKING = VehicleProfile(
             kind = VehicleKind.walking,
             label = "Walking",
-            oneLine = "No lean and no sideways constraint at all -- a person can " +
-                "sidestep and turn on the spot.",
+            oneLine = "Counts your footsteps instead of integrating acceleration. " +
+                "No lean, and no sideways constraint -- a person can sidestep.",
             leans = false,
+            usesSteps = true,
             maxLeanDeg = 0.0,
             lateralToleranceMps2 = 6.0,
             // 4 m/s is 14.4 km/h, which covers a jog as well as a walk.

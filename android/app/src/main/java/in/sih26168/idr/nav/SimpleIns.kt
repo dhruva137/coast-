@@ -163,6 +163,21 @@ class SimpleIns(
     private var lateralViolation: String? = null
     private var turnViolation: String? = null
 
+    // ---- Pedestrian dead reckoning -----------------------------------------
+    //
+    // A gait produces a per-step oscillation whose MEAN forward acceleration is
+    // about zero, so the vehicle integrator below reads a walk as "not moving"
+    // and then accumulates noise. Counting footsteps and multiplying by a
+    // step-length model is the standard answer. Used only when the profile says
+    // so -- see VehicleProfile.usesSteps.
+    private val steps = StepDetector()
+
+    /** Footsteps counted this session. 0 unless the profile uses steps. */
+    val stepCount: Long get() = steps.count
+
+    /** Most recent Weinberg step length, metres. NaN before the first step. */
+    val lastStepLengthM: Double get() = steps.lastLengthM
+
     // ---- Zero-velocity updates ---------------------------------------------
     private val zupt = ZuptDetector(profile)
     /** Gyro bias estimate in the integration frame, rad/s. */
@@ -285,6 +300,7 @@ class SimpleIns(
         minNorth = 0.0
         maxNorth = 0.0
         zupt.reset()
+        steps.reset()
         biasX = 0.0
         biasY = 0.0
         biasZ = 0.0
@@ -430,6 +446,13 @@ class SimpleIns(
         if (lock) {
             // onGnss already wrote speed from the fix.
             speedSource = SpeedSource.GNSS
+        } else if (profile.usesSteps) {
+            // Pedestrian: speed is step length x cadence, held between steps and
+            // faded out if a step is overdue, so a stop reads as a stop rather
+            // than as a phantom constant walk.
+            steps.update(frame.tNs, frame.ax, frame.ay, frame.az)
+            speed = steps.coastSpeedMps(frame.tNs)
+            speedSource = SpeedSource.FALLBACK
         } else if (modelFresh) {
             // Trained AVNet-tiny head drives the coast.
             speed = maxOf(0.0, modelSpeed)
