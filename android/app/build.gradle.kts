@@ -28,6 +28,22 @@ val keystoreProps = Properties().apply {
 val hasReleaseKeystore = keystoreProps.getProperty("storeFile")
     ?.let { file(it).exists() } == true
 
+/**
+ * Google Maps API key, read from `android/local.properties`, which is
+ * gitignored. Add a line:
+ *
+ *     MAPS_API_KEY=AIza...
+ *
+ * **The build succeeds without it** -- a fresh clone and CI both have no key,
+ * and the app falls back to its Canvas map and says so on screen. Maps SDK for
+ * Android bills nothing for map loads, so a key costs nothing to obtain; it is
+ * absent here only because a key must never be committed.
+ */
+val mapsApiKey: String = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}.getProperty("MAPS_API_KEY", "")
+
 android {
     namespace = "in.sih26168.idr"
     compileSdk = 35
@@ -41,6 +57,8 @@ android {
         versionName = "0.4.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         resourceConfigurations += listOf("en")
+        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
+        buildConfigField("boolean", "MAPS_KEY_PRESENT", (mapsApiKey.isNotBlank()).toString())
 
         // ONNX Runtime ships four ABIs, which made the debug APK 91 MB: 42 MB of
         // that was x86/x86_64, used only by emulators. An emulator has no usable
@@ -145,6 +163,13 @@ dependencies {
     // 20×6 @ 10 Hz). Required by the problem statement: the trained model runs
     // on the phone, not on a laptop over the wire.
     implementation("com.microsoft.onnxruntime:onnxruntime-android:1.20.0")
+
+    // Google Maps basemap under the dead-reckoned track. Maps SDK for Android
+    // charges NOTHING for map loads -- only Places/Directions/Roads are billed,
+    // and this app calls none of them. Without a key the app falls back to the
+    // Canvas map, so these dependencies never make the build fail.
+    implementation("com.google.android.gms:play-services-maps:19.0.0")
+    implementation("com.google.maps.android:maps-compose:6.1.2")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20240303")

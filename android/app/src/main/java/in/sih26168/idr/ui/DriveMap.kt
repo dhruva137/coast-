@@ -101,6 +101,13 @@ fun DriveMap(
     navMode: NavMode,
     modifier: Modifier = Modifier,
     onLongPress: () -> Unit = {},
+    /**
+     * One honest line explaining why there is no Google basemap underneath,
+     * e.g. "No map key -- showing track only". Null when there is nothing to
+     * explain. Supplied by [DriveMapPanel]; a blank grey tile would be worse
+     * than a grid that admits what it is.
+     */
+    caption: String? = null,
 ) {
     val empty = track.ins.isEmpty()
 

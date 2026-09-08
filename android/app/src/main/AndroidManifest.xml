@@ -17,6 +17,23 @@
     -->
 
     <!-- Live dead reckoning and CSV logging must survive the screen going off. -->
+    <!--
+        INTERNET and ACCESS_NETWORK_STATE exist ONLY so Maps SDK can fetch and
+        cache basemap tiles. This is a deliberate change from v0.4.x, which
+        declared no network permission at all.
+
+        What still holds: no position, sensor sample, log or session ever leaves
+        the device. Nothing is uploaded, there is no analytics and no crash
+        reporting, and the navigation itself runs with the radio off — that is
+        the entire point of the product. What Google receives is the ordinary
+        map-tile traffic any map app generates.
+
+        Removing the key from local.properties removes the traffic with it: the
+        app falls back to its own Canvas map and makes no network call at all.
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <!-- API 34+: one per declared foregroundServiceType on the service below. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
@@ -53,6 +70,16 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.IDR"
         android:usesCleartextTraffic="false">
+
+        <!--
+            Maps SDK for Android. The key is injected from local.properties at
+            build time and is EMPTY in a fresh clone; the app detects that and
+            falls back to its own Canvas map rather than showing a blank grey
+            tile. Map loads are not billed by Google, so this costs nothing.
+        -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="${MAPS_API_KEY}" />
 
         <activity
             android:name=".MainActivity"

@@ -23,6 +23,15 @@ class Prefs(context: Context) {
         get() = sp.getBoolean(KEY_DIAGNOSTICS, false)
         set(v) = sp.edit().putBoolean(KEY_DIAGNOSTICS, v).apply()
 
+    /**
+     * Show the Google basemap under the track when a key and tiles are
+     * available. Defaults true; the user can turn it off to get the metre grid
+     * back, which is also the surface that works with the radio off.
+     */
+    var basemapEnabled: Boolean
+        get() = sp.getBoolean(KEY_BASEMAP, true)
+        set(v) = sp.edit().putBoolean(KEY_BASEMAP, v).apply()
+
     var useKmh: Boolean
         get() = sp.getBoolean(KEY_KMH, true)
         set(v) = sp.edit().putBoolean(KEY_KMH, v).apply()
@@ -75,6 +84,7 @@ class Prefs(context: Context) {
         const val KEY_ONBOARDED = "onboarding_done_v1"
         const val KEY_DIAGNOSTICS = "diagnostics_open"
         const val KEY_KMH = "speed_kmh"
+        const val KEY_BASEMAP = "basemap_enabled"
         const val KEY_MOUNT_SET = "mount_set"
         const val KEY_MOUNT_NOTE = "mount_note"
         const val KEY_MOUNT_PREFIX = "mount_"

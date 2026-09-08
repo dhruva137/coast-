@@ -153,7 +153,10 @@ fun DriveScreen(
             onSetStart = { showOriginDialog = true },
         )
 
-        DriveMap(
+        // DriveMapPanel picks the surface: Google basemap when there is a key,
+        // Play services, an absolute position and tiles; the Canvas grid with a
+        // one-line reason otherwise. It never shows a blank grey tile.
+        DriveMapPanel(
             hud = hud,
             track = track,
             // The completed track stays on screen after STOP, but the mode
