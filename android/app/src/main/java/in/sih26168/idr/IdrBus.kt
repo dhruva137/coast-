@@ -66,8 +66,38 @@ class IdrBus {
     private val _location = MutableStateFlow(LocationStatus.UNKNOWN)
     val location: StateFlow<LocationStatus> = _location.asStateFlow()
 
+    /**
+     * Demo: suppress GNSS deliveries (live + replay). HUD reads this to flip
+     * the GPS→IDR pill; the estimator just stops receiving fixes.
+     */
+    private val _gnssBlackout = MutableStateFlow(false)
+    val gnssBlackout: StateFlow<Boolean> = _gnssBlackout.asStateFlow()
+
+    /**
+     * When true, the next NAVIGATE arm uses [in.sih26168.idr.sensor.ReplaySensorSource]
+     * instead of live phone sensors.
+     */
+    private val _replayEnabled = MutableStateFlow(false)
+    val replayEnabled: StateFlow<Boolean> = _replayEnabled.asStateFlow()
+
+    /** True while a replay drive is actively feeding the estimator. */
+    private val _replayActive = MutableStateFlow(false)
+    val replayActive: StateFlow<Boolean> = _replayActive.asStateFlow()
+
     fun setConfig(c: SessionConfig) {
         _config.value = c
+    }
+
+    fun setBlackout(on: Boolean) {
+        _gnssBlackout.value = on
+    }
+
+    fun setReplayEnabled(on: Boolean) {
+        _replayEnabled.value = on
+    }
+
+    fun setReplayActive(on: Boolean) {
+        _replayActive.value = on
     }
 
     /**

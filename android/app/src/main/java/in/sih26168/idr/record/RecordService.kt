@@ -23,8 +23,12 @@ import `in`.sih26168.idr.data.RecordStats
 import `in`.sih26168.idr.nav.OnnxSpeedModel
 import `in`.sih26168.idr.nav.SimpleIns
 import `in`.sih26168.idr.sensor.GnssHub
+import `in`.sih26168.idr.sensor.IoVnbdCsv
+import `in`.sih26168.idr.sensor.LiveSensorSource
 import `in`.sih26168.idr.sensor.LocationGate
+import `in`.sih26168.idr.sensor.ReplaySensorSource
 import `in`.sih26168.idr.sensor.SensorHub
+import `in`.sih26168.idr.sensor.SensorSource
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -37,12 +41,16 @@ import java.util.Locale
  * NAVIGATE does not require location. It arms on the IMU alone and runs in
  * relative mode; GNSS, when and if it appears, upgrades the same session to an
  * absolute one. Nothing here blocks on a fix.
+ *
+ * NAVIGATE sensors come from a [SensorSource]: live phone hubs by default, or
+ * a bundled IO-VNBD-style replay when [IdrBus.replayEnabled] is set.
  */
 class RecordService : LifecycleService() {
     private lateinit var bus: IdrBus
     private var wakeLock: PowerManager.WakeLock? = null
     private var sensors: SensorHub? = null
     private var gnss: GnssHub? = null
+    private var source: SensorSource? = null
     private var logger: CsvLogger? = null
     private val ins = SimpleIns()
     private val insLock = Any()
@@ -147,26 +155,43 @@ class RecordService : LifecycleService() {
                 ins.setModelStatus(model.ready, model.error, model.droppedWindows)
                 applyMountLocked(prefs)
             }
-            val hub = SensorHub(this) { frame ->
-                // Inference runs on the IMU handler thread, off the main thread,
-                // and only fires on the ~10 Hz ticks where a window closes.
-                val est = model.onImu(frame)
-                synchronized(insLock) {
-                    if (est != null) ins.onModel(est, model.hz)
-                    ins.setModelStatus(model.ready, model.error, model.droppedWindows)
-                    drainMarksLocked()
-                    drainOriginLocked()
-                    ins.onImu(frame)
-                    maybeRecheckLocationLocked(frame.tNs)
-                    maybePublishHudLocked(frame.tNs)
+            val blackout = { bus.gnssBlackout.value }
+            val wantReplay = bus.replayEnabled.value
+            val navSource: SensorSource = if (wantReplay) {
+                try {
+                    ReplaySensorSource(
+                        context = this,
+                        assetPath = IoVnbdCsv.DEFAULT_ASSET,
+                        blackout = blackout,
+                    )
+                } catch (t: Throwable) {
+                    // Missing / unreadable asset → live sensors, never crash.
+                    android.util.Log.w(TAG, "Replay asset failed, falling back to live", t)
+                    bus.setReplayEnabled(false)
+                    LiveSensorSource(this, blackout)
                 }
+            } else {
+                LiveSensorSource(this, blackout)
             }
-            sensors = hub
-            hub.start()
-            bus.publishSensors(hub.report)
-            gnss = GnssHub(
-                context = this,
-                onFix = { fix ->
+            bus.setReplayActive(navSource is ReplaySensorSource)
+            source = navSource
+            navSource.start(
+                onFrame = { frame ->
+                    // Inference runs on the sensor/replay thread, off main, and
+                    // only fires on the ~10 Hz ticks where a window closes.
+                    val est = model.onImu(frame)
+                    synchronized(insLock) {
+                        if (est != null) ins.onModel(est, model.hz)
+                        ins.setModelStatus(model.ready, model.error, model.droppedWindows)
+                        drainMarksLocked()
+                        drainOriginLocked()
+                        ins.onImu(frame)
+                        maybeRecheckLocationLocked(frame.tNs)
+                        maybePublishHudLocked(frame.tNs)
+                    }
+                },
+                onGnss = { fix ->
+                    if (fix == null || bus.gnssBlackout.value) return@start
                     lastFixLat = fix.lat
                     lastFixLon = fix.lon
                     synchronized(insLock) {
@@ -175,10 +200,13 @@ class RecordService : LifecycleService() {
                     }
                 },
                 onStatus = { status ->
-                    bus.publishLocation(status)
-                    synchronized(insLock) { ins.setLocationStatus(status) }
+                    val effective =
+                        if (bus.gnssBlackout.value) LocationStatus.LOST else status
+                    bus.publishLocation(effective)
+                    synchronized(insLock) { ins.setLocationStatus(effective) }
                 },
-            ).also { it.start() }
+            )
+            bus.publishSensors(navSource.sensorReport())
             synchronized(insLock) {
                 bus.publishHud(ins.snapshot(SystemClock.elapsedRealtimeNanos(), AppMode.NAVIGATE))
                 bus.publishTrack(ins.trackSnapshot())
@@ -211,10 +239,23 @@ class RecordService : LifecycleService() {
     private fun maybeRecheckLocationLocked(tNs: Long) {
         if (lastLocationCheckNs != 0L && tNs - lastLocationCheckNs < 1_000_000_000L) return
         lastLocationCheckNs = tNs
+        if (bus.gnssBlackout.value) {
+            ins.setLocationStatus(LocationStatus.LOST)
+            if (bus.location.value != LocationStatus.LOST) {
+                bus.publishLocation(LocationStatus.LOST)
+            }
+            return
+        }
+        if (bus.replayActive.value) {
+            // Replay owns status via SensorSource callbacks.
+            source?.refreshStatus()
+            return
+        }
         val blocking = LocationGate.blockingStatus(this)
         val status = blocking ?: LocationStatus.WAITING_FOR_FIX
         ins.setLocationStatus(status)
         if (bus.location.value != status) bus.publishLocation(status)
+        source?.refreshStatus()
         gnss?.refreshStatus()
     }
 
@@ -326,6 +367,9 @@ class RecordService : LifecycleService() {
     }
 
     private fun tearDown(keepWakelock: Boolean = false) {
+        source?.stop()
+        source = null
+        bus.setReplayActive(false)
         gnss?.stop()
         gnss = null
         sensors?.stop()
@@ -403,6 +447,8 @@ class RecordService : LifecycleService() {
     }
 
     companion object {
+        private const val TAG = "RecordService"
+
         /** 10 Hz. Fast enough to read as live, slow enough to skip most frames. */
         private const val HUD_PERIOD_NS = 100_000_000L
 
