@@ -24,9 +24,9 @@ class Prefs(context: Context) {
         set(v) = sp.edit().putBoolean(KEY_DIAGNOSTICS, v).apply()
 
     /**
-     * Show the Google basemap under the track when a key and tiles are
-     * available. Defaults true; the user can turn it off to get the metre grid
-     * back, which is also the surface that works with the radio off.
+     * Show the OpenStreetMap basemap (MapLibre) under the track. Defaults true;
+     * the user can turn it off to get the metre grid back, which is also the
+     * surface that works with the radio off and makes no network request.
      */
     var basemapEnabled: Boolean
         get() = sp.getBoolean(KEY_BASEMAP, true)

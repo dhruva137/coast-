@@ -153,9 +153,10 @@ fun DriveScreen(
             onSetStart = { showOriginDialog = true },
         )
 
-        // DriveMapPanel picks the surface: Google basemap when there is a key,
-        // Play services, an absolute position and tiles; the Canvas grid with a
-        // one-line reason otherwise. It never shows a blank grey tile.
+        // DriveMapPanel picks the surface: the OpenStreetMap (MapLibre) basemap
+        // when there is an absolute position and a network (or cached tiles);
+        // the Canvas grid with a one-line reason otherwise. It never shows a
+        // blank tile.
         DriveMapPanel(
             hud = hud,
             track = track,

@@ -42,3 +42,13 @@
 # org.json is provided by the platform; the test-only artifact must not be
 # dragged in or warned about.
 -dontwarn org.json.**
+
+# MapLibre Native (the OpenStreetMap basemap). Like ONNX Runtime it is a Java
+# layer over a native library, and the C++ side resolves Java classes, fields
+# and JNI callbacks by name. Keep the package intact so a minified release still
+# draws the map instead of throwing at getMapAsync/setStyle. R8 would otherwise
+# strip or rename the reflected members with no compile-time complaint.
+-keep class org.maplibre.android.** { *; }
+-keep class org.maplibre.geojson.** { *; }
+-keepclassmembers class org.maplibre.android.** { *; }
+-dontwarn org.maplibre.**

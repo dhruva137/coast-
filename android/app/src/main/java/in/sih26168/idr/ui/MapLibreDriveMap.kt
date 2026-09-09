@@ -1,0 +1,797 @@
+package `in`.sih26168.idr.ui
+
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Paint
+import android.graphics.Path
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import `in`.sih26168.idr.data.HudState
+import `in`.sih26168.idr.data.NavMode
+import `in`.sih26168.idr.data.Prefs
+import `in`.sih26168.idr.data.TrackSnapshot
+import `in`.sih26168.idr.nav.haversineM
+import `in`.sih26168.idr.nav.metersPerDeg
+import `in`.sih26168.idr.ui.theme.Accent
+import `in`.sih26168.idr.ui.theme.Amber
+import `in`.sih26168.idr.ui.theme.Bg
+import `in`.sih26168.idr.ui.theme.Gnss
+import `in`.sih26168.idr.ui.theme.IdrMono
+import `in`.sih26168.idr.ui.theme.Mute
+import `in`.sih26168.idr.ui.theme.Text as Fg
+import org.maplibre.android.MapLibre
+import org.maplibre.android.camera.CameraPosition
+import org.maplibre.android.camera.CameraUpdateFactory
+import org.maplibre.android.geometry.LatLng
+import org.maplibre.android.gestures.MoveGestureDetector
+import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapView
+import org.maplibre.android.maps.Style
+import org.maplibre.android.style.layers.FillLayer
+import org.maplibre.android.style.layers.LineLayer
+import org.maplibre.android.style.layers.Property
+import org.maplibre.android.style.layers.PropertyFactory
+import org.maplibre.android.style.layers.SymbolLayer
+import org.maplibre.android.style.sources.GeoJsonSource
+import org.maplibre.geojson.Feature
+import org.maplibre.geojson.FeatureCollection
+import org.maplibre.geojson.LineString
+import org.maplibre.geojson.Point
+import org.maplibre.geojson.Polygon
+import kotlin.math.cos
+import kotlin.math.min
+import kotlin.math.roundToInt
+import kotlin.math.sin
+
+/**
+ * The map panel: a real OpenStreetMap basemap when one is possible, and the
+ * metre-grid Canvas ([DriveMap]) when it is not.
+ *
+ * ## Why both exist
+ *
+ * The problem statement asks for a UI "displaying a smooth, uninterrupted
+ * vehicle icon showing seamless navigation", and it names the basemap
+ * explicitly: "overlaying the inertial trajectory onto an offline map database
+ * (e.g., OpenStreetMap)". So the basemap here is **MapLibre Native** drawing
+ * **OpenStreetMap** raster tiles. That stack needs no API key, no billing
+ * account and no Google Play services -- the public OSM tile server is open,
+ * and MapLibre is a plain Android `View`.
+ *
+ * But the basemap is still the one part of this screen that can fail for
+ * reasons outside the app: no network at the venue, or no anchor on the Earth
+ * to georeference the track against. Each of those falls back to the Canvas
+ * with a line saying which, because a blank tile in front of a judge is worse
+ * than an honest metre grid. [chooseMapBackend] holds that decision and is unit
+ * tested.
+ */
+@Composable
+fun DriveMapPanel(
+    hud: HudState,
+    track: TrackSnapshot,
+    navMode: NavMode,
+    modifier: Modifier = Modifier,
+    mapModifier: Modifier = Modifier,
+    onLongPress: () -> Unit = {},
+) {
+    val ctx = LocalContext.current
+    val prefs = remember { Prefs(ctx) }
+    var basemapWanted by remember { mutableStateOf(prefs.basemapEnabled) }
+    val online by rememberOnline()
+    // Survives rotation deliberately: once tiles have arrived, MapLibre serves
+    // them from its own cache, so dropping the network must NOT tear the map
+    // down. That case -- moving map, no signal -- is the entire demo.
+    var tilesEverLoaded by rememberSaveable { mutableStateOf(false) }
+
+    val origin = originFrom(hud.lat, hud.lon, hud.east, hud.north)
+    val choice = chooseMapBackend(
+        basemapWanted = basemapWanted,
+        online = online,
+        tilesEverLoaded = tilesEverLoaded,
+        navMode = navMode,
+        hasAbsolutePosition = hud.hasAbsolutePosition && origin != null,
+    )
+
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        if (choice.backend == MapBackend.OSM && origin != null) {
+            MapLibreDriveMap(
+                hud = hud,
+                track = track,
+                navMode = navMode,
+                origin = origin,
+                modifier = mapModifier,
+                onLongPress = onLongPress,
+                onMapLoaded = { tilesEverLoaded = true },
+            )
+        } else {
+            DriveMap(
+                hud = hud,
+                track = track,
+                navMode = navMode,
+                modifier = mapModifier,
+                onLongPress = onLongPress,
+                // Nothing to explain before the user has pressed START: the
+                // Canvas already says "Press START to begin tracking".
+                caption = if (navMode == NavMode.IDLE && track.ins.isEmpty()) null else choice.reason,
+            )
+        }
+
+        // Always offered now: OSM needs no key and no Play services, so a
+        // basemap is available whenever there is (or was) a network. It is also
+        // the privacy control -- with the basemap off this app makes no network
+        // request at all.
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            Text(
+                if (basemapWanted) "SHOW GRID INSTEAD" else "SHOW MAP",
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable {
+                        basemapWanted = !basemapWanted
+                        prefs.basemapEnabled = basemapWanted
+                    }
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                color = Mute,
+                fontFamily = IdrMono,
+                fontSize = 10.sp,
+                letterSpacing = 1.2.sp,
+            )
+        }
+    }
+}
+
+/** Follow zoom. 17 is "you can see which street you are on" without hunting. */
+private const val FOLLOW_ZOOM = 17.0
+
+private const val VEHICLE_IMG = "coast-vehicle"
+private const val SRC_GNSS = "coast-gnss"
+private const val SRC_DR = "coast-dr"
+private const val SRC_VEHICLE = "coast-vehicle-src"
+private const val SRC_UNC = "coast-uncertainty"
+private const val LYR_GNSS = "coast-gnss-line"
+private const val LYR_DR = "coast-dr-line"
+private const val LYR_VEHICLE = "coast-vehicle-layer"
+private const val LYR_UNC_FILL = "coast-uncertainty-fill"
+private const val LYR_UNC_LINE = "coast-uncertainty-line"
+
+/**
+ * A MapLibre raster style built entirely in code, pointing at the standard
+ * OpenStreetMap tile server. No token, no key, no Google. The `attribution`
+ * field is what MapLibre's attribution control reads; the text is ALSO shown
+ * verbatim on the map (see [MapLibreDriveMap]) because the OSM tile usage
+ * policy requires visible attribution.
+ */
+private val OSM_STYLE_JSON = """
+{
+  "version": 8,
+  "sources": {
+    "osm": {
+      "type": "raster",
+      "tiles": ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+      "tileSize": 256,
+      "minzoom": 0,
+      "maxzoom": 19,
+      "attribution": "© OpenStreetMap contributors"
+    }
+  },
+  "layers": [
+    { "id": "bg", "type": "background", "paint": { "background-color": "#07090D" } },
+    { "id": "osm", "type": "raster", "source": "osm" }
+  ]
+}
+""".trimIndent()
+
+/** Live references into the map, filled once the style is ready. */
+private class MapRefs {
+    var map: MapLibreMap? = null
+    var style: Style? = null
+    var gnss: GeoJsonSource? = null
+    var dr: GeoJsonSource? = null
+    var vehicle: GeoJsonSource? = null
+    var unc: GeoJsonSource? = null
+    var vehicleLayer: SymbolLayer? = null
+    var uncFill: FillLayer? = null
+    var uncLine: LineLayer? = null
+    var ready = false
+    var iconDirectional: Boolean? = null
+    var uncShown: Boolean? = null
+    var uncModelled: Boolean? = null
+}
+
+/**
+ * The COAST layer on a real OpenStreetMap basemap, MapLibre Native wrapped in an
+ * [AndroidView] because MapLibre is a classic Android `View`, not Compose.
+ *
+ * ## What is drawn, and what each thing means
+ *
+ *  * **Green line** -- the track while a live GNSS fix was anchoring it.
+ *  * **Orange line, thicker** -- the track while it was dead reckoned from the
+ *    IMU alone. Colour AND width differ, so the distinction survives a
+ *    colour-blind reader and a projector. These are the same two colours the
+ *    mode badge at the top of the screen uses, and the split is computed with
+ *    the same 2 s staleness window the estimator uses to choose the mode, so
+ *    the line and the badge cannot contradict each other. See [segmentTrail].
+ *  * **Circle** -- the uncertainty from `HudState.uncertaintyM`, which is the
+ *    OS-reported accuracy under GNSS (solid) and the distance-and-drift model
+ *    otherwise (dashed). It is NOT a particle-filter spread: `docs/
+ *    ARCHITECTURE_V2.md` measured that spread against true error at **-0.23**,
+ *    i.e. slightly anti-correlated, and drawing it as a confidence radius would
+ *    tell the user "trust me" exactly when the filter is most wrong.
+ *  * **Vehicle icon** -- a chevron when heading has been tied to true north by a
+ *    GNSS bearing, and a plain dot when it has not. Before that reference
+ *    exists `headingDeg` is the angle turned since arming from an arbitrary
+ *    zero; pointing a chevron with it on a north-up map would be a fabrication.
+ *
+ * ## Performance
+ *
+ *  * The projected polylines are rebuilt only when a point is appended
+ *    (`LaunchedEffect(track.version, ...)`), never per frame. The origin is
+ *    quantised (see [quantiseDeg]) because it is recovered from the HUD by
+ *    arithmetic whose last digits wobble as the vehicle moves.
+ *  * The 60 Hz vehicle animation writes straight into the vehicle GeoJSON
+ *    source and the camera from a `withFrameNanos` loop, which is OUTSIDE
+ *    composition entirely -- no composable of ours recomposes per frame.
+ */
+@Composable
+fun MapLibreDriveMap(
+    hud: HudState,
+    track: TrackSnapshot,
+    navMode: NavMode,
+    origin: GeoPoint,
+    modifier: Modifier = Modifier,
+    onLongPress: () -> Unit = {},
+    onMapLoaded: () -> Unit = {},
+) {
+    val ctx = LocalContext.current
+    val density = LocalDensity.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    val oLat = quantiseDeg(origin.lat)
+    val oLon = quantiseDeg(origin.lon)
+
+    val refs = remember { MapRefs() }
+    val smoother = remember { VehicleSmoother() }
+    // Plain array, not state: the gesture watcher needs the last drawn position
+    // and must not be woken up by it.
+    val rendered = remember { doubleArrayOf(oLat, oLon) }
+
+    val following = remember { mutableStateOf(true) }
+    val gesturing = remember { mutableStateOf(false) }
+    var viewportMinPx by remember { mutableIntStateOf(0) }
+    var followTick by remember { mutableIntStateOf(0) }
+
+    // MapLibre.getInstance MUST run before a MapView is constructed. No key is
+    // passed -- the style carries its own tile URLs, so none is needed.
+    val mapView = remember {
+        MapLibre.getInstance(ctx)
+        MapView(ctx)
+    }
+
+    // Classic View lifecycle, driven from the composition's lifecycle owner.
+    // addObserver replays the current state, so a MapView created while the
+    // activity is already RESUMED still gets onCreate/onStart/onResume.
+    DisposableEffect(lifecycleOwner, mapView) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_CREATE -> mapView.onCreate(null)
+                Lifecycle.Event.ON_START -> mapView.onStart()
+                Lifecycle.Event.ON_RESUME -> mapView.onResume()
+                Lifecycle.Event.ON_PAUSE -> mapView.onPause()
+                Lifecycle.Event.ON_STOP -> mapView.onStop()
+                else -> {}
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            refs.ready = false
+            mapView.onDestroy()
+        }
+    }
+
+    // One-time map wiring: style, sources, layers, gesture and load listeners.
+    DisposableEffect(mapView) {
+        mapView.getMapAsync { map ->
+            refs.map = map
+            map.uiSettings.apply {
+                isRotateGesturesEnabled = false
+                isTiltGesturesEnabled = false
+                isCompassEnabled = true
+                isAttributionEnabled = true
+                isLogoEnabled = true
+            }
+            map.cameraPosition = CameraPosition.Builder()
+                .target(LatLng(oLat, oLon))
+                .zoom(FOLLOW_ZOOM)
+                .build()
+
+            map.addOnMapLongClickListener {
+                onLongPress()
+                true
+            }
+
+            // Following stops when the user drags the map and is re-evaluated
+            // when the drag ends: a pan that carries the vehicle away hands over
+            // control, a small nudge keeps following. See [shouldBreakFollow].
+            map.addOnMoveListener(object : MapLibreMap.OnMoveListener {
+                override fun onMoveBegin(detector: MoveGestureDetector) {
+                    gesturing.value = true
+                }
+
+                override fun onMove(detector: MoveGestureDetector) {}
+
+                override fun onMoveEnd(detector: MoveGestureDetector) {
+                    gesturing.value = false
+                    val pos = map.cameraPosition
+                    val tgt = pos.target
+                    if (tgt != null) {
+                        val offsetM = haversineM(
+                            tgt.latitude, tgt.longitude, rendered[0], rendered[1],
+                        )
+                        following.value = !shouldBreakFollow(
+                            offsetM = offsetM,
+                            metresPerPixel = metresPerPixel(pos.zoom, tgt.latitude),
+                            viewportMinPx = viewportMinPx,
+                        )
+                        followTick++
+                    }
+                }
+            })
+
+            val directional = hud.headingReferenced
+            map.setStyle(Style.Builder().fromJson(OSM_STYLE_JSON)) { style ->
+                refs.style = style
+
+                style.addImage(
+                    VEHICLE_IMG,
+                    vehicleBitmap(density.density, directional),
+                )
+
+                val gnssSrc = GeoJsonSource(SRC_GNSS)
+                val drSrc = GeoJsonSource(SRC_DR)
+                val vehSrc = GeoJsonSource(SRC_VEHICLE)
+                val uncSrc = GeoJsonSource(SRC_UNC)
+                style.addSource(gnssSrc)
+                style.addSource(drSrc)
+                style.addSource(vehSrc)
+                style.addSource(uncSrc)
+
+                // Bottom-to-top: uncertainty, GNSS line, DR line, vehicle. Same
+                // stacking the Google version used (uncertainty under the
+                // track, vehicle on top).
+                val uncFill = FillLayer(LYR_UNC_FILL, SRC_UNC).withProperties(
+                    PropertyFactory.fillColor(Amber.toArgb()),
+                    PropertyFactory.fillOpacity(0.10f),
+                    PropertyFactory.visibility(Property.NONE),
+                )
+                val uncLine = LineLayer(LYR_UNC_LINE, SRC_UNC).withProperties(
+                    PropertyFactory.lineColor(Amber.toArgb()),
+                    PropertyFactory.lineWidth(2f),
+                    PropertyFactory.lineOpacity(0.6f),
+                    PropertyFactory.visibility(Property.NONE),
+                )
+                val gnssLine = LineLayer(LYR_GNSS, SRC_GNSS).withProperties(
+                    PropertyFactory.lineColor(Gnss.toArgb()),
+                    PropertyFactory.lineWidth(3f),
+                    PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
+                    PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
+                )
+                val drLine = LineLayer(LYR_DR, SRC_DR).withProperties(
+                    PropertyFactory.lineColor(Accent.toArgb()),
+                    PropertyFactory.lineWidth(5f),
+                    PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
+                    PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
+                )
+                val vehLayer = SymbolLayer(LYR_VEHICLE, SRC_VEHICLE).withProperties(
+                    PropertyFactory.iconImage(VEHICLE_IMG),
+                    PropertyFactory.iconAllowOverlap(true),
+                    PropertyFactory.iconIgnorePlacement(true),
+                    PropertyFactory.iconRotationAlignment(Property.ICON_ROTATION_ALIGNMENT_MAP),
+                    PropertyFactory.iconAnchor(Property.ICON_ANCHOR_CENTER),
+                    PropertyFactory.iconRotate(0f),
+                )
+                style.addLayer(uncFill)
+                style.addLayer(uncLine)
+                style.addLayer(gnssLine)
+                style.addLayer(drLine)
+                style.addLayer(vehLayer)
+
+                refs.gnss = gnssSrc
+                refs.dr = drSrc
+                refs.vehicle = vehSrc
+                refs.unc = uncSrc
+                refs.vehicleLayer = vehLayer
+                refs.uncFill = uncFill
+                refs.uncLine = uncLine
+                refs.iconDirectional = directional
+                refs.ready = true
+
+                // Style is up and the raster source is wired; once we are online
+                // its tiles load. Report loaded so the panel latches
+                // tilesEverLoaded and keeps the map if the radio then drops.
+                onMapLoaded()
+                pushTrail(refs, track, oLat, oLon)
+            }
+        }
+        onDispose { }
+    }
+
+    // Rebuild the two coloured polylines only when a point is appended.
+    LaunchedEffect(track.version, oLat, oLon) {
+        pushTrail(refs, track, oLat, oLon)
+    }
+
+    // Read in composition, consumed in the frame loop. rememberUpdatedState is
+    // exactly the tool for "the effect must see the newest value without being
+    // restarted by it".
+    val target by rememberUpdatedState(
+        VehicleTarget(oLat, oLon, hud.east, hud.north, hud.headingDeg),
+    )
+    val directional by rememberUpdatedState(hud.headingReferenced)
+    val modelled by rememberUpdatedState(navMode != NavMode.GNSS)
+    val uncertaintyM by rememberUpdatedState(hud.uncertaintyM)
+
+    LaunchedEffect(Unit) {
+        var lastNs = 0L
+        while (true) {
+            withFrameNanos { now ->
+                if (!refs.ready) {
+                    lastNs = now
+                    return@withFrameNanos
+                }
+                val dt = if (lastNs == 0L) 0.0 else (now - lastNs) / 1e9
+                lastNs = now
+
+                val t = target
+                smoother.step(dt, t.east, t.north, t.headingDeg)
+                val g = projectFromOrigin(t.originLat, t.originLon, smoother.east, smoother.north)
+                rendered[0] = g.lat
+                rendered[1] = g.lon
+
+                // Vehicle icon: swap chevron <-> dot only when the reference
+                // state actually flips, not every frame.
+                val dir = directional
+                if (refs.iconDirectional != dir) {
+                    refs.style?.addImage(VEHICLE_IMG, vehicleBitmap(density.density, dir))
+                    refs.iconDirectional = dir
+                }
+                refs.vehicle?.setGeoJson(Point.fromLngLat(g.lon, g.lat))
+                refs.vehicleLayer?.setProperties(
+                    PropertyFactory.iconRotate(if (dir) smoother.bearingDeg.toFloat() else 0f),
+                )
+
+                // Uncertainty: geometry every frame it is shown; colour/dash and
+                // visibility only when they change.
+                val r = uncertaintyM
+                if (uncertaintyDrawable(r)) {
+                    refs.unc?.setGeoJson(circlePolygonFeature(g.lat, g.lon, r))
+                    val mdl = modelled
+                    if (refs.uncShown != true || refs.uncModelled != mdl) {
+                        val tint = (if (mdl) Amber else Gnss).toArgb()
+                        refs.uncFill?.setProperties(
+                            PropertyFactory.visibility(Property.VISIBLE),
+                            PropertyFactory.fillColor(tint),
+                        )
+                        // Dashed = modelled, solid = measured. Same convention as
+                        // the Canvas map and the MEASURED / MODELLED accuracy
+                        // card, so the three cannot say different things.
+                        val dash = if (mdl) arrayOf(2f, 1.5f) else arrayOf(1f)
+                        refs.uncLine?.setProperties(
+                            PropertyFactory.visibility(Property.VISIBLE),
+                            PropertyFactory.lineColor(tint),
+                            PropertyFactory.lineDasharray(dash),
+                        )
+                        refs.uncShown = true
+                        refs.uncModelled = mdl
+                    }
+                } else if (refs.uncShown != false) {
+                    refs.uncFill?.setProperties(PropertyFactory.visibility(Property.NONE))
+                    refs.uncLine?.setProperties(PropertyFactory.visibility(Property.NONE))
+                    refs.uncShown = false
+                    refs.uncModelled = null
+                }
+
+                if (following.value && !gesturing.value) {
+                    refs.map?.moveCamera(CameraUpdateFactory.newLatLng(LatLng(g.lat, g.lon)))
+                }
+            }
+        }
+    }
+
+    Box(
+        modifier
+            .background(Bg)
+            .onSizeChanged { viewportMinPx = min(it.width, it.height) },
+    ) {
+        AndroidView(factory = { mapView }, modifier = Modifier.fillMaxSize())
+
+        MapLegend(
+            navMode = navMode,
+            headingReferenced = hud.headingReferenced,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(10.dp),
+        )
+
+        // OSM's tile policy requires visible attribution. MapLibre's attribution
+        // control also carries it, but this states it outright on the map.
+        Text(
+            "© OpenStreetMap contributors",
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(8.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .background(Bg.copy(alpha = 0.7f))
+                .padding(horizontal = 6.dp, vertical = 3.dp),
+            color = Mute,
+            fontFamily = IdrMono,
+            fontSize = 8.sp,
+        )
+
+        // Read followTick so this leaf recomposes when follow flips.
+        followTick
+        if (!following.value) {
+            Text(
+                "RE-CENTRE",
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(12.dp)
+                    .clip(RoundedCornerShape(99.dp))
+                    .background(Bg.copy(alpha = 0.85f))
+                    .clickable {
+                        val map = refs.map
+                        if (map != null) {
+                            runCatching {
+                                map.animateCamera(
+                                    CameraUpdateFactory.newLatLngZoom(
+                                        LatLng(rendered[0], rendered[1]),
+                                        maxOf(map.cameraPosition.zoom, FOLLOW_ZOOM),
+                                    ),
+                                    500,
+                                )
+                            }
+                        }
+                        following.value = true
+                        followTick++
+                    }
+                    .padding(horizontal = 14.dp, vertical = 9.dp),
+                color = Accent,
+                fontFamily = IdrMono,
+                fontSize = 11.sp,
+                letterSpacing = 1.2.sp,
+            )
+        }
+    }
+}
+
+/**
+ * Rebuild the GNSS and dead-reckoned polyline sources from the current track.
+ * Split with the same 2 s staleness window as the mode badge (see
+ * [segmentTrail]); each run becomes a LineString, grouped into two feature
+ * collections so the two colours are two layers.
+ */
+private fun pushTrail(refs: MapRefs, track: TrackSnapshot, oLat: Double, oLon: Double) {
+    val gnssSrc = refs.gnss ?: return
+    val drSrc = refs.dr ?: return
+    val gnssFeatures = ArrayList<Feature>()
+    val drFeatures = ArrayList<Feature>()
+    for (seg in segmentTrail(track.ins)) {
+        if (seg.points.size < 2) continue
+        val pts = seg.points.map { p ->
+            val g = projectFromOrigin(oLat, oLon, p.east, p.north)
+            Point.fromLngLat(g.lon, g.lat)
+        }
+        val f = Feature.fromGeometry(LineString.fromLngLats(pts))
+        if (seg.gnss) gnssFeatures.add(f) else drFeatures.add(f)
+    }
+    gnssSrc.setGeoJson(FeatureCollection.fromFeatures(gnssFeatures))
+    drSrc.setGeoJson(FeatureCollection.fromFeatures(drFeatures))
+}
+
+/**
+ * A closed polygon approximating a circle of [radiusM] metres around a point,
+ * so the uncertainty is drawn in real metres on the ground rather than in
+ * screen pixels. Uses the same local flat-Earth scaling the estimator projects
+ * with, so it cannot disagree with the track.
+ */
+private fun circlePolygonFeature(centerLat: Double, centerLon: Double, radiusM: Double): Feature {
+    val mpd = metersPerDeg(centerLat)
+    val steps = 48
+    val ring = ArrayList<Point>(steps + 1)
+    for (i in 0..steps) {
+        val a = 2.0 * Math.PI * i / steps
+        val east = radiusM * cos(a)
+        val north = radiusM * sin(a)
+        ring.add(Point.fromLngLat(centerLon + east / mpd.mLon, centerLat + north / mpd.mLat))
+    }
+    return Feature.fromGeometry(Polygon.fromLngLats(listOf(ring)))
+}
+
+@Composable
+private fun MapLegend(navMode: NavMode, headingReferenced: Boolean, modifier: Modifier = Modifier) {
+    Column(
+        modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(Bg.copy(alpha = 0.82f))
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        LegendRow(Gnss, "GNSS TRACKED")
+        LegendRow(Accent, "DEAD RECKONED")
+        if (!headingReferenced && navMode != NavMode.IDLE) {
+            Text(
+                "heading not tied to north yet",
+                color = Amber,
+                fontFamily = IdrMono,
+                fontSize = 8.sp,
+            )
+        }
+    }
+}
+
+@Composable
+private fun LegendRow(color: androidx.compose.ui.graphics.Color, label: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            Modifier
+                .width(16.dp)
+                .height(3.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(color),
+        )
+        Text(
+            label,
+            modifier = Modifier.padding(start = 6.dp),
+            color = Fg,
+            fontFamily = IdrMono,
+            fontSize = 8.sp,
+            letterSpacing = 0.8.sp,
+        )
+    }
+}
+
+/** What the frame loop needs to know, snapshotted once per composition. */
+private data class VehicleTarget(
+    val originLat: Double,
+    val originLon: Double,
+    val east: Double,
+    val north: Double,
+    val headingDeg: Double,
+)
+
+// ---------------------------------------------------------------------------
+// Network reachability
+// ---------------------------------------------------------------------------
+
+/**
+ * Live network reachability, used only to decide whether asking for tiles is
+ * worth it. Nothing here reads or reports anything about the network.
+ */
+@Composable
+private fun rememberOnline(): State<Boolean> {
+    val ctx = LocalContext.current
+    val state = remember { mutableStateOf(true) }
+    DisposableEffect(ctx) {
+        val cm = ctx.getSystemService(ConnectivityManager::class.java)
+        if (cm == null) {
+            // Cannot tell; assume yes and let the map's own load result decide.
+            state.value = true
+            return@DisposableEffect onDispose { }
+        }
+        state.value = hasInternet(cm)
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                state.value = true
+            }
+
+            override fun onLost(network: Network) {
+                state.value = hasInternet(cm)
+            }
+
+            override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {
+                state.value = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            }
+        }
+        val registered = runCatching { cm.registerDefaultNetworkCallback(callback) }.isSuccess
+        onDispose {
+            if (registered) runCatching { cm.unregisterNetworkCallback(callback) }
+        }
+    }
+    return state
+}
+
+private fun hasInternet(cm: ConnectivityManager): Boolean = runCatching {
+    val caps = cm.getNetworkCapabilities(cm.activeNetwork)
+    caps != null && caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+}.getOrDefault(false)
+
+// ---------------------------------------------------------------------------
+// Vehicle icon
+// ---------------------------------------------------------------------------
+
+/**
+ * The vehicle icon as a [Bitmap] for a MapLibre symbol image, drawn rather than
+ * shipped as a PNG so it matches the chevron on the Canvas map exactly and
+ * scales with the display density.
+ *
+ * [directional] false draws a dot instead: heading is not a compass bearing
+ * until a GNSS bearing has referenced it, and an arrow on a north-up map is a
+ * claim about the Earth that we would not be able to back up.
+ */
+private fun vehicleBitmap(density: Float, directional: Boolean): Bitmap {
+    val size = (40f * density).roundToInt().coerceIn(56, 220)
+    val s = size.toFloat()
+    val c = s / 2f
+    val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val canvas = android.graphics.Canvas(bmp)
+
+    val halo = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Accent.copy(alpha = 0.22f).toArgb()
+        style = Paint.Style.FILL
+    }
+    canvas.drawCircle(c, c, s * 0.46f, halo)
+
+    val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.WHITE
+        style = Paint.Style.FILL
+    }
+    val edge = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Accent.toArgb()
+        style = Paint.Style.STROKE
+        strokeWidth = s * 0.07f
+        strokeJoin = Paint.Join.ROUND
+    }
+
+    if (directional) {
+        val body = Path().apply {
+            moveTo(c, s * 0.10f)
+            lineTo(s * 0.80f, s * 0.86f)
+            lineTo(c, s * 0.66f)
+            lineTo(s * 0.20f, s * 0.86f)
+            close()
+        }
+        canvas.drawPath(body, fill)
+        canvas.drawPath(body, edge)
+    } else {
+        canvas.drawCircle(c, c, s * 0.22f, fill)
+        canvas.drawCircle(c, c, s * 0.22f, edge)
+    }
+    return bmp
+}

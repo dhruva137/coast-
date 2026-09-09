@@ -14,9 +14,11 @@ import org.junit.Test
  *
  * Two rules here are demo-critical and are the reason these tests exist:
  *
- *  1. **Never show a blank grey Google tile.** Every condition that would
- *     produce an empty or misleading basemap has to fall back to the Canvas
- *     with a sentence the user can act on.
+ *  1. **Never show a blank basemap.** Every condition that would produce an
+ *     empty or misleading basemap has to fall back to the Canvas with a
+ *     sentence the user can act on. MapLibre + OpenStreetMap needs no API key
+ *     and no Play services, so those two old fall-backs are gone; what remains
+ *     is basemap-off, no-anchor, and offline-with-nothing-cached.
  *  2. **Never draw a georeferenced track we do not have.** In RELATIVE mode
  *     there is no anchor on the Earth, so putting the trace over real streets
  *     would show a route the vehicle was never on.
@@ -24,38 +26,29 @@ import org.junit.Test
 class MapBackendTest {
 
     private fun choose(
-        hasApiKey: Boolean = true,
-        playServicesOk: Boolean = true,
         basemapWanted: Boolean = true,
         online: Boolean = true,
         tilesEverLoaded: Boolean = true,
         navMode: NavMode = NavMode.GNSS,
         hasAbsolutePosition: Boolean = true,
     ) = chooseMapBackend(
-        hasApiKey, playServicesOk, basemapWanted, online,
-        tilesEverLoaded, navMode, hasAbsolutePosition,
+        basemapWanted, online, tilesEverLoaded, navMode, hasAbsolutePosition,
     )
 
     @Test
-    fun `google is used when everything is available`() {
+    fun `osm is used when everything is available`() {
         val c = choose()
-        assertEquals(MapBackend.GOOGLE, c.backend)
+        assertEquals(MapBackend.OSM, c.backend)
         assertNull("nothing to explain when the basemap works", c.reason)
     }
 
     @Test
-    fun `no api key falls back to canvas with a reason`() {
-        // The shipped default: this repo contains no key and never will.
-        val c = choose(hasApiKey = false)
+    fun `basemap off falls back to canvas with a reason`() {
+        // The privacy control and the grid toggle: with the basemap off the app
+        // makes no tile request at all, and the Canvas says why.
+        val c = choose(basemapWanted = false)
         assertEquals(MapBackend.CANVAS, c.backend)
         assertNotNull("the user must be told why", c.reason)
-    }
-
-    @Test
-    fun `missing play services falls back`() {
-        val c = choose(playServicesOk = false)
-        assertEquals(MapBackend.CANVAS, c.backend)
-        assertNotNull(c.reason)
     }
 
     @Test
@@ -65,9 +58,15 @@ class MapBackendTest {
         val c = choose(navMode = NavMode.RELATIVE)
         assertEquals(MapBackend.CANVAS, c.backend)
         assertNotNull(c.reason)
+    }
 
+    @Test
+    fun `no absolute position falls back to canvas`() {
+        // Same rule reached the other way: even outside RELATIVE, a track with
+        // no georeference cannot be laid over streets.
         val d = choose(hasAbsolutePosition = false)
         assertEquals(MapBackend.CANVAS, d.backend)
+        assertNotNull(d.reason)
     }
 
     @Test
@@ -75,7 +74,7 @@ class MapBackendTest {
         // The whole point of a tunnel demo: the map must survive losing the
         // radio, because that is the moment the demo is about.
         assertEquals(
-            MapBackend.GOOGLE,
+            MapBackend.OSM,
             choose(online = false, tilesEverLoaded = true).backend,
         )
         assertEquals(
@@ -87,10 +86,9 @@ class MapBackendTest {
     @Test
     fun `every fallback carries an explanation`() {
         val fallbacks = listOf(
-            choose(hasApiKey = false),
-            choose(playServicesOk = false),
             choose(basemapWanted = false),
             choose(navMode = NavMode.RELATIVE),
+            choose(hasAbsolutePosition = false),
             choose(online = false, tilesEverLoaded = false),
         )
         for (c in fallbacks) {

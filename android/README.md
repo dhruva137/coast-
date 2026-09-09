@@ -152,16 +152,29 @@ labels the up axis "the way you were facing at start".
 
 ### Map
 
-Canvas metre grid with a labelled scale bar, the estimator track in orange, the
-raw GNSS track dashed teal, the origin crosshair, the vehicle chevron and the
-uncertainty circle. The camera is spring-smoothed; positions are not.
+The basemap is **MapLibre Native drawing OpenStreetMap** raster tiles
+(`ui/MapLibreDriveMap.kt`), the map database the problem statement names. It
+needs **no API key, no billing account and no Google Play services** — the
+public OSM tile server (`https://tile.openstreetmap.org/{z}/{x}/{y}.png`) is
+open and MapLibre is a plain Android `View` wrapped in an `AndroidView`. "©
+OpenStreetMap contributors" is shown on the map, as the tile policy requires.
 
-**MapLibre is still off.** It needs tiles, and the repo has none: `maps/style.json`
-points at a network CARTO raster source, and there are no `.mbtiles`/`.pmtiles`
-anywhere. A basemap that blanks without wifi is worse at the venue than an
-honest metre grid. Re-enable it only together with bundled offline tiles — the
-commented dependency in `app/build.gradle.kts` and `settings.gradle.kts` is
-still there.
+On top of the basemap: the GNSS-tracked track as a solid green line and the
+dead-reckoned track as a thicker orange line (colour AND width differ, so the
+moment the fix died is visible to a colour-blind reader and on a projector; the
+split uses the same 2 s window as the mode badge), the vehicle icon (a chevron
+once heading is tied to north, a dot before), and the uncertainty circle drawn
+in real metres — solid when GNSS-measured, dashed when modelled — from the
+distance/drift model, **not** the particle spread (which `docs/
+ARCHITECTURE_V2.md` measured at -0.23 against true error).
+
+`ui/MapBackend.kt` (pure, unit-tested in `MapBackendTest`) decides basemap vs
+Canvas. The basemap is dropped for the Canvas metre grid, with a one-line
+reason on screen, in exactly three cases: the user turned it off, there is no
+absolute position to georeference against (`RELATIVE` mode), or the phone is
+offline **and** no tiles have been cached yet. Once tiles have loaded, losing
+the radio keeps the map — that is the tunnel demo. The Canvas fallback
+(`ui/DriveMap.kt`) is unchanged.
 
 ### Diagnostics
 

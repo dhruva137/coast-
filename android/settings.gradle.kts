@@ -10,10 +10,9 @@ dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
+        // MapLibre Native (org.maplibre.gl:android-sdk) is published to Maven
+        // Central, so no extra repository is needed. No API key, no billing.
         mavenCentral()
-        // Optional MapLibre Native (no API key). Uncomment together with the
-        // app/build.gradle.kts MapLibre dependency to replace TrailMap Canvas.
-        // maven(url = "https://dl.cloudsmith.io/public/maplibre/maplibre-native/maven/")
     }
 }
 

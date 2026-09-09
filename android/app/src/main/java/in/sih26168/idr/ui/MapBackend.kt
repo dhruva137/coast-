@@ -13,14 +13,18 @@ import kotlin.math.sqrt
  * Everything the map needs to decide and to draw itself, with no Android and no
  * Compose in it, so all of it is covered by plain JVM unit tests.
  *
- * The composables that use this live in [GoogleDriveMap] (the Google basemap)
- * and [DriveMap] (the metre-grid Canvas that is still the fallback).
+ * The composables that use this live in [MapLibreDriveMap] (the OpenStreetMap
+ * basemap) and [DriveMap] (the metre-grid Canvas that is still the fallback).
  */
 
 /** Which map surface is on screen right now. */
 enum class MapBackend {
-    /** Maps SDK for Android, real tiles, the COAST layer drawn on top. */
-    GOOGLE,
+    /**
+     * MapLibre Native + an OpenStreetMap raster style, real tiles, the COAST
+     * layer drawn on top. No API key, no billing account, no Play services --
+     * OSM's public tile server needs none of that. See [MapLibreDriveMap].
+     */
+    OSM,
 
     /** The hand-drawn metre grid in [DriveMap]. Always works, needs nothing. */
     CANVAS,
@@ -31,7 +35,7 @@ data class MapChoice(
     val backend: MapBackend,
     /**
      * One honest line saying why there is no basemap, shown on the Canvas.
-     * Null when [backend] is [MapBackend.GOOGLE] -- there is nothing to explain.
+     * Null when [backend] is [MapBackend.OSM] -- there is nothing to explain.
      */
     val reason: String?,
 )
@@ -39,39 +43,31 @@ data class MapChoice(
 /**
  * Pick the map surface.
  *
- * The rule this encodes: **never show a blank grey Google tile.** Every
- * condition below produces a map that would be empty, broken or a lie, and each
- * one falls back to the Canvas with a sentence a stranger can act on.
+ * The rule this encodes: **never show a blank basemap.** Every condition below
+ * produces a map that would be empty, broken or a lie, and each one falls back
+ * to the Canvas with a sentence a stranger can act on.
  *
- * Order matters, and it is "what would a user fix first":
+ * MapLibre + OpenStreetMap removed two of the old conditions outright: OSM's
+ * tile server needs **no API key** (a fresh clone and CI draw a real map), and
+ * MapLibre is a plain Android view, **not** a Play-services client, so a
+ * de-Googled phone draws a real map too. What remains are the three reasons a
+ * basemap genuinely cannot help:
  *
- *  1. No API key. This is the state of a fresh clone and of CI, and it is the
- *     shipped default -- the repo contains no key and never will.
- *  2. No Google Play services. Maps SDK is a Play services client; without it
- *     the `MapView` never draws anything.
- *  3. The user asked for the grid.
- *  4. No absolute position. In [NavMode.RELATIVE] there is no anchor on the
+ *  1. The user asked for the grid.
+ *  2. No absolute position. In [NavMode.RELATIVE] there is no anchor on the
  *     Earth at all, so the track cannot be georeferenced. Drawing it over a
  *     basemap would put a real-looking route on real streets it was never on.
- *  5. Offline, with nothing cached yet. Once tiles HAVE loaded, going offline
- *     keeps the map: the SDK serves what it cached, which is the whole point of
- *     a tunnel demo.
+ *  3. Offline, with nothing cached yet. Once tiles HAVE loaded, going offline
+ *     keeps the map: MapLibre serves what it cached, which is the whole point
+ *     of a tunnel demo.
  */
 fun chooseMapBackend(
-    hasApiKey: Boolean,
-    playServicesOk: Boolean,
     basemapWanted: Boolean,
     online: Boolean,
     tilesEverLoaded: Boolean,
     navMode: NavMode,
     hasAbsolutePosition: Boolean,
 ): MapChoice = when {
-    !hasApiKey ->
-        MapChoice(MapBackend.CANVAS, "No map key — showing track only")
-
-    !playServicesOk ->
-        MapChoice(MapBackend.CANVAS, "No Google Play services — showing track only")
-
     !basemapWanted ->
         MapChoice(MapBackend.CANVAS, "Basemap off — showing track only")
 
@@ -81,7 +77,7 @@ fun chooseMapBackend(
     !online && !tilesEverLoaded ->
         MapChoice(MapBackend.CANVAS, "Offline, no tiles cached — showing track only")
 
-    else -> MapChoice(MapBackend.GOOGLE, null)
+    else -> MapChoice(MapBackend.OSM, null)
 }
 
 // ---------------------------------------------------------------------------
@@ -137,9 +133,9 @@ fun originFrom(lat: Double, lon: Double, east: Double, north: Double): GeoPoint?
 }
 
 /**
- * Ground resolution of the Web Mercator tile pyramid Google Maps uses, in metres
- * per screen pixel. Used to turn "the user dragged the map a long way" into a
- * decision that is the same at every zoom.
+ * Ground resolution of the Web Mercator tile pyramid OSM (and every slippy-map
+ * basemap) uses, in metres per screen pixel. Used to turn "the user dragged the
+ * map a long way" into a decision that is the same at every zoom.
  */
 fun metresPerPixel(zoom: Double, latDeg: Double): Double =
     156_543.03392 * cos(latDeg * Math.PI / 180.0) / Math.pow(2.0, zoom)

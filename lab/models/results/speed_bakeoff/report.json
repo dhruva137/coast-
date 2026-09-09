@@ -1,0 +1,483 @@
+{
+  "device": "cuda",
+  "epochs": 12,
+  "cap": 120000,
+  "aggregate": {
+    "n_folds": 23,
+    "model_median_rmse": 5.061418102633552,
+    "hold_median_rmse": 1.2804026991861577,
+    "mean_median_rmse": 7.970093637835143,
+    "folds_model_beats_hold": 0,
+    "median_improvement_pct": -295.2989247719223,
+    "median_cov68": 0.4258986980331991,
+    "median_cov95": 0.7490500717723549,
+    "outage_model_dist_err_m": 150.3141631309627,
+    "outage_frozen_dist_err_m": 163.18843860962443,
+    "outage_model_drift_pct": 17.95335047196482,
+    "outage_frozen_drift_pct": 21.0715971830974,
+    "outage_folds_model_wins": 9,
+    "outage_folds": 23
+  },
+  "folds": [
+    {
+      "held": "S-M",
+      "n": 52978,
+      "outage": {
+        "n": 12,
+        "model_dist_err_m": 80.30536159617441,
+        "frozen_dist_err_m": 168.70687311546112,
+        "model_drift_pct": 14.211842944582095,
+        "frozen_drift_pct": 41.99658807994393,
+        "model_beats_frozen": true
+      },
+      "model_rmse": 4.24825197056632,
+      "model_mae": 3.24557357034997,
+      "hold_rmse": 3.447910117945928,
+      "hold_mae": 1.75337471786074,
+      "mean_rmse": 6.573658886243656,
+      "beats_hold": false,
+      "cov68": 0.5345992676205217,
+      "cov95": 0.8152818150930575
+    },
+    {
+      "held": "S-S1",
+      "n": 25864,
+      "outage": {
+        "n": 12,
+        "model_dist_err_m": 60.53756164372999,
+        "frozen_dist_err_m": 228.49964610372263,
+        "model_drift_pct": 12.326135427357602,
+        "frozen_drift_pct": 59.983354979380515,
+        "model_beats_frozen": true
+      },
+      "model_rmse": 3.1374029223320643,
+      "model_mae": 2.3642552668906283,
+      "hold_rmse": 1.3236378463417378,
+      "hold_mae": 0.944672238875896,
+      "mean_rmse": 7.394259406033234,
+      "beats_hold": false,
+      "cov68": 0.6858181255799567,
+      "cov95": 0.9256108877203836
+    },
+    {
+      "held": "S-S2",
+      "n": 46929,
+      "outage": {
+        "n": 12,
+        "model_dist_err_m": 66.5111786215275,
+        "frozen_dist_err_m": 229.10321714787278,
+        "model_drift_pct": 11.69659909319046,
+        "frozen_drift_pct": 59.47625543459682,
+        "model_beats_frozen": true
+      },
+      "model_rmse": 5.061418102633552,
+      "model_mae": 3.9267646964638554,
+      "hold_rmse": 1.4813829880473774,
+      "hold_mae": 0.9690981724360277,
+      "mean_rmse": 7.970093637835143,
+      "beats_hold": false,
+      "cov68": 0.4258986980331991,
+      "cov95": 0.7501118711244646
+    },
+    {
+      "held": "S-S3a",
+      "n": 12301,
+      "outage": {
+        "n": 12,
+        "model_dist_err_m": 123.48029659521126,
+        "frozen_dist_err_m": 44.24048829363892,
+        "model_drift_pct": 16.443556268910243,
+        "frozen_drift_pct": 4.834412763861876,
+        "model_beats_frozen": false
+      },
+      "model_rmse": 4.869866460862134,
+      "model_mae": 3.7829133388814613,
+      "hold_rmse": 1.250686345048459,
+      "hold_mae": 0.8302299258873895,
+      "mean_rmse": 6.513473343636792,
+      "beats_hold": false,
+      "cov68": 0.44825623933013575,
+      "cov95": 0.7619705714982522
+    },
+    {
+      "held": "S-S3b",
+      "n": 3397,
+      "outage": {
+        "n": 12,
+        "model_dist_err_m": 120.11303373223382,
+        "frozen_dist_err_m": 81.17009167266951,
+        "model_drift_pct": 36.547043531734204,
+        "frozen_drift_pct": 28.650918379723553,
+        "model_beats_frozen": false
+      },
+      "model_rmse": 4.228317156951401,
+      "model_mae": 3.1617507485002236,
+      "hold_rmse": 1.5205477314271567,
+      "hold_mae": 1.1552758984945435,
+      "mean_rmse": 8.014624197345853,
+      "beats_hold": false,
+      "cov68": 0.5487194583455991,
+      "cov95": 0.8077715631439506
+    },
+    {
+      "held": "S-S3c",
+      "n": 18582,
+      "outage": {
+        "n": 12,
+        "model_dist_err_m": 208.3933982637118,
+        "frozen_dist_err_m": 167.0313254728535,
+        "model_drift_pct": 34.78641747618682,
+        "frozen_drift_pct": 21.0715971830974,
+        "model_beats_frozen": false
+      },
+      "model_rmse": 7.633829123656886,
+      "model_mae": 5.468743452589994,
+      "hold_rmse": 1.2361554151236822,
+      "hold_mae": 0.8365958957048679,
+      "mean_rmse": 8.292979925157516,
+      "beats_hold": false,
+      "cov68": 0.3852653105155527,
+      "cov95": 0.6457862447529867
+    },
+    {
+      "held": "S-S4",
+      "n": 47291,
+      "outage": {
+        "n": 11,
+        "model_dist_err_m": 275.87711298795693,
+        "frozen_dist_err_m": 242.79643174004968,
+        "model_drift_pct": 56.16793713674936,
+        "frozen_drift_pct": 48.32198470623876,
+        "model_beats_frozen": false
+      },
+      "model_rmse": 6.718614113970461,
+      "model_mae": 5.113833182181249,
+      "hold_rmse": 4.634309360070448,
+      "hold_mae": 2.3007338626046296,
+      "mean_rmse": 8.022803085784702,
+      "beats_hold": false,
+      "cov68": 0.37040874585016176,
+      "cov95": 0.6285128248503944
+    },
+    {
+      "held": "S-Vfa01",
+      "n": 5734,
+      "outage": {
+        "n": 12,
+        "model_dist_err_m": 150.3141631309627,
+        "frozen_dist_err_m": 155.76787531829905,
+        "model_drift_pct": 14.289714773069576,
+        "frozen_drift_pct": 14.07154510552175,
+        "model_beats_frozen": true
+      },
+      "model_rmse": 5.4541346949377845,
+      "model_mae": 4.4522075817667215,
+      "hold_rmse": 1.2767440344625276,
+      "hold_mae": 0.854340070001664,
+      "mean_rmse": 7.984712580005394,
+      "beats_hold": false,
+      "cov68": 0.37007324729682595,
+      "cov95": 0.637077084059993
+    },
+    {
+      "held": "S-Vfa02",
+      "n": 33752,
+      "outage": {
+        "n": 12,
+        "model_dist_err_m": 250.04974167328328,
+        "frozen_dist_err_m": 31.597848456760403,
+        "model_drift_pct": 15.705937261454359,
+        "frozen_drift_pct": 2.0094683783949554,
+        "model_beats_frozen": false
+      },
+      "model_rmse": 5.5475525378147745,
+      "model_mae": 4.362116745465179,
+      "hold_rmse": 0.7991770429998145,
+      "hold_mae": 0.4958419823252207,
+      "mean_rmse": 13.820792671907745,
+      "beats_hold": false,
+      "cov68": 0.39763569566247925,
+      "cov95": 0.6788338468831476
+    },
+    {
+      "held": "S-Vta16",
+      "n": 5658,
+      "outage": {
+        "n": 12,
+        "model_dist_err_m": 148.679943719515,
+        "frozen_dist_err_m": 101.74719679405825,
+        "model_drift_pct": 19.80875806114386,
+        "frozen_drift_pct": 12.024421281730652,
+        "model_beats_frozen": false
+      },
+      "model_rmse": 4.099410519303511,
+      "model_mae": 3.3213338684718616,
+      "hold_rmse": 1.1467634518711591,
+      "hold_mae": 0.721685623031764,
+      "mean_rmse": 6.22811584466419,
+      "beats_hold": false,
+      "cov68": 0.4817956875220926,
+      "cov95": 0.8022269353128314
+    },
+    {
+      "held": "S-Vta1a",
+      "n": 12829,
+      "outage": {
+        "n": 12,
+        "model_dist_err_m": 224.39236849908048,
+        "frozen_dist_err_m": 163.18843860962443,
+        "model_drift_pct": 25.57876738641978,
+        "frozen_drift_pct": 15.696080290325614,
+        "model_beats_frozen": false
+      },
+      "model_rmse": 6.049211481859403,
+      "model_mae": 4.9375042171929735,
+      "hold_rmse": 1.2804026991861577,
+      "hold_mae": 0.90494126563382,
+      "mean_rmse": 6.1555436026529255,
+      "beats_hold": false,
+      "cov68": 0.3201340712448359,
+      "cov95": 0.6006703562241796
+    },
+    {
+      "held": "S-Vta2",
+      "n": 5486,
+      "outage": {
+        "n": 12,
+        "model_dist_err_m": 267.672089100638,
+        "frozen_dist_err_m": 192.67279328699442,
+        "model_drift_pct": 59.35239367575231,
+        "frozen_drift_pct": 31.024280586383554,
+        "model_beats_frozen": false
+      },
+      "model_rmse": 5.791145014232929,
+      "model_mae": 4.922025321534286,
+      "hold_rmse": 1.2953659262357748,
+      "hold_mae": 0.8996870811584545,
+      "mean_rmse": 5.893614974778812,
+      "beats_hold": false,
+      "cov68": 0.25938753189938024,
+      "cov95": 0.6086401749908859
+    },
+    {
+      "held": "S-Vta29",
+      "n": 11843,
+      "outage": {
+        "n": 12,
+        "model_dist_err_m": 146.1232157374161,
+        "frozen_dist_err_m": 205.69780208304292,
+        "model_drift_pct": 27.70073665804403,
+        "frozen_drift_pct": 23.399456152380946,
+        "model_beats_frozen": true
+      },
+      "model_rmse": 4.779540774068101,
+      "model_mae": 3.7434170215398406,
+      "hold_rmse": 1.4630925002601438,
+      "hold_mae": 1.0580889270921259,
+      "mean_rmse": 6.551301795537247,
+      "beats_hold": false,
+      "cov68": 0.4539390357173014,
+      "cov95": 0.7490500717723549
+    },
+    {
+      "held": "S-Vta30",
+      "n": 8559,
+      "outage": {
+        "n": 11,
+        "model_dist_err_m": 176.14935714779403,
+        "frozen_dist_err_m": 106.38533113698941,
+        "model_drift_pct": 52.609348799271174,
+        "frozen_drift_pct": 52.99553038503062,
+        "model_beats_frozen": false
+      },
+      "model_rmse": 4.5000187312052295,
+      "model_mae": 3.652836188539046,
+      "hold_rmse": 1.1717020609617246,
+      "hold_mae": 0.722177103100877,
+      "mean_rmse": 8.835111783784429,
+      "beats_hold": false,
+      "cov68": 0.46944736534641895,
+      "cov95": 0.7537095455076528
+    },
+    {
+      "held": "S-Vtb1",
+      "n": 16220,
+      "outage": {
+        "n": 12,
+        "model_dist_err_m": 168.12868829997024,
+        "frozen_dist_err_m": 154.12713548290776,
+        "model_drift_pct": 17.945524277885752,
+        "frozen_drift_pct": 17.449848406999003,
+        "model_beats_frozen": false
+      },
+      "model_rmse": 5.830642006120755,
+      "model_mae": 4.475101942768373,
+      "hold_rmse": 4.4441998556517905,
+      "hold_mae": 2.305226048431675,
+      "mean_rmse": 6.347367667639518,
+      "beats_hold": false,
+      "cov68": 0.39457459926017263,
+      "cov95": 0.6990752157829839
+    },
+    {
+      "held": "S-Vtb2",
+      "n": 2847,
+      "outage": {
+        "n": 10,
+        "model_dist_err_m": 135.6959103941,
+        "frozen_dist_err_m": 139.8540226707314,
+        "model_drift_pct": 24.18533329696806,
+        "frozen_drift_pct": 30.378538798365362,
+        "model_beats_frozen": true
+      },
+      "model_rmse": 4.787760734894801,
+      "model_mae": 3.678270726223598,
+      "hold_rmse": 1.1422276402298615,
+      "hold_mae": 0.7792637409909926,
+      "mean_rmse": 7.510681313999549,
+      "beats_hold": false,
+      "cov68": 0.48963821566561294,
+      "cov95": 0.7604495960660345
+    },
+    {
+      "held": "S-Vtb5",
+      "n": 32185,
+      "outage": {
+        "n": 12,
+        "model_dist_err_m": 203.48013013903983,
+        "frozen_dist_err_m": 75.37918017640277,
+        "model_drift_pct": 17.95335047196482,
+        "frozen_drift_pct": 7.056380181853928,
+        "model_beats_frozen": false
+      },
+      "model_rmse": 5.944397544887685,
+      "model_mae": 4.5343448197196246,
+      "hold_rmse": 0.9798517899071891,
+      "hold_mae": 0.6699936171584161,
+      "mean_rmse": 8.923681745260517,
+      "beats_hold": false,
+      "cov68": 0.4023924188286469,
+      "cov95": 0.6718347056082026
+    },
+    {
+      "held": "S-Vw14b",
+      "n": 9785,
+      "outage": {
+        "n": 12,
+        "model_dist_err_m": 116.0643024307501,
+        "frozen_dist_err_m": 43.4392979292752,
+        "model_drift_pct": 9.434595172511205,
+        "frozen_drift_pct": 4.392248891647554,
+        "model_beats_frozen": false
+      },
+      "model_rmse": 4.069645148873765,
+      "model_mae": 3.1800803926079992,
+      "hold_rmse": 0.730641212514204,
+      "hold_mae": 0.5234346865633037,
+      "mean_rmse": 10.181756573791764,
+      "beats_hold": false,
+      "cov68": 0.5227388860500767,
+      "cov95": 0.8214614205416454
+    },
+    {
+      "held": "S-Vw14c",
+      "n": 7904,
+      "outage": {
+        "n": 12,
+        "model_dist_err_m": 114.61935607822011,
+        "frozen_dist_err_m": 189.7144726655024,
+        "model_drift_pct": 26.45625312878112,
+        "frozen_drift_pct": 25.732282410148777,
+        "model_beats_frozen": true
+      },
+      "model_rmse": 4.504930566386371,
+      "model_mae": 3.3781333129121527,
+      "hold_rmse": 1.2825450760192096,
+      "hold_mae": 0.8693309129151677,
+      "mean_rmse": 9.193661061905754,
+      "beats_hold": false,
+      "cov68": 0.5441548582995951,
+      "cov95": 0.7861842105263158
+    },
+    {
+      "held": "S-Vw16a",
+      "n": 2930,
+      "outage": {
+        "n": 12,
+        "model_dist_err_m": 109.3746916188314,
+        "frozen_dist_err_m": 235.63484552885348,
+        "model_drift_pct": 12.339206089195036,
+        "frozen_drift_pct": 24.45398628718415,
+        "model_beats_frozen": true
+      },
+      "model_rmse": 5.254946648954466,
+      "model_mae": 4.077984166519125,
+      "hold_rmse": 1.090305026327341,
+      "hold_mae": 0.7160229380271134,
+      "mean_rmse": 6.797605688514103,
+      "beats_hold": false,
+      "cov68": 0.3989761092150171,
+      "cov95": 0.6901023890784983
+    },
+    {
+      "held": "S-Vw2",
+      "n": 26347,
+      "outage": {
+        "n": 12,
+        "model_dist_err_m": 154.01985681777455,
+        "frozen_dist_err_m": 54.1342233910691,
+        "model_drift_pct": 16.469959089559538,
+        "frozen_drift_pct": 3.5289648538848497,
+        "model_beats_frozen": false
+      },
+      "model_rmse": 4.1972118188874346,
+      "model_mae": 3.2544415147382155,
+      "hold_rmse": 1.079798088532195,
+      "hold_mae": 0.6331249922669494,
+      "mean_rmse": 9.755665883557603,
+      "beats_hold": false,
+      "cov68": 0.5200212547918169,
+      "cov95": 0.8099214331802482
+    },
+    {
+      "held": "S-Vw4",
+      "n": 63254,
+      "outage": {
+        "n": 11,
+        "model_dist_err_m": 169.14723695116118,
+        "frozen_dist_err_m": 256.52385547570884,
+        "model_drift_pct": 13.950880127747133,
+        "frozen_drift_pct": 13.672027135524292,
+        "model_beats_frozen": true
+      },
+      "model_rmse": 5.598991728306126,
+      "model_mae": 4.374235776682412,
+      "hold_rmse": 1.2872480662878343,
+      "hold_mae": 0.8136441151256935,
+      "mean_rmse": 10.59676379201146,
+      "beats_hold": false,
+      "cov68": 0.39390394283365476,
+      "cov95": 0.690106554526196
+    },
+    {
+      "held": "S-Y1",
+      "n": 35133,
+      "outage": {
+        "n": 11,
+        "model_dist_err_m": 176.79722659496474,
+        "frozen_dist_err_m": 168.19828768144362,
+        "model_drift_pct": 21.02708874420162,
+        "frozen_drift_pct": 19.22165582911196,
+        "model_beats_frozen": false
+      },
+      "model_rmse": 6.846621359094358,
+      "model_mae": 5.481798911420487,
+      "hold_rmse": 1.6984264379848213,
+      "hold_mae": 0.9609464187553258,
+      "mean_rmse": 7.633171618852962,
+      "beats_hold": false,
+      "cov68": 0.32593288361369654,
+      "cov95": 0.5646543136082885
+    }
+  ]
+}
