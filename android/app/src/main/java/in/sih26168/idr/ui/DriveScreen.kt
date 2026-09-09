@@ -11,42 +11,61 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Layers
+import androidx.compose.material.icons.outlined.MyLocation
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.VisibilityOff
+import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberBottomSheetScaffoldState
+import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.contentDescription
@@ -82,16 +101,23 @@ import `in`.sih26168.idr.ui.theme.Mute
 import `in`.sih26168.idr.ui.theme.Telem
 import `in`.sih26168.idr.ui.theme.Text as Fg
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+/** Peek height: drag handle + speed row + Start/Stop. */
+private val DriveSheetPeek = 168.dp
+
 /**
- * Full-screen Uber-black drive map. The basemap is the bottom layer; HUD,
- * controls, and the bottom sheet float over it. Nothing steals height from the
- * map (the old 300.dp box is gone).
+ * Map-first Drive — Google Maps / Uber-driver layout.
+ *
+ * Full-bleed map, centered GPS↔IDR pill, M3 FABs, and a
+ * [BottomSheetScaffold] whose peek shows speed + mode + Start/Stop; expand
+ * reveals diagnostics and mark/replay controls.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DriveScreen(
     bus: IdrBus,
@@ -118,9 +144,24 @@ fun DriveScreen(
     val navMode = if (live) hud.navMode else NavMode.IDLE
     val prefs = remember { Prefs(ctx) }
     val (notifsOk, requestNotifs) = rememberNotificationGate()
-    var sheetExpanded by remember { mutableStateOf(prefs.diagnosticsOpen) }
     var showOriginDialog by remember { mutableStateOf(false) }
     var lastFix by remember { mutableStateOf<SessionLastFix?>(null) }
+    var basemapWanted by remember { mutableStateOf(prefs.basemapEnabled) }
+    var recenterTick by remember { mutableIntStateOf(0) }
+
+    val sheetState = rememberStandardBottomSheetState(
+        initialValue = if (prefs.diagnosticsOpen) SheetValue.Expanded else SheetValue.PartiallyExpanded,
+        skipHiddenState = true,
+    )
+    val scaffoldState = rememberBottomSheetScaffoldState(bottomSheetState = sheetState)
+
+    LaunchedEffect(sheetState) {
+        snapshotFlow { sheetState.currentValue }
+            .distinctUntilChanged()
+            .collect { value ->
+                prefs.diagnosticsOpen = value == SheetValue.Expanded
+            }
+    }
 
     LaunchedEffect(live) {
         if (!live) {
@@ -149,186 +190,202 @@ fun DriveScreen(
         onDispose { view.keepScreenOn = false }
     }
 
-    Box(Modifier.fillMaxSize()) {
-        // Bottom layer: map fills the entire drive viewport.
-        DriveMapPanel(
-            hud = hud,
-            track = track,
-            navMode = navMode,
-            modifier = Modifier.fillMaxSize(),
-            mapModifier = Modifier.fillMaxSize(),
-            onLongPress = { showOriginDialog = true },
-            showBasemapToggle = true,
-            ghostTrack = ghostTrack,
-            showGhost = drawGhost,
-        )
-
-        if (zuptTabletop) {
-            ZuptTabletopOverlay(
-                naiveMps = naiveGhostSpeed,
-                coastMps = coastSpeed,
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .padding(horizontal = 16.dp)
-                    .fillMaxWidth(),
-            )
-        }
-
-        // Top overlays (status-bar safe).
-        Column(
-            Modifier
-                .align(Alignment.TopCenter)
-                .fillMaxWidth()
-                .statusBarsPadding()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    "HELP",
-                    modifier = Modifier
-                        .defaultMinSize(minWidth = 44.dp, minHeight = 44.dp)
-                        .clip(RoundedCornerShape(99.dp))
-                        .background(Bg2.copy(alpha = 0.88f))
-                        .border(1.dp, Line, RoundedCornerShape(99.dp))
-                        .semantics { contentDescription = "Open help" }
-                        .clickable(onClick = onOpenHelp)
-                        .padding(horizontal = 14.dp, vertical = 12.dp),
-                    color = Mute,
-                    fontFamily = IdrMono,
-                    fontSize = 11.sp,
-                    textAlign = TextAlign.Center,
-                )
-                ModePill(navMode = navMode, nSats = hud.nSats, live = live)
-                // Balance the HELP chip so the pill stays visually centred.
-                Spacer(Modifier.width(64.dp))
-            }
-
-            if (live) {
-                MotionChip(label = motionLabel, speedKmh = speedText)
-            }
-
-            if (replayActive || replayEnabled) {
-                Text(
-                    "REPLAY — real dataset, real estimator",
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(99.dp))
-                        .background(Bg2.copy(alpha = 0.92f))
-                        .border(1.dp, Amber.copy(alpha = 0.45f), RoundedCornerShape(99.dp))
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                    color = Amber,
-                    fontFamily = IdrMono,
-                    fontSize = 10.sp,
-                    letterSpacing = 1.0.sp,
-                )
-            }
-
-            // tracker flavor only (standard TrackerHooks always returns false)
-            if (TrackerHooks.bannerVisible(prefs)) {
-                Text(
-                    "Streaming to laptop · LAN",
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(99.dp))
-                        .background(Bg2.copy(alpha = 0.92f))
-                        .border(1.dp, Accent.copy(alpha = 0.55f), RoundedCornerShape(99.dp))
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                    color = Accent,
-                    fontFamily = IdrMono,
-                    fontSize = 10.sp,
-                    letterSpacing = 1.0.sp,
-                )
-            }
-
-            DeviceWarningLine(device)
-
-            LocationBanner(
-                status = locationStatus,
-                hasAbsolutePosition = hud.hasAbsolutePosition,
+    BottomSheetScaffold(
+        scaffoldState = scaffoldState,
+        sheetPeekHeight = DriveSheetPeek,
+        containerColor = Color.Transparent,
+        contentColor = Fg,
+        sheetContainerColor = Bg2.copy(alpha = 0.97f),
+        sheetContentColor = Fg,
+        sheetTonalElevation = 0.dp,
+        sheetShadowElevation = 8.dp,
+        sheetShape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+        sheetDragHandle = { BottomSheetDefaults.DragHandle(color = Mute.copy(alpha = 0.65f)) },
+        sheetContent = {
+            DriveSheetBody(
                 live = live,
-                permsOk = permsOk,
-                onRequestPerms = requestPerms,
-                onOpenSettings = {
-                    try {
-                        ctx.startActivity(
-                            Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
-                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                        )
-                    } catch (_: Exception) {
-                    }
-                },
-                onSetStart = { showOriginDialog = true },
-            )
-
-            if (!live) {
-                LastLocationCard(
-                    lastFix = lastFix,
-                    liveHud = hud,
-                )
-            }
-        }
-
-        // Bottom sheet + primary controls.
-        Column(
-            Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            if (live) {
-                DemoControls(
-                    blackout = blackout,
-                    replayEnabled = replayEnabled,
-                    onToggleBlackout = { bus.setBlackout(!blackout) },
-                    onToggleReplay = { bus.setReplayEnabled(!replayEnabled) },
-                )
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    SecondaryButton("SET START", Modifier.weight(1f)) { showOriginDialog = true }
-                    SecondaryButton(
-                        if (hud.loopMarked) "CLOSE LOOP" else "MARK HERE",
-                        Modifier.weight(1f),
-                    ) { bus.markRequested = true }
-                }
-                if (hud.loopMarked) {
-                    TextButton(onClick = { bus.clearMarkRequested = true }) {
-                        Text("Clear mark", fontFamily = IdrSans, color = Mute, fontSize = 12.sp)
-                    }
-                }
-            }
-
-            DriveBottomSheet(
-                expanded = sheetExpanded,
-                onToggle = {
-                    sheetExpanded = !sheetExpanded
-                    prefs.diagnosticsOpen = sheetExpanded
-                },
                 speedText = speedText,
                 distText = distText,
                 distUnit = distUnit,
                 navMode = navMode,
                 hud = hud,
                 bus = bus,
+                permsOk = permsOk,
+                notifsOk = notifsOk,
+                requestNotifs = requestNotifs,
+                requestPerms = requestPerms,
+                replayEnabled = replayEnabled,
+                onToggleReplay = { bus.setReplayEnabled(!replayEnabled) },
+                onShowOrigin = { showOriginDialog = true },
+            )
+        },
+    ) { pad ->
+        Box(Modifier.fillMaxSize()) {
+            DriveMapPanel(
+                hud = hud,
+                track = track,
+                navMode = navMode,
+                modifier = Modifier.fillMaxSize(),
+                mapModifier = Modifier.fillMaxSize(),
+                onLongPress = { showOriginDialog = true },
+                showBasemapToggle = false,
+                basemapWanted = basemapWanted,
+                onBasemapWantedChange = {
+                    basemapWanted = it
+                    prefs.basemapEnabled = it
+                },
+                recenterTick = recenterTick,
+                showRecenterChip = false,
+                ghostTrack = ghostTrack,
+                showGhost = drawGhost,
             )
 
-            PrimaryControls(
-                live = live,
-                permsOk = permsOk,
-                onStartStop = {
-                    if (live) {
-                        RecordService.stop(ctx)
+            if (zuptTabletop) {
+                ZuptTabletopOverlay(
+                    naiveMps = naiveGhostSpeed,
+                    coastMps = coastSpeed,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = pad.calculateBottomPadding() / 2)
+                        .fillMaxWidth(),
+                )
+            }
+
+            // Top overlays — status pill centered.
+            Column(
+                Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Box(Modifier.fillMaxWidth()) {
+                    Text(
+                        "HELP",
+                        modifier = Modifier
+                            .align(Alignment.CenterStart)
+                            .defaultMinSize(minWidth = 44.dp, minHeight = 44.dp)
+                            .clip(RoundedCornerShape(99.dp))
+                            .background(Bg2.copy(alpha = 0.88f))
+                            .border(1.dp, Line, RoundedCornerShape(99.dp))
+                            .semantics { contentDescription = "Open help" }
+                            .clickable(onClick = onOpenHelp)
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
+                        color = Mute,
+                        fontFamily = IdrMono,
+                        fontSize = 11.sp,
+                        textAlign = TextAlign.Center,
+                    )
+                    ModePill(
+                        navMode = navMode,
+                        nSats = hud.nSats,
+                        live = live,
+                        modifier = Modifier.align(Alignment.Center),
+                    )
+                }
+
+                if (live) {
+                    MotionChip(label = motionLabel, speedKmh = speedText)
+                }
+
+                if (replayActive || replayEnabled) {
+                    Text(
+                        "REPLAY — real dataset, real estimator",
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(99.dp))
+                            .background(Bg2.copy(alpha = 0.92f))
+                            .border(1.dp, Amber.copy(alpha = 0.45f), RoundedCornerShape(99.dp))
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        color = Amber,
+                        fontFamily = IdrMono,
+                        fontSize = 10.sp,
+                        letterSpacing = 1.0.sp,
+                    )
+                }
+
+                if (TrackerHooks.bannerVisible(prefs)) {
+                    Text(
+                        "Streaming to laptop · LAN",
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(99.dp))
+                            .background(Bg2.copy(alpha = 0.92f))
+                            .border(1.dp, Accent.copy(alpha = 0.55f), RoundedCornerShape(99.dp))
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        color = Accent,
+                        fontFamily = IdrMono,
+                        fontSize = 10.sp,
+                        letterSpacing = 1.0.sp,
+                    )
+                }
+
+                DeviceWarningLine(device)
+
+                LocationBanner(
+                    status = locationStatus,
+                    hasAbsolutePosition = hud.hasAbsolutePosition,
+                    live = live,
+                    permsOk = permsOk,
+                    onRequestPerms = requestPerms,
+                    onOpenSettings = {
+                        try {
+                            ctx.startActivity(
+                                Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                            )
+                        } catch (_: Exception) {
+                        }
+                    },
+                    onSetStart = { showOriginDialog = true },
+                )
+
+                if (!live) {
+                    LastLocationCard(
+                        lastFix = lastFix,
+                        liveHud = hud,
+                    )
+                }
+            }
+
+            // Map FABs — above the sheet, Maps/Uber style.
+            Column(
+                Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 14.dp, bottom = pad.calculateBottomPadding() + 12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalAlignment = Alignment.End,
+            ) {
+                DriveFab(
+                    icon = Icons.Outlined.MyLocation,
+                    contentDescription = "Recenter map on vehicle",
+                    onClick = { recenterTick++ },
+                )
+                DriveFab(
+                    icon = Icons.Outlined.Layers,
+                    contentDescription = if (basemapWanted) {
+                        "Show metre grid instead of basemap; disables tile network"
                     } else {
-                        if (!notifsOk) requestNotifs()
-                        RecordService.start(ctx, AppMode.NAVIGATE)
-                    }
-                },
-                onRequestPerms = requestPerms,
-            )
+                        "Show map basemap"
+                    },
+                    tint = if (basemapWanted) Accent else Mute,
+                    onClick = {
+                        basemapWanted = !basemapWanted
+                        prefs.basemapEnabled = basemapWanted
+                    },
+                )
+                DriveFab(
+                    icon = if (blackout) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+                    contentDescription = if (blackout) {
+                        "Restore GNSS — end simulated blackout"
+                    } else {
+                        "Simulate GNSS blackout for demo"
+                    },
+                    tint = if (blackout) Amber else Mute,
+                    onClick = { bus.setBlackout(!blackout) },
+                )
+            }
         }
     }
 
@@ -351,6 +408,184 @@ fun DriveScreen(
                 showOriginDialog = false
             },
         )
+    }
+}
+
+@Composable
+private fun DriveFab(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+    tint: Color = Fg,
+) {
+    FloatingActionButton(
+        onClick = onClick,
+        modifier = Modifier
+            .size(56.dp)
+            .semantics { this.contentDescription = contentDescription },
+        shape = CircleShape,
+        containerColor = Bg2.copy(alpha = 0.94f),
+        contentColor = tint,
+        elevation = FloatingActionButtonDefaults.elevation(
+            defaultElevation = 4.dp,
+            pressedElevation = 6.dp,
+        ),
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            modifier = Modifier.size(26.dp),
+        )
+    }
+}
+
+@Composable
+private fun ColumnScope.DriveSheetBody(
+    live: Boolean,
+    speedText: String,
+    distText: String,
+    distUnit: String,
+    navMode: NavMode,
+    hud: HudState,
+    bus: IdrBus,
+    permsOk: Boolean,
+    notifsOk: Boolean,
+    requestNotifs: () -> Unit,
+    requestPerms: () -> Unit,
+    replayEnabled: Boolean,
+    onToggleReplay: () -> Unit,
+    onShowOrigin: () -> Unit,
+) {
+    val ctx = LocalContext.current
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(horizontal = 16.dp)
+            .padding(bottom = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        // Peek content: speed + mode + Start/Stop
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Column {
+                Text("SPEED", fontFamily = IdrMono, color = Mute, fontSize = 10.sp, letterSpacing = 1.4.sp)
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(speedText, fontFamily = IdrMono, color = Fg, fontSize = 34.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.width(4.dp))
+                    Text("km/h", fontFamily = IdrMono, color = Mute, fontSize = 12.sp, modifier = Modifier.padding(bottom = 6.dp))
+                }
+            }
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("MODE", fontFamily = IdrMono, color = Mute, fontSize = 10.sp, letterSpacing = 1.4.sp)
+                Text(
+                    when (navMode) {
+                        NavMode.GNSS -> "GPS"
+                        NavMode.DEAD_RECKONING -> "IDR"
+                        NavMode.RELATIVE -> "REL"
+                        NavMode.IDLE -> "—"
+                    },
+                    fontFamily = IdrMono,
+                    color = modeColor(navMode),
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text("SINCE FIX", fontFamily = IdrMono, color = Mute, fontSize = 10.sp, letterSpacing = 1.4.sp)
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        if (hud.distanceSinceFixM.isFinite()) "%.0f".format(hud.distanceSinceFixM) else distText,
+                        fontFamily = IdrMono,
+                        color = Fg,
+                        fontSize = 34.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        if (hud.distanceSinceFixM.isFinite()) "m" else distUnit,
+                        fontFamily = IdrMono,
+                        color = Mute,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(bottom = 6.dp),
+                    )
+                }
+            }
+        }
+
+        PrimaryControls(
+            live = live,
+            permsOk = permsOk,
+            onStartStop = {
+                if (live) {
+                    RecordService.stop(ctx)
+                } else {
+                    if (!notifsOk) requestNotifs()
+                    RecordService.start(ctx, AppMode.NAVIGATE)
+                }
+            },
+            onRequestPerms = requestPerms,
+        )
+
+        // Expanded diagnostics + ride controls (visible when sheet expands).
+        LoopClosureLine(
+            closureM = hud.loopClosureM,
+            driftPct = hud.driftPct,
+            loopMarked = hud.loopMarked,
+            loopDistanceM = hud.loopDistanceM,
+        )
+
+        if (hud.floorChanged) {
+            Text(
+                "FLOOR CHANGED · relative floor ${hud.floorIndex}",
+                fontFamily = IdrMono,
+                color = Amber,
+                fontSize = 11.sp,
+                letterSpacing = 1.0.sp,
+            )
+        }
+
+        if (live) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                SecondaryButton("SET START", Modifier.weight(1f), onShowOrigin)
+                SecondaryButton(
+                    if (hud.loopMarked) "CLOSE LOOP" else "MARK HERE",
+                    Modifier.weight(1f),
+                ) { bus.markRequested = true }
+            }
+            if (hud.loopMarked) {
+                TextButton(onClick = { bus.clearMarkRequested = true }) {
+                    Text("Clear mark", fontFamily = IdrSans, color = Mute, fontSize = 12.sp)
+                }
+            }
+            SecondaryButton(
+                if (replayEnabled) "REPLAY ON" else "REPLAY",
+                Modifier.fillMaxWidth(),
+                onToggleReplay,
+            )
+        }
+
+        // Accuracy / uncertainty card is debug-only (broken confidence signal).
+        val prefs = Prefs(ctx)
+        if (prefs.showUncertaintyRadius && navMode != NavMode.IDLE) {
+            AccuracyCard(hud)
+        }
+
+        Text(
+            "SYSTEM HEALTH",
+            fontFamily = IdrMono,
+            color = Mute,
+            fontSize = 11.sp,
+            letterSpacing = 1.2.sp,
+            modifier = Modifier.padding(top = 4.dp),
+        )
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .heightIn(max = 320.dp)
+                .verticalScroll(rememberScrollState()),
+        ) {
+            DiagnosticsPanel(bus = bus, hud = hud)
+        }
     }
 }
 
@@ -442,7 +677,12 @@ private fun MotionChip(label: String, speedKmh: String) {
 }
 
 @Composable
-private fun ModePill(navMode: NavMode, nSats: Int, live: Boolean) {
+private fun ModePill(
+    navMode: NavMode,
+    nSats: Int,
+    live: Boolean,
+    modifier: Modifier = Modifier,
+) {
     val idr = navMode == NavMode.DEAD_RECKONING || navMode == NavMode.RELATIVE
     val pulse = rememberInfiniteTransition(label = "idrPulse")
     val alpha by pulse.animateFloat(
@@ -466,7 +706,7 @@ private fun ModePill(navMode: NavMode, nSats: Int, live: Boolean) {
         else -> "RELATIVE — no absolute fix"
     }
     Box(
-        Modifier
+        modifier
             .alpha(alpha)
             .widthIn(max = 260.dp)
             .clip(RoundedCornerShape(99.dp))
@@ -524,166 +764,6 @@ private fun LastLocationCard(lastFix: SessionLastFix?, liveHud: HudState) {
         Text(title, fontFamily = IdrMono, color = Mute, fontSize = 9.sp, letterSpacing = 1.2.sp)
         Text(coords, fontFamily = IdrMono, color = Fg, fontSize = 13.sp)
         Text(subtitle, fontFamily = IdrSans, color = Mute, fontSize = 11.sp, maxLines = 1)
-    }
-}
-
-@Composable
-private fun DemoControls(
-    blackout: Boolean,
-    replayEnabled: Boolean,
-    onToggleBlackout: () -> Unit,
-    onToggleReplay: () -> Unit,
-) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        SecondaryButton(
-            if (replayEnabled) "REPLAY ON" else "REPLAY",
-            Modifier.weight(1f),
-            onToggleReplay,
-        )
-        SecondaryButton(
-            if (blackout) "RESTORE GNSS" else "SIMULATE BLACKOUT",
-            Modifier.weight(1.4f),
-            onToggleBlackout,
-        )
-    }
-}
-
-@Composable
-private fun DriveBottomSheet(
-    expanded: Boolean,
-    onToggle: () -> Unit,
-    speedText: String,
-    distText: String,
-    distUnit: String,
-    navMode: NavMode,
-    hud: HudState,
-    bus: IdrBus,
-) {
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp, bottomStart = 14.dp, bottomEnd = 14.dp))
-            .background(Bg2.copy(alpha = 0.94f))
-            .border(1.dp, Line, RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp, bottomStart = 14.dp, bottomEnd = 14.dp))
-            .pointerInput(Unit) {
-                detectVerticalDragGestures { _, drag ->
-                    if (drag < -20f && !expanded) onToggle()
-                    if (drag > 20f && expanded) onToggle()
-                }
-            }
-            .padding(14.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Box(
-            Modifier
-                .align(Alignment.CenterHorizontally)
-                .defaultMinSize(minWidth = 48.dp, minHeight = 44.dp)
-                .semantics {
-                    contentDescription = if (expanded) {
-                        "Collapse system health sheet"
-                    } else {
-                        "Expand system health sheet"
-                    }
-                }
-                .clickable(onClick = onToggle),
-            contentAlignment = Alignment.Center,
-        ) {
-            Box(
-                Modifier
-                    .width(36.dp)
-                    .height(4.dp)
-                    .clip(RoundedCornerShape(99.dp))
-                    .background(Mute.copy(alpha = 0.65f)),
-            )
-        }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Column {
-                Text("SPEED", fontFamily = IdrMono, color = Mute, fontSize = 10.sp, letterSpacing = 1.4.sp)
-                Row(verticalAlignment = Alignment.Bottom) {
-                    Text(speedText, fontFamily = IdrMono, color = Fg, fontSize = 34.sp, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.width(4.dp))
-                    Text("km/h", fontFamily = IdrMono, color = Mute, fontSize = 12.sp, modifier = Modifier.padding(bottom = 6.dp))
-                }
-            }
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("MODE", fontFamily = IdrMono, color = Mute, fontSize = 10.sp, letterSpacing = 1.4.sp)
-                Text(
-                    when (navMode) {
-                        NavMode.GNSS -> "GPS"
-                        NavMode.DEAD_RECKONING -> "IDR"
-                        NavMode.RELATIVE -> "REL"
-                        NavMode.IDLE -> "—"
-                    },
-                    fontFamily = IdrMono,
-                    color = modeColor(navMode),
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
-            Column(horizontalAlignment = Alignment.End) {
-                Text("SINCE FIX", fontFamily = IdrMono, color = Mute, fontSize = 10.sp, letterSpacing = 1.4.sp)
-                Row(verticalAlignment = Alignment.Bottom) {
-                    Text(
-                        if (hud.distanceSinceFixM.isFinite()) "%.0f".format(hud.distanceSinceFixM) else distText,
-                        fontFamily = IdrMono,
-                        color = Fg,
-                        fontSize = 34.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        if (hud.distanceSinceFixM.isFinite()) "m" else distUnit,
-                        fontFamily = IdrMono,
-                        color = Mute,
-                        fontSize = 12.sp,
-                        modifier = Modifier.padding(bottom = 6.dp),
-                    )
-                }
-            }
-        }
-
-        LoopClosureLine(
-            closureM = hud.loopClosureM,
-            driftPct = hud.driftPct,
-            loopMarked = hud.loopMarked,
-            loopDistanceM = hud.loopDistanceM,
-        )
-
-        if (hud.floorChanged) {
-            Text(
-                "FLOOR CHANGED · relative floor ${hud.floorIndex}",
-                fontFamily = IdrMono,
-                color = Amber,
-                fontSize = 11.sp,
-                letterSpacing = 1.0.sp,
-            )
-        }
-
-        // Accuracy / uncertainty card is debug-only (broken confidence signal).
-        val prefs = Prefs(LocalContext.current)
-        if (prefs.showUncertaintyRadius && navMode != NavMode.IDLE) {
-            AccuracyCard(hud)
-        }
-
-        TextButton(onClick = onToggle, modifier = Modifier.fillMaxWidth()) {
-            Text(
-                if (expanded) "HIDE SYSTEM HEALTH" else "SYSTEM HEALTH",
-                fontFamily = IdrMono,
-                color = Mute,
-                fontSize = 11.sp,
-                letterSpacing = 1.2.sp,
-            )
-        }
-        if (expanded) {
-            Column(
-                Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 280.dp)
-                    .verticalScroll(rememberScrollState()),
-            ) {
-                DiagnosticsPanel(bus = bus, hud = hud)
-            }
-        }
     }
 }
 
@@ -833,7 +913,10 @@ private fun PrimaryControls(
         onClick = onStartStop,
         modifier = Modifier
             .fillMaxWidth()
-            .height(56.dp),
+            .height(56.dp)
+            .semantics {
+                contentDescription = if (live) "Stop navigation" else "Start navigation"
+            },
         colors = ButtonDefaults.buttonColors(
             containerColor = if (live) Danger else Accent,
             contentColor = Bg,

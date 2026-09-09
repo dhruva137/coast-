@@ -114,10 +114,16 @@ fun SettingsScreen(
         Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text("SETTINGS", fontFamily = IdrMono, color = Accent, letterSpacing = 3.sp, fontSize = 12.sp)
+        Text(
+            "Settings",
+            fontFamily = IdrSans,
+            color = Fg,
+            fontSize = 22.sp,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+        )
         Text(
             if (displayName.isBlank()) "Signed in as guest"
             else "Signed in as $displayName",
@@ -125,147 +131,192 @@ fun SettingsScreen(
             fontFamily = IdrSans,
             fontSize = 13.sp,
         )
-        SecondaryButton("ACCOUNT", Modifier.fillMaxWidth(), onOpenAccount)
+
+        SettingsCard {
+            SecondaryButton("ACCOUNT", Modifier.fillMaxWidth(), onOpenAccount)
+        }
 
         Section("VEHICLE")
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            VehicleKind.entries.forEach { v ->
-                SettingsChip(v.name, cfg.vehicle == v) {
-                    bus.setVehicle(v)
-                    prefs.vehicleKind = v
+        SettingsCard {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                VehicleKind.entries.forEach { v ->
+                    SettingsChip(v.name, cfg.vehicle == v) {
+                        bus.setVehicle(v)
+                        prefs.vehicleKind = v
+                    }
                 }
             }
         }
 
         Section("MAP")
-        SettingsToggle(
-            title = "Dark map",
-            subtitle = if (mapDark) {
-                "Night chrome (default). Light theme not wired yet — preference still saved."
-            } else {
-                "Light preference saved; UI stays dark until a light theme ships."
-            },
-            checked = mapDark,
-            onCheckedChange = {
-                mapDark = it
-                prefs.mapDarkTheme = it
-            },
-        )
-        SettingsToggle(
-            title = "Basemap",
-            subtitle = "Off → metre grid, zero tile traffic.",
-            checked = basemap,
-            onCheckedChange = {
-                basemap = it
-                prefs.basemapEnabled = it
-            },
-        )
-        SettingsToggle(
-            title = "Speed in km/h",
-            subtitle = "Off shows m/s.",
-            checked = useKmh,
-            onCheckedChange = {
-                useKmh = it
-                prefs.useKmh = it
-            },
-        )
+        SettingsCard {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                SettingsToggle(
+                    title = "Dark map",
+                    subtitle = if (mapDark) {
+                        "Night chrome (default). Light theme not wired yet — preference still saved."
+                    } else {
+                        "Light preference saved; UI stays dark until a light theme ships."
+                    },
+                    checked = mapDark,
+                    onCheckedChange = {
+                        mapDark = it
+                        prefs.mapDarkTheme = it
+                    },
+                    bordered = false,
+                )
+                SettingsToggle(
+                    title = "Basemap",
+                    subtitle = "Off → metre grid, zero tile traffic.",
+                    checked = basemap,
+                    onCheckedChange = {
+                        basemap = it
+                        prefs.basemapEnabled = it
+                    },
+                    bordered = false,
+                )
+                SettingsToggle(
+                    title = "Speed in km/h",
+                    subtitle = "Off shows m/s.",
+                    checked = useKmh,
+                    onCheckedChange = {
+                        useKmh = it
+                        prefs.useKmh = it
+                    },
+                    bordered = false,
+                )
+            }
+        }
 
         Section("DEMO")
-        SettingsToggle(
-            title = "Replay mode",
-            subtitle = "Next drive uses the bundled IO-VNBD-style stream.",
-            checked = replayEnabled,
-            onCheckedChange = {
-                bus.setReplayEnabled(it)
-                prefs.replayMode = it
-            },
-        )
-        SettingsToggle(
-            title = "Show ghost car",
-            subtitle = "Red naive-DR puck — only drawn during blackout/replay or ZUPT tabletop (not on a normal live Start).",
-            checked = showGhost,
-            onCheckedChange = {
-                showGhost = it
-                prefs.showGhostCar = it
-                bus.setShowGhost(it)
-            },
-        )
-        SettingsToggle(
-            title = "ZUPT tabletop",
-            subtitle = "Still phone: side-by-side naive vs COAST speed (naive drifts, COAST ~0).",
-            checked = zuptTabletop,
-            onCheckedChange = {
-                zuptTabletop = it
-                prefs.zuptTabletop = it
-                bus.setZuptTabletop(it)
-            },
-        )
-        Button(
-            onClick = { bus.setBlackout(!blackout) },
-            modifier = Modifier.fillMaxWidth().height(48.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = if (blackout) Amber else Bg2,
-                contentColor = if (blackout) Bg else Fg,
-            ),
-            shape = RoundedCornerShape(8.dp),
-        ) {
-            Text(
-                if (blackout) "RESTORE GNSS" else "SIMULATE GNSS BLACKOUT",
-                fontFamily = IdrMono,
-                fontSize = 12.sp,
-                letterSpacing = 1.sp,
-            )
+        SettingsCard {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                SettingsToggle(
+                    title = "Replay mode",
+                    subtitle = "Next drive uses the bundled IO-VNBD-style stream.",
+                    checked = replayEnabled,
+                    onCheckedChange = {
+                        bus.setReplayEnabled(it)
+                        prefs.replayMode = it
+                    },
+                    bordered = false,
+                )
+                SettingsToggle(
+                    title = "Show ghost car",
+                    subtitle = "Red naive-DR puck — only drawn during blackout/replay or ZUPT tabletop (not on a normal live Start).",
+                    checked = showGhost,
+                    onCheckedChange = {
+                        showGhost = it
+                        prefs.showGhostCar = it
+                        bus.setShowGhost(it)
+                    },
+                    bordered = false,
+                )
+                SettingsToggle(
+                    title = "ZUPT tabletop",
+                    subtitle = "Still phone: side-by-side naive vs COAST speed (naive drifts, COAST ~0).",
+                    checked = zuptTabletop,
+                    onCheckedChange = {
+                        zuptTabletop = it
+                        prefs.zuptTabletop = it
+                        bus.setZuptTabletop(it)
+                    },
+                    bordered = false,
+                )
+                Button(
+                    onClick = { bus.setBlackout(!blackout) },
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (blackout) Amber else Accent.copy(alpha = 0.16f),
+                        contentColor = if (blackout) Bg else Accent,
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Text(
+                        if (blackout) "RESTORE GNSS" else "SIMULATE GNSS BLACKOUT",
+                        fontFamily = IdrMono,
+                        fontSize = 12.sp,
+                        letterSpacing = 1.sp,
+                    )
+                }
+            }
         }
 
         Section("PRIVACY")
-        Text(
-            // Honest F8: INTERNET exists for public OSM tiles; user data never leaves.
-            "No user data leaves the device · basemap-off = zero network",
-            color = Telem,
-            fontFamily = IdrSans,
-            fontSize = 14.sp,
-            lineHeight = 20.sp,
-        )
-        Text(
-            "Position, sensors, and sessions stay on this phone. The only optional " +
-                "outbound traffic is public map tiles when basemap is on.",
-            color = Mute,
-            fontFamily = IdrSans,
-            fontSize = 12.sp,
-            lineHeight = 17.sp,
-        )
+        SettingsCard {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    "No user data leaves the device · basemap-off = zero network",
+                    color = Telem,
+                    fontFamily = IdrSans,
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp,
+                )
+                Text(
+                    "Position, sensors, and sessions stay on this phone. The only optional " +
+                        "outbound traffic is public map tiles when basemap is on.",
+                    color = Mute,
+                    fontFamily = IdrSans,
+                    fontSize = 12.sp,
+                    lineHeight = 17.sp,
+                )
+            }
+        }
 
         Section("PHONE TRACKER (OPT-IN)")
-        SettingsToggle(
-            title = "Stream to laptop",
-            subtitle = "Off by default. Prefs only for now — uploader comes later.",
-            checked = trackerOptIn,
-            onCheckedChange = {
-                trackerOptIn = it
-                prefs.trackerOptIn = it
-            },
-        )
-        OutlinedTextField(
-            value = trackerIp,
-            onValueChange = {
-                trackerIp = it
-                prefs.trackerLanIp = it.trim()
-            },
-            label = { Text("Laptop LAN IP") },
-            placeholder = { Text("192.168.1.10") },
-            singleLine = true,
-            enabled = trackerOptIn,
-            modifier = Modifier.fillMaxWidth(),
-            colors = fieldColors,
-        )
+        SettingsCard {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                SettingsToggle(
+                    title = "Stream to laptop",
+                    subtitle = "Off by default. Prefs only for now — uploader comes later.",
+                    checked = trackerOptIn,
+                    onCheckedChange = {
+                        trackerOptIn = it
+                        prefs.trackerOptIn = it
+                    },
+                    bordered = false,
+                )
+                OutlinedTextField(
+                    value = trackerIp,
+                    onValueChange = {
+                        trackerIp = it
+                        prefs.trackerLanIp = it.trim()
+                    },
+                    label = { Text("Laptop LAN IP") },
+                    placeholder = { Text("192.168.1.10") },
+                    singleLine = true,
+                    enabled = trackerOptIn,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = fieldColors,
+                    shape = RoundedCornerShape(12.dp),
+                )
+            }
+        }
 
         Section("FIELD LOGGING")
-        SecondaryButton("OPEN RECORD SCREEN", Modifier.fillMaxWidth()) { showRecord = true }
+        SettingsCard {
+            SecondaryButton("OPEN RECORD SCREEN", Modifier.fillMaxWidth()) { showRecord = true }
+        }
 
         Spacer(Modifier.height(24.dp))
+    }
+}
+
+@Composable
+private fun SettingsCard(content: @Composable () -> Unit) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(Bg2)
+            .border(1.dp, Line, RoundedCornerShape(16.dp))
+            .padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        content()
     }
 }
 
