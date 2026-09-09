@@ -379,9 +379,15 @@ def _write_summary(path: Path, report: dict[str, Any]) -> None:
         f"Device: {report['device']} | epochs/fold: {report['epochs']} | "
         f"folds: {a['n_folds']}",
         "",
+        "Protocol confirmed: labels are CAN indicated vehicle speed "
+        "(`speed_data`, `can_only` / `can_10hz`); leave-file-out — train on "
+        "N-1 drives, score the held-out drive only.",
+        "",
         "The question is whether the learned speed model beats simply **holding** "
         "the last known speed, which is what free dead reckoning does in an "
         "outage. RMSE alone is not the point; beating `hold` is.",
+        "",
+        "## Per-window (RMSE)",
         "",
         "| | median RMSE | note |",
         "|---|---:|---|",
@@ -392,6 +398,25 @@ def _write_summary(path: Path, report: dict[str, Any]) -> None:
         "",
         f"Median improvement over hold: **{a['median_improvement_pct']:.1f}%**.",
         "",
+    ]
+    if a.get("outage_folds"):
+        lines += [
+            "## Closed-loop / outage distance (60 s)",
+            "",
+            "Integrates model speed vs freezing onset speed over mid-route "
+            "60 s windows. This is the along-track metric free DR actually cares "
+            "about; per-window RMSE can lose while distance still wins.",
+            "",
+            "| | median dist err | median drift % | folds model wins |",
+            "|---|---:|---:|---:|",
+            f"| **Model** | **{a['outage_model_dist_err_m']:.1f} m** | "
+            f"**{a['outage_model_drift_pct']:.1f}** | "
+            f"{a['outage_folds_model_wins']}/{a['outage_folds']} |",
+            f"| Frozen onset speed | {a['outage_frozen_dist_err_m']:.1f} m | "
+            f"{a['outage_frozen_drift_pct']:.1f} | — |",
+            "",
+        ]
+    lines += [
         "## Uncertainty calibration",
         "",
         f"The model has a Gaussian NLL head. Empirical coverage of its nominal "
@@ -402,13 +427,19 @@ def _write_summary(path: Path, report: dict[str, Any]) -> None:
         "",
         "## Per fold",
         "",
-        "| held-out drive | n | model RMSE | hold RMSE | beats hold | cov68 | cov95 |",
-        "|---|---:|---:|---:|:--:|---:|---:|",
+        "| held-out drive | n | model RMSE | hold RMSE | beats hold | "
+        "outage model m | outage frozen m | outage win | cov68 | cov95 |",
+        "|---|---:|---:|---:|:--:|---:|---:|:--:|---:|---:|",
     ]
     for r in report["folds"]:
+        od = r.get("outage") or {}
+        om = f"{od['model_dist_err_m']:.0f}" if od else "—"
+        of = f"{od['frozen_dist_err_m']:.0f}" if od else "—"
+        ow = ("yes" if od.get("model_beats_frozen") else "no") if od else "—"
         lines.append(
             f"| `{r['held']}` | {r['n']} | {r['model_rmse']:.3f} | "
             f"{r['hold_rmse']:.3f} | {'yes' if r['beats_hold'] else 'no'} | "
+            f"{om} | {of} | {ow} | "
             f"{r['cov68']:.2f} | {r['cov95']:.2f} |"
         )
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
