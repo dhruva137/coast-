@@ -94,6 +94,21 @@ class IdrBus {
     private val _showGhost = MutableStateFlow(false)
     val showGhost: StateFlow<Boolean> = _showGhost.asStateFlow()
 
+    /**
+     * P1-2 ZUPT tabletop: leave the phone still and compare naive vs COAST
+     * speeds side-by-side. Physics produces the naive drift — do not script it.
+     */
+    private val _zuptTabletop = MutableStateFlow(false)
+    val zuptTabletop: StateFlow<Boolean> = _zuptTabletop.asStateFlow()
+
+    /** Horizontal speed from [nav.NaiveGhostEstimator], m/s. */
+    private val _naiveGhostSpeedMps = MutableStateFlow(0.0)
+    val naiveGhostSpeedMps: StateFlow<Double> = _naiveGhostSpeedMps.asStateFlow()
+
+    /** COAST HUD speed mirrored for the tabletop readout, m/s. */
+    private val _coastSpeedMps = MutableStateFlow(0.0)
+    val coastSpeedMps: StateFlow<Double> = _coastSpeedMps.asStateFlow()
+
     fun setConfig(c: SessionConfig) {
         _config.value = c
     }
@@ -112,6 +127,10 @@ class IdrBus {
 
     fun setShowGhost(on: Boolean) {
         _showGhost.value = on
+    }
+
+    fun setZuptTabletop(on: Boolean) {
+        _zuptTabletop.value = on
     }
 
     /**
@@ -145,6 +164,12 @@ class IdrBus {
     /** No-ops when the ghost estimator has not appended a point since the last call. */
     fun publishGhostTrack(t: TrackSnapshot) {
         if (_ghostTrack.value.version != t.version) _ghostTrack.value = t
+    }
+
+    /** Side-by-side speeds for the ZUPT tabletop (and any HUD that wants them). */
+    fun publishGhostSpeeds(naiveMps: Double, coastMps: Double) {
+        _naiveGhostSpeedMps.value = naiveMps
+        _coastSpeedMps.value = coastMps
     }
 
     fun publishRecord(s: RecordStats) {

@@ -21,6 +21,7 @@ import `in`.sih26168.idr.data.OriginSource
 import `in`.sih26168.idr.data.Prefs
 import `in`.sih26168.idr.data.RecordStats
 import `in`.sih26168.idr.demo.TrackerHooks
+import `in`.sih26168.idr.nav.NaiveGhostEstimator
 import `in`.sih26168.idr.nav.OnnxSpeedModel
 import `in`.sih26168.idr.nav.SimpleIns
 import `in`.sih26168.idr.sensor.GnssHub
@@ -55,6 +56,8 @@ class RecordService : LifecycleService() {
     private var source: SensorSource? = null
     private var logger: CsvLogger? = null
     private val ins = SimpleIns()
+    /** Parallel naive DR for the ghost puck — same IMU frames, no ZUPT/map. */
+    private val ghost = NaiveGhostEstimator()
     private val insLock = Any()
     private var speedModel: OnnxSpeedModel? = null
     private var lastHudNs = 0L
@@ -104,7 +107,10 @@ class RecordService : LifecycleService() {
 
     private fun startMode(mode: AppMode) {
         tearDown(keepWakelock = true)
-        synchronized(insLock) { ins.reset() }
+        synchronized(insLock) {
+            ins.reset()
+            ghost.reset()
+        }
         bus.setMode(mode)
         startedAt = SystemClock.elapsedRealtimeNanos()
         sessionId = UUID.randomUUID().toString().take(8)
@@ -191,6 +197,7 @@ class RecordService : LifecycleService() {
                         drainMarksLocked()
                         drainOriginLocked()
                         ins.onImu(frame)
+                        ghost.onImu(frame)
                         maybeRecheckLocationLocked(frame.tNs)
                         maybePublishHudLocked(frame.tNs)
                     }
@@ -213,8 +220,12 @@ class RecordService : LifecycleService() {
             )
             bus.publishSensors(navSource.sensorReport())
             synchronized(insLock) {
-                bus.publishHud(ins.snapshot(SystemClock.elapsedRealtimeNanos(), AppMode.NAVIGATE))
+                val t0 = SystemClock.elapsedRealtimeNanos()
+                val snap = ins.snapshot(t0, AppMode.NAVIGATE)
+                bus.publishHud(snap)
+                bus.publishGhostSpeeds(ghost.speedMps, snap.speedMps)
                 bus.publishTrack(ins.trackSnapshot())
+                bus.publishGhostTrack(ghost.trackSnapshot())
             }
         }
         startInForeground()
@@ -320,12 +331,14 @@ class RecordService : LifecycleService() {
         lastHudNs = tNs
         val snap = ins.snapshot(tNs, AppMode.NAVIGATE)
         bus.publishHud(snap)
+        bus.publishGhostSpeeds(ghost.speedMps, snap.speedMps)
         // Flavor-specific: standard no-ops; tracker may POST off a bg thread.
         TrackerHooks.onHud(this, snap, sessionId)
         if (force || lastTrackNs == 0L || tNs - lastTrackNs >= TRACK_PERIOD_NS) {
             lastTrackNs = tNs
             // No-ops unless the estimator actually appended a point.
             bus.publishTrack(ins.trackSnapshot())
+            bus.publishGhostTrack(ghost.trackSnapshot())
         }
     }
 
