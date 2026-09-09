@@ -2,15 +2,24 @@ package `in`.sih26168.idr.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Bg = Color(0xFF07090D)
-val Bg2 = Color(0xFF0C1016)
-val Panel = Color(0xC70A0E14)
+/** App background — Uber-black surface. */
+val Bg = Color(0xFF0B0E11)
+/** Sheets, cards, elevated panels. */
+val Bg2 = Color(0xFF161A1F)
+val Panel = Color(0xC7161A1F)
 val Line = Color(0x17E8EDF2)
-val Text = Color(0xFFE8EDF2)
-val Mute = Color(0xFF8B98A5)
-val Accent = Color(0xFFFF6B2D)
-val Telem = Color(0xFF00D4AA)
-val Ours = Color(0xFF4DA3FF)
+val Text = Color(0xFFFFFFFF)
+val Mute = Color(0xFF8A929B)
+/** Our track, active states, CTA — teal. */
+val Accent = Color(0xFF00E0A4)
+/** Alias for telem/success readouts (same teal family). */
+val Telem = Color(0xFF00E0A4)
+/** GNSS-fix track segment — calm blue only. */
+val Gnss = Color(0xFF4FC3F7)
+/** Legacy name kept for call sites; maps to GNSS blue. */
+val Ours = Gnss
 val Danger = Color(0xFFFF4D6A)
-val Amber = Color(0xFFFFC14A)
-val Gnss = Color(0xFF6DFF8A)
+/** IDR-mode HUD pill / warnings. */
+val Amber = Color(0xFFFFB300)
+/** Naive/ghost puck (file 05). */
+val Ghost = Color(0xFFFF5252)
