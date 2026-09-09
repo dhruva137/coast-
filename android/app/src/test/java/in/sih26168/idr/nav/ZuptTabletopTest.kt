@@ -7,14 +7,9 @@ import org.junit.Test
 import kotlin.math.abs
 
 /**
- * P1-2 ZUPT tabletop: still phone → naive speed grows from physics; COAST with
- * ZUPT holds near zero. [IdrBus] exposes `zuptTabletop`, `naiveGhostSpeedMps`,
- * and `coastSpeedMps` for the side-by-side UI (not constructed here — Robolectric
- * would be needed for `Build.*` in [IdrBus]'s default config).
- *
- * Expected live behaviour (not scripted): residual IMU bias integrates so the
- * naive readout may climb through roughly 5→15→40 km/h over tens of seconds
- * while COAST stays ~0.00 m/s. Exact numbers depend on the phone's bias.
+ * ZUPT tabletop: on a pure still phone COAST holds ~0; ghost stays calm after
+ * gravity LP (does not explode). Residual step growth is covered in
+ * [NaiveGhostTest].
  */
 class ZuptTabletopTest {
 
@@ -31,20 +26,19 @@ class ZuptTabletopTest {
     )
 
     @Test
-    fun `still bias grows naive speed while COAST ZUPT holds near zero`() {
+    fun `pure still - COAST ZUPT holds zero and ghost stays calm`() {
         val ins = SimpleIns()
         val ghost = NaiveGhostEstimator()
-        // 0.03 m/s² residual — typical order for a still phone on a desk.
-        for (i in 0 until 1200) {
-            val f = frame(i, ax = 0.03)
+        for (i in 0 until 1000) {
+            val f = frame(i)
             ins.onImu(f)
             ghost.onImu(f)
         }
-        val coast = ins.snapshot(1200L * dtNs, AppMode.NAVIGATE).speedMps
+        val coast = ins.snapshot(1000L * dtNs, AppMode.NAVIGATE).speedMps
         assertTrue("COAST should hold near 0 with ZUPT, was $coast", abs(coast) < 0.15)
         assertTrue(
-            "naive speed should grow from still bias, was ${ghost.speedMps}",
-            ghost.speedMps > 0.25,
+            "ghost on pure still must stay calm (gravity removed), was ${ghost.speedMps}",
+            ghost.speedMps < 1.0,
         )
     }
 }

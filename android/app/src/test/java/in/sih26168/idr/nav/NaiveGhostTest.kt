@@ -4,13 +4,15 @@ import `in`.sih26168.idr.data.AppMode
 import `in`.sih26168.idr.data.SensorFrame
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import kotlin.math.PI
 import kotlin.math.abs
+import kotlin.math.cos
 import kotlin.math.hypot
+import kotlin.math.sin
 
 /**
- * P1-1 ghost car: naive double-integration on the same IMU as COAST must
- * diverge, and still input with a realistic accel bias must grow speed
- * (the contrast ZUPT tabletop relies on).
+ * Ghost car: gravity-removed naive DR must stay bounded on a still/tilted phone
+ * and still diverge from COAST under sustained bias/yaw.
  */
 class NaiveGhostTest {
 
@@ -33,69 +35,83 @@ class NaiveGhostTest {
     )
 
     @Test
+    fun `tilted still phone - ghost speed stays bounded after 10s`() {
+        val ghost = NaiveGhostEstimator()
+        // ~15° tilt: without gravity removal this dumps ~2.5 m/s² into ax and
+        // explodes past hundreds of m/s in 10 s.
+        val tilt = 15.0 * PI / 180.0
+        val ax = g * sin(tilt)
+        val az = g * cos(tilt)
+        for (i in 0 until 1000) {
+            ghost.onImu(frame(i, ax = ax, az = az))
+        }
+        assertTrue(
+            "tilted-still ghost speed ${ghost.speedMps} m/s must stay < 8 (not explode)",
+            ghost.speedMps < 8.0,
+        )
+        assertTrue(
+            "displacement ${hypot(ghost.east, ghost.north)} m must stay finite/sane",
+            hypot(ghost.east, ghost.north) < 200.0,
+        )
+    }
+
+    @Test
     fun `still then yaw - ghost displaces differently from COAST`() {
         val ins = SimpleIns()
         val ghost = NaiveGhostEstimator()
         var i = 0
 
-        // Long still with a realistic accel bias. COAST ZUPT zeros speed; ghost
-        // double-integrates so position/speed run away before any yaw.
-        repeat(600) {
-            val f = frame(i++, ax = 0.06)
+        // Warm up gravity LP on pure g, then apply a sudden horizontal step that
+        // the LP has not fully absorbed — ghost integrates residual; COAST ZUPTs.
+        repeat(200) {
+            val f = frame(i++)
             ins.onImu(f)
             ghost.onImu(f)
         }
-
-        // Sustained yaw — ghost keeps the unbounded EN velocity; COAST stays
-        // near a stop (or coasts with a different heading model).
+        repeat(400) {
+            val f = frame(i++, ax = 0.8)
+            ins.onImu(f)
+            ghost.onImu(f)
+        }
         repeat(300) {
-            val f = frame(i++, ax = 0.06, gz = 0.50)
+            val f = frame(i++, ax = 0.8, gz = 0.50)
             ins.onImu(f)
             ghost.onImu(f)
         }
 
         val separation = hypot(ghost.east - ins.east, ghost.north - ins.north)
-        val coastHud = ins.snapshot(i.toLong() * dtNs, AppMode.NAVIGATE)
-
         assertTrue("ghost yaw ${ghost.yaw} should be clearly positive", ghost.yaw > 1.0)
         assertTrue(
-            "ghost should have drifted far under bias (e=${ghost.east} n=${ghost.north})",
-            hypot(ghost.east, ghost.north) > 2.0,
+            "ghost should have moved under residual accel (e=${ghost.east} n=${ghost.north})",
+            hypot(ghost.east, ghost.north) > 1.0,
         )
         assertTrue(
-            "ghost/COAST separation $separation m (coast e=${ins.east} n=${ins.north})",
-            separation > 1.0,
-        )
-        // Honest: paths are not identical on the same IMU.
-        assertTrue(
-            "estimators should not share the same east",
-            abs(ghost.east - coastHud.east) > 0.2 || abs(ghost.north - coastHud.north) > 0.2,
+            "ghost/COAST separation $separation m",
+            separation > 0.5,
         )
     }
 
     @Test
-    fun `still input with bias makes naive speed grow`() {
+    fun `sudden horizontal step makes naive speed grow while LP catches up`() {
         val ghost = NaiveGhostEstimator()
-        // Constant horizontal bias, phone otherwise still — physics, not a script.
-        for (i in 0 until 1000) {
-            ghost.onImu(frame(i, ax = 0.05))
-        }
+        for (i in 0 until 150) ghost.onImu(frame(i))
+        for (i in 150 until 650) ghost.onImu(frame(i, ax = 0.4))
         assertTrue(
-            "naive speed should grow under still+bias, was ${ghost.speedMps} m/s",
-            ghost.speedMps > 0.3,
+            "naive speed should grow under a step residual, was ${ghost.speedMps} m/s",
+            ghost.speedMps > 0.15,
         )
-        // After 10 s at 0.05 m/s², v ≈ 0.5 m/s (ideal). Allow some slack.
-        assertTrue("speed ${ghost.speedMps} absurdly large for 10 s of 0.05 m/s²", ghost.speedMps < 2.0)
+        assertTrue(
+            "speed ${ghost.speedMps} must stay bounded (not gravity-leak thousands)",
+            ghost.speedMps < 30.0,
+        )
     }
 
     @Test
-    fun `COAST ZUPT holds near zero while ghost speed grows on same still frames`() {
+    fun `COAST ZUPT holds near zero on still frames`() {
         val ins = SimpleIns()
         val ghost = NaiveGhostEstimator()
-        // Tiny bias + gravity: enough for ghost to integrate, small enough that
-        // ZUPT still classifies the phone as stopped (accel ≈ g).
         for (i in 0 until 800) {
-            val f = frame(i, ax = 0.02)
+            val f = frame(i)
             ins.onImu(f)
             ghost.onImu(f)
         }
@@ -104,9 +120,10 @@ class NaiveGhostTest {
             "COAST speed should stay near zero with ZUPT, was ${coastHud.speedMps}",
             abs(coastHud.speedMps) < 0.15,
         )
+        // After gravity LP converges, pure still → ghost also calm (no explode).
         assertTrue(
-            "ghost speed should grow on the same still frames, was ${ghost.speedMps}",
-            ghost.speedMps > 0.1,
+            "ghost on pure still must stay calm, was ${ghost.speedMps}",
+            ghost.speedMps < 1.0,
         )
     }
 }
