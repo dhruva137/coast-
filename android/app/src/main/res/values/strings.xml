@@ -1,6 +1,10 @@
 <resources>
-    <string name="app_name">IDR Navigator</string>
+    <string name="app_name">COAST</string>
     <string name="channel_record">Tracking in progress</string>
+    <string name="demo_mode">Demo Mode</string>
+    <string name="demo_explainer">GPS is off. Position is coming from the phone\'s motion sensors + the road map.</string>
+    <string name="demo_replay_label">REPLAY — real dataset, real estimator.</string>
+    <string name="demo_handover">GPS LOST → COAST</string>
 
     <!--
         Foreground-service notification. It must be specific about what is being

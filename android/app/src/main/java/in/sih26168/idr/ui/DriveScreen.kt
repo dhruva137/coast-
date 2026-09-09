@@ -107,8 +107,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-/** Peek height: drag handle + speed row + Start/Stop. */
-private val DriveSheetPeek = 168.dp
+/** Peek height: drag handle + speed row + Start/Stop (+ Demo Mode when idle). */
+private val DriveSheetPeek = 188.dp
 
 /**
  * Map-first Drive — Google Maps / Uber-driver layout.
@@ -122,8 +122,10 @@ private val DriveSheetPeek = 168.dp
 fun DriveScreen(
     bus: IdrBus,
     permsOk: Boolean,
+    coarseOnly: Boolean = false,
     requestPerms: () -> Unit,
     onOpenHelp: () -> Unit,
+    onStartDemo: (() -> Unit)? = null,
 ) {
     val ctx = LocalContext.current
     val hud by bus.hud.collectAsStateWithLifecycle()
@@ -143,11 +145,27 @@ fun DriveScreen(
     val locationStatus = if (live) hud.locationStatus else idleLocation
     val navMode = if (live) hud.navMode else NavMode.IDLE
     val prefs = remember { Prefs(ctx) }
+    val demoActive = prefs.demoMode || replayActive || (replayEnabled && live)
     val (notifsOk, requestNotifs) = rememberNotificationGate()
     var showOriginDialog by remember { mutableStateOf(false) }
     var lastFix by remember { mutableStateOf<SessionLastFix?>(null) }
     var basemapWanted by remember { mutableStateOf(prefs.basemapEnabled) }
     var recenterTick by remember { mutableIntStateOf(0) }
+    var prevNavMode by remember { mutableStateOf(NavMode.IDLE) }
+    var showHandover by remember { mutableStateOf(false) }
+
+    LaunchedEffect(navMode, live, blackout) {
+        val enteredIdr = live && prevNavMode == NavMode.GNSS &&
+            (navMode == NavMode.DEAD_RECKONING || navMode == NavMode.RELATIVE || blackout)
+        val demoColdStart = demoActive && live && blackout &&
+            prevNavMode == NavMode.IDLE && navMode != NavMode.GNSS
+        if (enteredIdr || demoColdStart) {
+            showHandover = true
+            kotlinx.coroutines.delay(3200)
+            showHandover = false
+        }
+        prevNavMode = navMode
+    }
 
     val sheetState = rememberStandardBottomSheetState(
         initialValue = if (prefs.diagnosticsOpen) SheetValue.Expanded else SheetValue.PartiallyExpanded,
@@ -202,7 +220,7 @@ fun DriveScreen(
         sheetShape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
         sheetDragHandle = { BottomSheetDefaults.DragHandle(color = Mute.copy(alpha = 0.65f)) },
         sheetContent = {
-            DriveSheetBody(
+                DriveSheetBody(
                 live = live,
                 speedText = speedText,
                 distText = distText,
@@ -215,8 +233,15 @@ fun DriveScreen(
                 requestNotifs = requestNotifs,
                 requestPerms = requestPerms,
                 replayEnabled = replayEnabled,
-                onToggleReplay = { bus.setReplayEnabled(!replayEnabled) },
+                demoActive = demoActive,
+                onToggleReplay = {
+                    val next = !replayEnabled
+                    bus.setReplayEnabled(next)
+                    prefs.replayMode = next
+                    if (!next) DemoMode.clear(prefs, bus)
+                },
                 onShowOrigin = { showOriginDialog = true },
+                onStartDemo = onStartDemo,
             )
         },
     ) { pad ->
@@ -283,6 +308,7 @@ fun DriveScreen(
                         navMode = navMode,
                         nSats = hud.nSats,
                         live = live,
+                        blackout = blackout,
                         modifier = Modifier.align(Alignment.Center),
                     )
                 }
@@ -291,19 +317,49 @@ fun DriveScreen(
                     MotionChip(label = motionLabel, speedKmh = speedText)
                 }
 
-                if (replayActive || replayEnabled) {
+                // In-frame honesty label — same visual layer as the map.
+                if (demoActive || replayActive || replayEnabled) {
                     Text(
-                        "REPLAY — real dataset, real estimator",
+                        DemoMode.REPLAY_LABEL,
                         modifier = Modifier
-                            .clip(RoundedCornerShape(99.dp))
-                            .background(Bg2.copy(alpha = 0.92f))
-                            .border(1.dp, Amber.copy(alpha = 0.45f), RoundedCornerShape(99.dp))
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Amber.copy(alpha = 0.22f))
+                            .border(2.dp, Amber, RoundedCornerShape(8.dp))
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                            .semantics {
+                                contentDescription = DemoMode.REPLAY_LABEL
+                            },
                         color = Amber,
                         fontFamily = IdrMono,
-                        fontSize = 10.sp,
-                        letterSpacing = 1.0.sp,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.8.sp,
+                        textAlign = TextAlign.Center,
                     )
+                }
+
+                if (demoActive || (blackout && live)) {
+                    Text(
+                        DemoMode.EXPLAINER,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Bg2.copy(alpha = 0.94f))
+                            .border(1.dp, Accent.copy(alpha = 0.55f), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 12.dp, vertical = 10.dp)
+                            .semantics { contentDescription = DemoMode.EXPLAINER },
+                        color = Fg,
+                        fontFamily = IdrSans,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 18.sp,
+                    )
+                }
+
+                if (showHandover) {
+                    HandoverBanner()
                 }
 
                 if (TrackerHooks.bannerVisible(prefs)) {
@@ -322,6 +378,21 @@ fun DriveScreen(
                 }
 
                 DeviceWarningLine(device)
+
+                if (coarseOnly) {
+                    Text(
+                        "Approximate location — reduced precision",
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(99.dp))
+                            .background(Bg2.copy(alpha = 0.92f))
+                            .border(1.dp, Amber.copy(alpha = 0.45f), RoundedCornerShape(99.dp))
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        color = Amber,
+                        fontFamily = IdrMono,
+                        fontSize = 10.sp,
+                        letterSpacing = 1.0.sp,
+                    )
+                }
 
                 LocationBanner(
                     status = locationStatus,
@@ -453,10 +524,13 @@ private fun ColumnScope.DriveSheetBody(
     requestNotifs: () -> Unit,
     requestPerms: () -> Unit,
     replayEnabled: Boolean,
+    demoActive: Boolean,
     onToggleReplay: () -> Unit,
     onShowOrigin: () -> Unit,
+    onStartDemo: (() -> Unit)?,
 ) {
     val ctx = LocalContext.current
+    val prefs = remember { Prefs(ctx) }
     Column(
         Modifier
             .fillMaxWidth()
@@ -480,7 +554,7 @@ private fun ColumnScope.DriveSheetBody(
                 Text(
                     when (navMode) {
                         NavMode.GNSS -> "GPS"
-                        NavMode.DEAD_RECKONING -> "IDR"
+                        NavMode.DEAD_RECKONING -> "COAST"
                         NavMode.RELATIVE -> "REL"
                         NavMode.IDLE -> "—"
                     },
@@ -512,15 +586,34 @@ private fun ColumnScope.DriveSheetBody(
             }
         }
 
+        if (!live && onStartDemo != null && !demoActive) {
+            Button(
+                onClick = onStartDemo,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp)
+                    .semantics { contentDescription = "Start Demo Mode" },
+                colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Bg),
+                shape = RoundedCornerShape(12.dp),
+            ) {
+                Text("DEMO MODE", fontFamily = IdrMono, letterSpacing = 1.4.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+
         PrimaryControls(
             live = live,
             permsOk = permsOk,
             onStartStop = {
-                if (live) {
-                    RecordService.stop(ctx)
-                } else {
-                    if (!notifsOk) requestNotifs()
-                    RecordService.start(ctx, AppMode.NAVIGATE)
+                try {
+                    if (live) {
+                        RecordService.stop(ctx)
+                        if (prefs.demoMode) DemoMode.clear(prefs, bus)
+                    } else {
+                        if (!notifsOk) requestNotifs()
+                        RecordService.start(ctx, AppMode.NAVIGATE)
+                    }
+                } catch (_: Exception) {
+                    // Foreground-service / lifecycle races must not crash the UI.
                 }
             },
             onRequestPerms = requestPerms,
@@ -565,7 +658,6 @@ private fun ColumnScope.DriveSheetBody(
         }
 
         // Accuracy / uncertainty card is debug-only (broken confidence signal).
-        val prefs = Prefs(ctx)
         if (prefs.showUncertaintyRadius && navMode != NavMode.IDLE) {
             AccuracyCard(hud)
         }
@@ -677,41 +769,85 @@ private fun MotionChip(label: String, speedKmh: String) {
 }
 
 @Composable
+private fun HandoverBanner() {
+    val pulse = rememberInfiniteTransition(label = "handoverPulse")
+    val alpha by pulse.animateFloat(
+        initialValue = 1f,
+        targetValue = 0.55f,
+        animationSpec = infiniteRepeatable(tween(450), RepeatMode.Reverse),
+        label = "handoverAlpha",
+    )
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .alpha(alpha)
+            .clip(RoundedCornerShape(12.dp))
+            .background(Amber)
+            .border(3.dp, Fg, RoundedCornerShape(12.dp))
+            .padding(horizontal = 14.dp, vertical = 14.dp)
+            .semantics { contentDescription = DemoMode.HANDOVER },
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(
+            "◼ GPS  →  ◆ COAST",
+            color = Bg,
+            fontFamily = IdrMono,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.2.sp,
+            textAlign = TextAlign.Center,
+        )
+        Text(
+            DemoMode.HANDOVER,
+            color = Bg,
+            fontFamily = IdrSans,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
+
+@Composable
 private fun ModePill(
     navMode: NavMode,
     nSats: Int,
     live: Boolean,
+    blackout: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
-    val idr = navMode == NavMode.DEAD_RECKONING || navMode == NavMode.RELATIVE
+    val idr = navMode == NavMode.DEAD_RECKONING || navMode == NavMode.RELATIVE || (live && blackout)
     val pulse = rememberInfiniteTransition(label = "idrPulse")
     val alpha by pulse.animateFloat(
         initialValue = 1f,
         targetValue = if (idr && live) 0.55f else 1f,
-        animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse),
+        animationSpec = infiniteRepeatable(tween(700), RepeatMode.Reverse),
         label = "idrAlpha",
     )
     val tint by animateColorAsState(
         targetValue = when {
             !live || navMode == NavMode.IDLE -> Mute
-            navMode == NavMode.GNSS -> Gnss
+            navMode == NavMode.GNSS && !blackout -> Gnss
             else -> Amber
         },
         label = "pillTint",
     )
+    // Shape + label redundancy (not colour alone): GPS = round, COAST = squared.
+    val shape = if (idr) RoundedCornerShape(10.dp) else RoundedCornerShape(99.dp)
     val label = when {
         !live || navMode == NavMode.IDLE -> "READY"
-        navMode == NavMode.GNSS -> "GPS  ·  $nSats sats"
-        navMode == NavMode.DEAD_RECKONING -> "IDR MODE — AI speed + road lock"
-        else -> "RELATIVE — no absolute fix"
+        navMode == NavMode.GNSS && !blackout -> "● GPS  ·  $nSats sats"
+        navMode == NavMode.DEAD_RECKONING || blackout -> "◆ COAST — sensors + map"
+        else -> "◇ RELATIVE — no absolute fix"
     }
     Box(
         modifier
             .alpha(alpha)
-            .widthIn(max = 260.dp)
-            .clip(RoundedCornerShape(99.dp))
-            .background(Bg2.copy(alpha = 0.92f))
-            .border(1.5.dp, tint.copy(alpha = 0.85f), RoundedCornerShape(99.dp))
+            .widthIn(max = 280.dp)
+            .clip(shape)
+            .background(Bg2.copy(alpha = 0.94f))
+            .border(if (idr) 2.5.dp else 1.5.dp, tint.copy(alpha = 0.9f), shape)
             .padding(horizontal = 16.dp, vertical = 10.dp),
         contentAlignment = Alignment.Center,
     ) {

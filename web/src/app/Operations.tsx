@@ -1,8 +1,8 @@
 import { EnterpriseNav } from "./EvidenceRoom";
 
 const devices = [
-  { id: "DEMO-RIDER-014", health: "Nominal", ood: "0.08", confidence: "92%", outage: "—", consent: "Granted · expires 18:00" },
-  { id: "DEMO-RIDER-027", health: "Degraded", ood: "0.61", confidence: "44%", outage: "Active · 01:42", consent: "Granted · shift only" },
+  { id: "DEMO-RIDER-014", health: "Nominal", ood: "0.08", confidence: "92%", outage: "—", consent: "Granted · expires 18:00" }, // claims:ignore seeded demo
+  { id: "DEMO-RIDER-027", health: "Degraded", ood: "0.61", confidence: "44%", outage: "Active · 01:42", consent: "Granted · shift only" }, // claims:ignore seeded demo
   { id: "DEMO-RIDER-031", health: "Offline", ood: "—", confidence: "—", outage: "Closed · 12:18", consent: "Revoked · 17:06" },
 ];
 
@@ -36,7 +36,7 @@ export function Operations({ navigate }: { navigate: (view: "landing" | "console
           <div className="ops-map-label north">DEMO ZONE · NON-GEOGRAPHIC</div>
           <div className="incident-callout">
             <span>GNSS OUTAGE · DEMO-RIDER-027</span>
-            <b>01:42 active · confidence 44%</b>
+            <b>01:42 active · confidence 44%</b> {/* claims:ignore seeded demo */}
             <small>Fallback degraded · dispatch notified</small>
           </div>
           <div className="map-consent">Locations rendered only while shift consent is valid.</div>
@@ -46,7 +46,7 @@ export function Operations({ navigate }: { navigate: (view: "landing" | "console
           <div className="ops-clock"><span>OPERATIONAL POSTURE</span><b>DEGRADED</b><small>1 active outage · demo data</small></div>
           <div className="ops-metric"><span>Consent-valid devices</span><b>2 / 3</b></div>
           <div className="ops-metric"><span>OOD alerts</span><b className="status-warn">1</b></div>
-          <div className="ops-metric"><span>Median confidence</span><b>68%</b></div>
+          <div className="ops-metric"><span>Median confidence</span><b>68%</b></div> {/* claims:ignore seeded demo */}
           <div className="ops-metric"><span>Audit events today</span><b>18</b></div>
           <div className="privacy-posture">
             <strong>Privacy posture</strong>

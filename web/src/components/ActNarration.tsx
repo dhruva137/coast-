@@ -31,13 +31,13 @@ export const ACT_SCRIPT: readonly ActBeat[] = [
     act: 2,
     title: "THE VEHICLE",
     clock: "90 s",
-    line: "Same bicycle ride, two traces: car-style AI-IMU baseline vs lean-aware IDR. Baseline diverges at every turn. Textbook cos(φ) — we apply it; we do not claim discovery.",
+    line: "Same bicycle ride, two traces: car-style AI-IMU baseline vs lean-aware COAST. Baseline diverges at every turn. Textbook cos(φ) — we apply it; we do not claim discovery.",
   },
   {
     act: 3,
     title: "THE BENCHMARK",
     clock: "60 s",
-    line: "Replay an underpass with GNSS at both ends: entered here, predicted exit here, GPS says here. Score it live against ISRO — <10% drift, <100 m per km.",
+    line: "Replay an underpass with GNSS at both ends: entered here, predicted exit here, GPS says here. Score it live against ISRO — <10% drift, <100 m/km.",
   },
   {
     act: 4,

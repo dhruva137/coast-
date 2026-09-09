@@ -32,7 +32,7 @@ list.**
 
 | Claim | Number | Source file |
 |---|---|---|
-| Our headline: map-in-loop vs naive DR | **2.02×** (43 real GNSS outages, car CAN truth) | `lab/stress/results/mapfilter/summary.md` |
+| Our headline: map-in-loop vs naive DR | **2.02× lower median position error** (252.66 m → 125.20 m; 43 real GNSS outages, car CAN truth). Median drift 27.6% → 16.8% | `lab/stress/results/mapfilter/summary.md` |
 | The negative result we volunteer | **A perfect gyro still fails 55%** of 60-s segments | `lab/stress/results/heading_ablation/summary.md` |
 | Naive DR baseline (what we beat) | **17%** short-arm / **10%** tunnel-arm pass; **28%** median drift vs our **17%** | `lab/stress/results/isro_benchmark/summary.md` |
 | Edge engine throughput | **120,305 Hz** (200 Hz required → 600×) | `core/cpp/apps/README.md` |
@@ -120,7 +120,7 @@ Keep a **pre-recorded backup video** (rules allow it if the live demo fails).
 - **Localhost live console** — one web app showing the phone's live dot AND a
   browser Train button that streams real epochs + an animated loss curve + an honest
   "why we beat the baseline" ledger.
-- **Dataset stress harness** + adapter pattern.
+- **Dataset adapter harness (synthetic plumbing fixture)** + adapter pattern.
 - **Research enhancement** — mount-invariant speed model (EqNIO-style), measured.
 
 ### Left (human / next) ⏳

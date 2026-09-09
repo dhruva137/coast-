@@ -6,6 +6,8 @@ import { BranchBars } from "../components/BranchBars";
 import { MetricTicker } from "../components/MetricTicker";
 import { ActNarration } from "../components/ActNarration";
 import { Sparkline } from "../components/Sparkline";
+import { TrainPanel } from "../components/TrainPanel";
+import { CoastWordmark } from "../components/CoastMark";
 import { ACT_COPY, buildDemo, type ActId, type DemoBundle } from "../lib/runDemo";
 
 export type ConsoleProps = {
@@ -21,7 +23,8 @@ export function Console({ onBack, onNavigate, autoAct }: ConsoleProps) {
   const [idx, setIdx] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [tab, setTab] = useState<"live" | "budget" | "claims">("live");
+  const [tab, setTab] = useState<"live" | "budget" | "claims" | "train">("live");
+  const [mapSolo, setMapSolo] = useState(false);
 
   const cur = demo?.ours[Math.min(idx, (demo?.ours.length ?? 1) - 1)];
   const gnss = cur?.gnss_aided ?? true;
@@ -77,14 +80,14 @@ export function Console({ onBack, onNavigate, autoAct }: ConsoleProps) {
   }
 
   return (
-    <div className="app">
+    <div className={`app ${mapSolo ? "map-solo" : ""} ${tab === "train" ? "train-open" : ""}`}>
       <header className="topbar">
         <button className="wordmark" type="button" onClick={onBack} title="Back to product">
-          IDR<span>.</span>
+          <CoastWordmark size={22} />
         </button>
         <div className="meta">
           <div className="sub">Console · SIH 26168 · ISRO frame</div>
-          <div className="tagline">Intelligent Dead Reckoning — two-wheeler GNSS outage</div>
+          <div className="tagline">COAST — when GPS dies, you coast on sensors</div>
         </div>
         <div className="pills">
           <span className={`pill ${demo ? (gnss ? "on" : "off") : ""}`}>
@@ -141,11 +144,9 @@ export function Console({ onBack, onNavigate, autoAct }: ConsoleProps) {
         {!demo && !busy && (
           <div className="map-idle">
             <div className="map-idle-inner">
-              <span className="brand-mark">
-                IDR<span className="dot">.</span>
-              </span>
-              <p>Full-bleed map is the product surface. Run an act to stream lean-aware vs car-style traces.</p>
-              <div className="hint">SELECT ACT → RUN</div>
+              <CoastWordmark size={42} />
+              <p>Full-bleed map is the product surface. Run an act, or open Train for a live AVNet pass.</p>
+              <div className="hint">SELECT ACT → RUN · or TRAIN LIVE</div>
             </div>
           </div>
         )}
@@ -163,12 +164,22 @@ export function Console({ onBack, onNavigate, autoAct }: ConsoleProps) {
           </div>
           <div className="chip">{cur?.edge_id ?? "no edge"}</div>
         </div>
+        <button className="map-full-btn" type="button" onClick={() => setMapSolo((s) => !s)}>
+          {mapSolo ? "Show panels" : "Full map"}
+        </button>
       </div>
 
       <aside className="side">
         <div className="tabs">
           <button className={tab === "live" ? "on" : ""} onClick={() => setTab("live")} type="button">
             Live
+          </button>
+          <button
+            className={tab === "train" ? "on" : ""}
+            onClick={() => setTab("train")}
+            type="button"
+          >
+            Train
           </button>
           <button
             className={tab === "budget" ? "on" : ""}
@@ -209,6 +220,7 @@ export function Console({ onBack, onNavigate, autoAct }: ConsoleProps) {
             </div>
           </div>
         )}
+        {tab === "train" && <TrainPanel />}
         {tab === "budget" && <ErrorBudget />}
         {tab === "claims" && (
           <div className="claims-body">
@@ -223,7 +235,7 @@ export function Console({ onBack, onNavigate, autoAct }: ConsoleProps) {
               adaptive NHC (MTDNN 2025).
             </p>
             <p>
-              Hard braking mid-turn is the real failure mode (0.4 g → 9.6% drift). Simulation
+              Hard braking mid-turn is the real failure mode (high lateral accel → elevated drift). Simulation
               until campus bicycle logs exist.
             </p>
           </div>
@@ -233,7 +245,7 @@ export function Console({ onBack, onNavigate, autoAct }: ConsoleProps) {
       <footer className="bottom">
         <div className="legend">
           <span>
-            <i className="sw" style={{ background: "#4da3ff" }} /> IDR
+            <i className="sw" style={{ background: "#4da3ff" }} /> COAST
           </span>
           <span>
             <i className="sw" style={{ background: "#ff4d6a" }} /> Baseline

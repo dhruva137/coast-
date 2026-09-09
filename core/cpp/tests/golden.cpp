@@ -2,8 +2,10 @@
 // No external test framework — return 0 on success.
 
 #include "nav/engine.h"
+#include "nav/graphpf.h"
 #include "nav/inekf.h"
 #include "nav/leansolver.h"
+#include "nav/manifold.h"
 #include "nav/math.h"
 #include "nav/metrics.h"
 #include "nav/types.h"
@@ -133,12 +135,109 @@ void test_tiny_imu() {
   check(nav::driftPct(10.0, 1000.0) == 1.0, "drift% = error / distance");
 }
 
+void test_corridor_manifold_synthetic() {
+  // Eastbound corridor ~200 m, 3 m lateral tolerance.
+  nav::Lla origin{12.9912, 77.5523, 920.0};
+  std::vector<nav::Lla> poly;
+  for (int i = 0; i <= 10; ++i) {
+    poly.push_back(nav::enuToLla(origin, i * 20.0, 0.0, 0.0));
+  }
+  nav::CorridorManifold corridor(poly, 3.0, origin);
+  check(corridor.dim() == 1, "CorridorManifold dim == 1");
+  check(corridor.length_m() > 190.0 && corridor.length_m() < 210.0,
+        "CorridorManifold length ~200 m");
+
+  nav::ManifoldState probe;
+  const nav::Lla off = nav::enuToLla(origin, 100.0, 8.0, 0.0);  // 8 m north of track
+  probe.lat = off.lat;
+  probe.lon = off.lon;
+  probe.yaw_deg = 90.0;
+  const nav::ManifoldState snapped = corridor.project(probe);
+  const double residual = nav::haversineM(probe.lat, probe.lon, snapped.lat, snapped.lon);
+  check(residual > 4.5 && residual < 5.5,
+        "CorridorManifold clamps 8 m offset to ~5 m (tol=3)");
+  check(std::abs(snapped.lateral_m) <= 3.0 + 1e-9, "lateral within tolerance");
+
+  nav::ManifoldParticleFilter pf(corridor, {48, 7u});
+  pf.seed(poly.front().lat, poly.front().lon, 90.0);
+  double max_lat = 0;
+  for (int k = 0; k < 40; ++k) {
+    pf.step(0.5, 10.0, 90.0);
+    const nav::ManifoldState est = pf.estimate();
+    max_lat = std::max(max_lat, pf.lateralErrorM(est.lat, est.lon));
+  }
+  check(max_lat < 3.5, "corridor filter lateral error bounded under synthetic drift");
+}
+
+void test_dual_manifold_lateral_bound() {
+  nav::IRoadGraph g = nav::defaultCampusGraph();
+  nav::RoadGraphManifold road(g);
+  check(road.dim() == 1, "RoadGraphManifold dim == 1");
+
+  const nav::IGraphEdge* tun = nav::edgeById(g, "e_tun_a");
+  check(tun != nullptr, "campus tunnel edge present");
+  std::vector<nav::Lla> poly;
+  for (int i = 0; i <= 8; ++i) {
+    poly.push_back(nav::interpolateEdge(g, *tun, i / 8.0));
+  }
+  nav::CorridorManifold corridor(poly, 4.0, g.origin);
+
+  const nav::Lla start = poly.front();
+  nav::ManifoldParticleFilter road_pf(road, {32, 11u});
+  nav::ManifoldParticleFilter corr_pf(corridor, {32, 11u});
+  road_pf.seed(start.lat, start.lon, tun->heading_deg);
+  corr_pf.seed(start.lat, start.lon, tun->heading_deg);
+
+  double max_road = 0, max_corr = 0;
+  double max_corr_lat = 0;
+  for (int k = 0; k < 30; ++k) {
+    const nav::Lla free =
+        nav::enuToLla(g.origin, 200.0 + 8.0 * k, 80.0 + 5.0 + 0.2 * k, -1.0);
+    road_pf.step(0.4, 12.0, tun->heading_deg);
+    corr_pf.step(0.4, 12.0, tun->heading_deg);
+    const auto re = road_pf.estimate();
+    const auto ce = corr_pf.estimate();
+    max_road = std::max(max_road, road_pf.lateralErrorM(re.lat, re.lon));
+    max_corr = std::max(max_corr, corr_pf.lateralErrorM(ce.lat, ce.lon));
+
+    nav::ManifoldState probe;
+    probe.lat = free.lat;
+    probe.lon = free.lon;
+    probe.yaw_deg = tun->heading_deg;
+    const auto cp = corridor.project(probe);
+    max_corr_lat = std::max(max_corr_lat, std::abs(cp.lateral_m));
+  }
+  check(max_road < 1.0, "road filter estimate stays on centreline (~0 lateral)");
+  check(max_corr < 4.5, "corridor filter estimate lateral bounded by tol");
+  check(max_corr_lat <= 4.0 + 1e-6, "corridor project clamps |lateral| to tol");
+}
+
+void test_road_mapproject_via_manifold() {
+  // Spot-check: GraphParticleFilter::mapProject matches RoadGraphManifold::project.
+  nav::IRoadGraph g = nav::defaultCampusGraph();
+  nav::GraphParticleFilter pf(g, {64, 3u});
+  nav::RoadGraphManifold m(g);
+  const nav::Lla q = nav::enuToLla(g.origin, 100.0, 85.0, 0.0);
+  const nav::MapProject a = pf.mapProject(q.lat, q.lon, 90.0);
+  nav::ManifoldState probe;
+  probe.lat = q.lat;
+  probe.lon = q.lon;
+  probe.yaw_deg = 90.0;
+  const nav::ManifoldState b = m.project(probe);
+  check(a.edge_id == b.edge_id, "mapProject edge_id == RoadGraphManifold");
+  check(std::abs(a.lat - b.lat) < 1e-12 && std::abs(a.lon - b.lon) < 1e-12,
+        "mapProject lat/lon bit-match RoadGraphManifold");
+}
+
 } // namespace
 
 int main() {
   test_lean_solver();
   test_f6_identity();
   test_tiny_imu();
+  test_corridor_manifold_synthetic();
+  test_dual_manifold_lateral_bound();
+  test_road_mapproject_via_manifold();
   if (g_fails) {
     std::cerr << g_fails << " golden check(s) failed\n";
     return 1;

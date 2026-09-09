@@ -10,8 +10,9 @@ this entrypoint does a short *honest* training pass (live epoch/loss lines)
 then regenerates the three PPT figures from measured mapfilter results plus a
 live trajectory overlay on a real IO-VNBD outage window.
 
-PPT headline numbers (2.02×, 17%/10% free-DR arms, etc.) are read from the
-committed decision-layer sources — never invented from the quick run.
+PPT headline numbers (2.02× median position error, 17%/10% free-DR arms, etc.)
+are read from committed ``report.json`` / summary sources — never invented from
+the quick run.
 """
 
 from __future__ import annotations
@@ -31,6 +32,7 @@ _FIGURES = _REPO / "figures"
 _REFERENCE = _FIGURES / "_reference"
 _MAPFILTER_REPORT = _REPO / "lab" / "stress" / "results" / "mapfilter" / "report.json"
 _MAPFILTER_SUMMARY = _REPO / "lab" / "stress" / "results" / "mapfilter" / "summary.md"
+_ISRO_REPORT = _REPO / "lab" / "stress" / "results" / "isro_benchmark" / "report.json"
 _ISRO_SUMMARY = _REPO / "lab" / "stress" / "results" / "isro_benchmark" / "summary.md"
 _SPEED_SUMMARY = _REPO / "lab" / "models" / "results" / "speed_bakeoff" / "summary.md"
 
@@ -54,10 +56,23 @@ def _banner() -> None:
     print()
 
 
+def _best_isro_arm_pct(isro_report: dict, arm: str) -> int:
+    """Best pass-rate percent among methods for one ISRO arm (rounded)."""
+    rates = [
+        float(v["pass_rate"])
+        for k, v in isro_report["summary"].items()
+        if k.startswith(f"{arm}/")
+    ]
+    if not rates:
+        raise KeyError(f"no {arm} rows in isro_benchmark/report.json")
+    return int(round(max(rates) * 100))
+
+
 def _load_headline_numbers() -> dict:
     """Verbatim decision-layer numbers from committed result files."""
     report = json.loads(_MAPFILTER_REPORT.read_text(encoding="utf-8"))
     junc = report["scenarios"]["junctions"]
+    isro = json.loads(_ISRO_REPORT.read_text(encoding="utf-8"))
     return {
         "mapfilter_improvement_x": float(junc["improvement_x"]),
         "free_pass": int(junc["free_pass"]),
@@ -67,9 +82,8 @@ def _load_headline_numbers() -> dict:
         "pf_median_error_m": float(junc["pf_median_error_m"]),
         "free_median_drift_pct": float(junc["free_median_drift_pct"]),
         "pf_median_drift_pct": float(junc["pf_median_drift_pct"]),
-        # Decision layer §D baselines (ISRO arms) — fixed measured rates.
-        "free_dr_short_arm_pct": 17,
-        "free_dr_tunnel_arm_pct": 10,
+        "free_dr_short_arm_pct": _best_isro_arm_pct(isro, "ARM_SHORT"),
+        "free_dr_tunnel_arm_pct": _best_isro_arm_pct(isro, "ARM_TUNNEL"),
         "sources": {
             "mapfilter": str(_MAPFILTER_SUMMARY.relative_to(_REPO)),
             "isro": str(_ISRO_SUMMARY.relative_to(_REPO)),
@@ -123,6 +137,8 @@ def _quick_train() -> dict:
     std = Standardiser(imu)
     x = torch.from_numpy(std(imu)).to(device)
     y = torch.from_numpy(speed).to(device)
+    y_h = held.speed.astype(np.float64)
+    x_held = torch.from_numpy(std(held.imu)).to(device)
     model = build_model().to(device)
     opt = torch.optim.Adam(model.parameters(), lr=2e-3, weight_decay=1e-5)
     n = x.shape[0]
@@ -157,14 +173,38 @@ def _quick_train() -> dict:
             steps += 1
         last_loss = total / max(steps, 1)
         mode = "NLL" if use_nll else "MSE"
-        print(f"      epoch {ep + 1}/{QUICK_EPOCHS}  loss={last_loss:.4f}  "
-              f"({mode})  {time.time() - t0:.1f}s")
+        model.eval()
+        with torch.no_grad():
+            mu_ep = model.split_heads(model(x_held))["speed"]
+            rmse_ep = _rmse(mu_ep.cpu().numpy().astype(np.float64), y_h)
+        model.train()
+        elapsed = time.time() - t0
+        print(
+            f"      epoch {ep + 1}/{QUICK_EPOCHS}  loss={last_loss:.4f}  "
+            f"rmse={rmse_ep:.3f}  ({mode})  {elapsed:.1f}s",
+            flush=True,
+        )
+        print(
+            "COAST_EVENT "
+            + json.dumps(
+                {
+                    "type": "epoch",
+                    "epoch": ep + 1,
+                    "epochs": QUICK_EPOCHS,
+                    "loss": last_loss,
+                    "rmse": rmse_ep,
+                    "mode": mode,
+                    "elapsed_s": elapsed,
+                    "source": "lab.demo stdout",
+                }
+            ),
+            flush=True,
+        )
 
     model.eval()
     with torch.no_grad():
-        mu = model.split_heads(model(torch.from_numpy(std(held.imu)).to(device)))["speed"]
+        mu = model.split_heads(model(x_held))["speed"]
         mu_np = mu.cpu().numpy().astype(np.float64)
-    y_h = held.speed.astype(np.float64)
     hold = _hold_label(held).astype(np.float64)
     quick = {
         "held": held.name,
@@ -227,12 +267,12 @@ def _ensure_reference(paths: dict[str, str]) -> None:
 def _print_headlines(head: dict, wall_s: float) -> None:
     print("[3/3] Headline numbers (decision layer - measured, not quick-run)")
     x = head["mapfilter_improvement_x"]
-    print(f"      Map-in-loop vs free DR:  {x:.2f}x  "
+    print(f"      {x:.2f}x lower median position error  "
           f"(pass {head['free_pass']}->{head['pf_pass']} of {head['n_outages']})")
-    print(f"      Median error:           free {head['free_median_error_m']:.1f} m  |  "
-          f"COAST {head['pf_median_error_m']:.1f} m")
-    print(f"      Median drift %:         free {head['free_median_drift_pct']:.0f}%  |  "
-          f"COAST {head['pf_median_drift_pct']:.0f}%  |  ISRO bar 10%")
+    print(f"      Median position error:  free {head['free_median_error_m']:.2f} m  |  "
+          f"COAST {head['pf_median_error_m']:.2f} m")
+    print(f"      Median drift %:         free {head['free_median_drift_pct']:.2f}%  |  "
+          f"COAST {head['pf_median_drift_pct']:.2f}%  (no {x:.2f}x on this row)")
     print(f"      Free-DR baseline arms:  short {head['free_dr_short_arm_pct']}%  /  "
           f"tunnel {head['free_dr_tunnel_arm_pct']}%")
     print(f"      Sources: {head['sources']['mapfilter']}")

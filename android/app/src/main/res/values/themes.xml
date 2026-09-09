@@ -1,8 +1,29 @@
 <resources>
+    <!--
+      The theme the app runs under once the splash has handed off. Compose /
+      Material 3 owns all in-app colour; this only controls the window before
+      and behind Compose, so it stays on the dark ground the app is designed
+      around and avoids a light flash on cold start.
+    -->
     <style name="Theme.IDR" parent="android:Theme.Material.NoActionBar">
-        <item name="android:statusBarColor">@color/idr_bg</item>
-        <item name="android:navigationBarColor">@color/idr_bg</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowBackground">@color/idr_bg</item>
         <item name="android:windowLightStatusBar">false</item>
+    </style>
+
+    <!--
+      Launch theme. Attributes here are from androidx.core:core-splashscreen and
+      are deliberately NOT in the android: namespace.
+
+      windowSplashScreenAnimationDuration is required on Android 12; 13+ infers
+      the duration from the AVD itself. 620ms matches avd_splash_logo.xml and is
+      inside the ~1000ms platform cap.
+    -->
+    <style name="Theme.IDR.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/idr_bg</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/avd_splash_logo</item>
+        <item name="windowSplashScreenAnimationDuration">620</item>
+        <item name="postSplashScreenTheme">@style/Theme.IDR</item>
     </style>
 </resources>

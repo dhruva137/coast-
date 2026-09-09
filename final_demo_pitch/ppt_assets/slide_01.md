@@ -2,11 +2,17 @@
 
 **Status:** final text for paste into official SIH template. **Not** a finished `.pptx`.
 
-## On-slide
+## Conclusion headline (largest type)
 
-- **COAST**
-- Tagline: *when GPS dies, you coast on sensors.*
-- AI-ML Intelligent Dead Reckoning for seamless navigation — SIH 26168, ISRO / Dept. of Space
+**COAST — when GPS dies, you coast on sensors.**
+
+## Dominant visual (one)
+
+Full-bleed dark map / tunnel-mouth screenshot behind the title (product in situ). No secondary charts on this slide.
+
+## Support (≤18 pt body)
+
+- AI-ML Intelligent Dead Reckoning — SIH 26168, ISRO / Dept. of Space
 - Team: **[FILL: team name]** · 6 members · **[FILL: college]**
 
 ## Speaker (~15 s)

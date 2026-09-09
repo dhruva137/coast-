@@ -1,7 +1,9 @@
+import { CoastWordmark } from "../components/CoastMark";
+
 type LandingProps = {
   onOpenConsole: () => void;
   onRunDemo: () => void;
-  onNavigate: (view: "landing" | "console" | "evidence" | "operations") => void;
+  onNavigate: (view: "landing" | "console" | "evidence" | "operations" | "apk") => void;
 };
 
 export function Landing({ onOpenConsole, onRunDemo, onNavigate }: LandingProps) {
@@ -9,13 +11,16 @@ export function Landing({ onOpenConsole, onRunDemo, onNavigate }: LandingProps) 
     <div className="landing">
       <nav className="landing-nav" aria-label="Product">
         <div className="brand-mark" aria-hidden="true">
-          IDR<span className="dot">.</span>
+          <CoastWordmark size={22} />
         </div>
         <div className="nav-links">
           <a href="#pricing">SDK</a>
           <a href="#docs">Claims</a>
           <a href="#console-jump" onClick={(e) => { e.preventDefault(); onOpenConsole(); }}>
             Console
+          </a>
+          <a href="#/apk" onClick={(e) => { e.preventDefault(); onNavigate("apk"); }}>
+            APK
           </a>
           <a href="#/evidence" onClick={(e) => { e.preventDefault(); onNavigate("evidence"); }}>
             Evidence
@@ -43,7 +48,7 @@ export function Landing({ onOpenConsole, onRunDemo, onNavigate }: LandingProps) 
               d="M80 110 C 150 100, 190 180, 250 240 S 340 340, 420 360 S 500 320, 548 250"
             />
             <circle className="dot-live" cx="548" cy="250" r="5" />
-            <text className="label" x="420" y="210">IDR lean-aware</text>
+            <text className="label" x="420" y="210">COAST lean-aware</text>
             <text className="label" x="300" y="455">car-style baseline</text>
           </svg>
         </div>
@@ -51,7 +56,7 @@ export function Landing({ onOpenConsole, onRunDemo, onNavigate }: LandingProps) 
         <div className="hero-copy">
           <p className="hero-kicker">Intelligent Dead Reckoning</p>
           <h1 className="hero-brand">
-            IDR<span className="dot">.</span>
+            COAST<span className="dot">.</span>
           </h1>
           <h2 className="hero-headline">Keep the fleet moving when GNSS dies.</h2>
           <p className="hero-lede">
@@ -86,7 +91,7 @@ export function Landing({ onOpenConsole, onRunDemo, onNavigate }: LandingProps) 
       <section className="section pricing" id="pricing">
         <div className="section-head">
           <p className="section-eyebrow">SDK license</p>
-          <h2 className="section-title">Ship IDR into your navigation stack.</h2>
+          <h2 className="section-title">Ship COAST into your navigation stack.</h2>
           <p className="section-lede">
             Placeholder commercial tiers for buyers evaluating a phone-side DR module. No
             published customer logos — pricing is indicative until pilots close.
@@ -166,7 +171,7 @@ export function Landing({ onOpenConsole, onRunDemo, onNavigate }: LandingProps) 
             <ul>
               <li>First smartphone DR path that treats leaning two-wheelers as first-class</li>
               <li>Fixed-point coordinated-turn solver with cos(Δφ) insensitivity</li>
-              <li>Error budget: heading hurts ~6.3× more than speed (F8, simulated)</li>
+              <li>Error budget: heading hurts far more than speed (F8, simulated)</li>
               <li>Branch-decision accuracy as the user-facing metric</li>
             </ul>
           </div>
@@ -185,21 +190,21 @@ export function Landing({ onOpenConsole, onRunDemo, onNavigate }: LandingProps) 
               <div className="isro-bar">
                 <span className="lbl">Drift</span>
                 <div className="track">
-                  <div className="fill" style={{ width: "100%" }} />
+                  <div className="fill" style={{ width: "100%" }} /> {/* claims:ignore layout */}
                 </div>
                 <span className="val">&lt; 10%</span>
               </div>
               <div className="isro-bar">
                 <span className="lbl">Error</span>
                 <div className="track">
-                  <div className="fill" style={{ width: "92%", animationDelay: "0.12s" }} />
+                  <div className="fill" style={{ width: "92%", animationDelay: "0.12s" }} /> {/* claims:ignore layout */}
                 </div>
                 <span className="val">&lt; 100 m / km</span>
               </div>
               <div className="isro-bar">
                 <span className="lbl">Rate</span>
                 <div className="track">
-                  <div className="fill" style={{ width: "85%", animationDelay: "0.24s" }} />
+                  <div className="fill" style={{ width: "85%", animationDelay: "0.24s" }} /> {/* claims:ignore layout */}
                 </div>
                 <span className="val">10 Hz class</span>
               </div>
@@ -210,7 +215,7 @@ export function Landing({ onOpenConsole, onRunDemo, onNavigate }: LandingProps) 
 
       <footer className="landing-foot">
         <div className="brand-mark">
-          IDR<span className="dot">.</span>
+          <CoastWordmark size={22} />
         </div>
         <span>SIH 26168 · framed for ISRO / fleet buyers · phone-side dead reckoning</span>
         <div className="footer-actions">

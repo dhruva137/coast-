@@ -458,13 +458,13 @@ private fun SessionDetailScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 LegendDot(Gnss, "GNSS")
-                LegendDot(Accent, if (hasIdr) "IDR" else "IDR (not logged)")
+                LegendDot(Accent, if (hasIdr) "COAST" else "COAST (not logged)")
             }
         }
 
         if (!hasIdr && hasGnss) {
             Text(
-                "Field logs store GNSS fixes only — teal IDR segments appear when trail.csv is present.",
+                "Field logs store GNSS fixes only — teal COAST segments appear when trail.csv is present.",
                 color = Mute,
                 fontFamily = IdrSans,
                 fontSize = 11.sp,

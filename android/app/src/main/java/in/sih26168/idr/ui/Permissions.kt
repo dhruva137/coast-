@@ -12,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
+import `in`.sih26168.idr.sensor.LocationGate
 
 /**
  * Permissions the app asks for. None of them gate tracking: the estimator arms
@@ -35,6 +36,20 @@ fun notificationPermissions(): Array<String> =
     if (Build.VERSION.SDK_INT >= 33) arrayOf(Manifest.permission.POST_NOTIFICATIONS) else emptyArray()
 
 /**
+ * Location grant state for Drive / onboarding.
+ *
+ * [granted] is true when **either** FINE or COARSE is present (Android
+ * "Approximate" grants only COARSE). [coarseOnly] is true when precision is
+ * reduced — callers should surface that separately; it must not keep the
+ * permission-denied banner up.
+ */
+data class LocationPermissionGate(
+    val granted: Boolean,
+    val coarseOnly: Boolean,
+    val request: () -> Unit,
+)
+
+/**
  * Location-only gate for the Drive / onboarding "Allow location" path.
  *
  * [onResult] fires after every system dialog result so callers can refresh
@@ -43,21 +58,23 @@ fun notificationPermissions(): Array<String> =
 @Composable
 fun rememberLocationPermissionGate(
     onResult: (granted: Boolean) -> Unit = {},
-): Pair<Boolean, () -> Unit> {
+): LocationPermissionGate {
     val ctx = LocalContext.current
     val needed = locationPermissions()
-    fun granted(): Boolean = needed.all {
-        ContextCompat.checkSelfPermission(ctx, it) == PackageManager.PERMISSION_GRANTED
-    }
+    // either FINE or COARSE — matches LocationGate.hasPermission / Approximate grant
+    fun granted(): Boolean = LocationGate.hasPermission(ctx)
+    fun coarseOnly(): Boolean = LocationGate.coarseOnly(ctx)
     var ok by remember { mutableStateOf(granted()) }
+    var approximate by remember { mutableStateOf(coarseOnly()) }
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
     ) {
         ok = granted()
+        approximate = coarseOnly()
         onResult(ok)
     }
     val request: () -> Unit = { launcher.launch(needed) }
-    return ok to request
+    return LocationPermissionGate(granted = ok, coarseOnly = approximate, request = request)
 }
 
 /**
@@ -66,7 +83,7 @@ fun rememberLocationPermissionGate(
  * the combined list (should not drive the location banner).
  */
 @Composable
-fun rememberPermissionGate(): Pair<Boolean, () -> Unit> = rememberLocationPermissionGate()
+fun rememberPermissionGate(): LocationPermissionGate = rememberLocationPermissionGate()
 
 /**
  * A notification-only gate, used by the START buttons.

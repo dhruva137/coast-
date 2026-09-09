@@ -455,16 +455,33 @@ class RecordService : LifecycleService() {
         // app. Without location we are still a legitimate dataSync service --
         // the IMU stream is what we are keeping alive for.
         if (Build.VERSION.SDK_INT >= 34) {
-            val type = if (usingGnss) {
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION or
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-            } else {
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+            // Android 15 caps dataSync at 6 hours per 24, then calls onTimeout()
+            // and throws if we do not stop. `location` carries no such cap, so
+            // only claim dataSync while CSV rows are actually being written --
+            // that is the only thing the type is there to justify.
+            var type = 0
+            if (usingGnss) type = type or ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
+            if (logger != null) type = type or ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+            if (type == 0) {
+                // NAVIGATE with no location grant and no CSV: the IMU stream is
+                // still what we are staying alive for.
+                type = ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
             }
             startForeground(IdrApplication.NOTIF_ID, notif, type)
         } else {
             startForeground(IdrApplication.NOTIF_ID, notif)
         }
+    }
+
+    /**
+     * Android 15+ dataSync budget exhausted. The system gives us a few seconds
+     * to stop before it throws RemoteServiceException, so shut the session down
+     * cleanly and let the UI fall back to IDLE rather than dying mid-drive.
+     */
+    @androidx.annotation.RequiresApi(35)
+    override fun onTimeout(startId: Int) {
+        stopEverything()
+        stopSelf()
     }
 
     companion object {
@@ -486,15 +503,23 @@ class RecordService : LifecycleService() {
             val i = Intent(context, RecordService::class.java).setAction(
                 if (mode == AppMode.RECORD) ACTION_START_RECORD else ACTION_START_NAVIGATE,
             )
-            if (Build.VERSION.SDK_INT >= 26) {
-                context.startForegroundService(i)
-            } else {
-                context.startService(i)
+            try {
+                if (Build.VERSION.SDK_INT >= 26) {
+                    context.startForegroundService(i)
+                } else {
+                    context.startService(i)
+                }
+            } catch (t: Throwable) {
+                android.util.Log.w(TAG, "RecordService.start failed (non-fatal)", t)
             }
         }
 
         fun stop(context: Context) {
-            context.startService(Intent(context, RecordService::class.java).setAction(ACTION_STOP))
+            try {
+                context.startService(Intent(context, RecordService::class.java).setAction(ACTION_STOP))
+            } catch (t: Throwable) {
+                android.util.Log.w(TAG, "RecordService.stop failed (non-fatal)", t)
+            }
         }
 
         fun mark(context: Context) {

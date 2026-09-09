@@ -11,6 +11,7 @@ add_library(nav_core STATIC
   src/inference.cpp
   src/inekf.cpp
   src/graphpf.cpp
+  src/manifold.cpp
   src/aiding.cpp
   src/metrics.cpp
   src/engine.cpp

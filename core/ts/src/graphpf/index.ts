@@ -17,6 +17,7 @@ import {
   outgoing,
   projectS,
 } from "./geometry.ts";
+import { RoadGraphManifold } from "./manifold.ts";
 
 export {
   edgeById,
@@ -36,6 +37,16 @@ export type {
   VectorLocatorConfig,
   LocateQuery,
 } from "./vector_locator.ts";
+export {
+  RoadGraphManifold,
+  CorridorManifold,
+  ManifoldParticleFilter,
+} from "./manifold.ts";
+export type {
+  ConstraintManifold,
+  ManifoldState,
+  ManifoldFilterConfig,
+} from "./manifold.ts";
 
 export interface GraphPfConfig {
   n: number;
@@ -181,23 +192,24 @@ export class GraphParticleFilter {
   }
 
   mapProject(lat: number, lon: number, yawDeg: number): { lat: number; lon: number; edge_id: string; residual_m: number } {
-    const cands = nearestEdges(this.graph, lat, lon, 5);
-    let best = cands[0];
-    let bestScore = Infinity;
-    for (const e of cands) {
-      const dH = circDiff(e.heading_deg, yawDeg);
-      const { lat: a, lon: b } = interpolateEdge(this.graph, e, projectS(this.graph, e, lat, lon));
-      const d = haversineM(lat, lon, a, b);
-      const score = d + 0.15 * dH;
-      if (score < bestScore) {
-        bestScore = score;
-        best = e;
-      }
-    }
-    if (!best) return { lat, lon, edge_id: "", residual_m: 0 };
-    const s = projectS(this.graph, best, lat, lon);
-    const p = interpolateEdge(this.graph, best, s);
-    return { lat: p.lat, lon: p.lon, edge_id: best.id, residual_m: haversineM(lat, lon, p.lat, p.lon) };
+    // Delegates to RoadGraphManifold::project — same scoring as the prior inline path.
+    const m = new RoadGraphManifold(this.graph);
+    const p = m.project({
+      lat,
+      lon,
+      alt: 0,
+      yaw_deg: yawDeg,
+      edge_id: "",
+      s: 0,
+      lateral_m: 0,
+    });
+    if (!p.edge_id) return { lat, lon, edge_id: "", residual_m: 0 };
+    return {
+      lat: p.lat,
+      lon: p.lon,
+      edge_id: p.edge_id,
+      residual_m: haversineM(lat, lon, p.lat, p.lon),
+    };
   }
 
   private normalize(): void {

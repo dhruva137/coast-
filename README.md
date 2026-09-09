@@ -69,6 +69,15 @@ python lab/eval/harness.py
 
 ISRO: < 10% drift · < 100 m error over 1 km at 60 km/h · 10 Hz on-device.
 
+## Claim Verification
+
+Every number we publish is linted against `win_tuning/CLAIMS.json`.
+
+```bash
+python tools/verify_claims.py
+python tools/verify_all.py
+```
+
 Readiness gates are intentionally distinct:
 
 ```bash

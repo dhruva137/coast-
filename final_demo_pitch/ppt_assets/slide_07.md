@@ -2,14 +2,21 @@
 
 **Status:** final text for paste into official SIH template. **Not** a finished `.pptx`.
 
-## On-slide
+## Conclusion headline (largest type)
 
-- **One shared C++ math core** →
-  - (a) **JNI / Android @ 10 Hz** — consumer phone app
-  - (b) **headless C++ daemon @ 200 Hz** — FOG-grade IMUs (edge engine the PS demands)
+**One core runs on a ₹15,000 phone and a 200 Hz edge box.**
+
+## Dominant visual (one)
+
+`diagrams/architecture.png` — single shared C++ core → phone + edge. Cut any second stack diagram.
+
+## Support (≤18 pt body)
+
+- **JNI / Android @ 10 Hz** — consumer phone app
+- **Headless C++ daemon @ 200 Hz** — FOG-grade IMUs (edge engine the PS demands)
 - Measured edge engine: **120,305 Hz** · **8.3 µs/sample** · **7.5 MB** *(200 Hz requirement met **600×**)*
 - GNSS→DR handover **100 ms**
-- Stack: Kotlin/Compose · MapLibre + OSM (no key, no billing) · ONNX Runtime Mobile · C++ core · **all offline**
+- Stack: Kotlin/Compose · MapLibre + OSM · ONNX Runtime Mobile · C++ core · **all offline**
 
 ## Speaker (~25 s)
 

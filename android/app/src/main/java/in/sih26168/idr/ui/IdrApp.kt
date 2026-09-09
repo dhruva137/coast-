@@ -53,6 +53,7 @@ private val Tabs = listOf("DRIVE", "SESSIONS", "SETTINGS", "ABOUT")
  *
  * Auth stub runs once until guest/sign-in; reopenable from Settings.
  * Onboarding takes the whole window on first run and can be reopened from About.
+ * Demo Mode skips both and starts the blackout replay in one tap.
  */
 @Composable
 fun IdrApp(bus: IdrBus) {
@@ -62,11 +63,25 @@ fun IdrApp(bus: IdrBus) {
     var authDone by remember { mutableStateOf(prefs.authDone) }
     var showAuthOverlay by remember { mutableStateOf(false) }
     var onboarding by remember { mutableStateOf(!prefs.onboardingDone) }
+    var pendingDemoStart by rememberSaveable { mutableStateOf(false) }
     // Location-only gate for banners/onboarding. Notifications stay a separate
     // ask at START (see rememberNotificationGate). Refresh bus.location as soon
     // as the system dialog returns so the banner clears without needing Start.
-    val (permsOk, request) = rememberLocationPermissionGate { _ ->
+    // granted = FINE or COARSE; coarseOnly surfaces reduced precision separately.
+    val locPerm = rememberLocationPermissionGate { _ ->
         bus.publishLocation(LocationGate.status(ctx))
+    }
+    val permsOk = locPerm.granted
+    val coarseOnly = locPerm.coarseOnly
+    val request = locPerm.request
+
+    fun enterDemoMode() {
+        DemoMode.arm(prefs, bus)
+        authDone = true
+        showAuthOverlay = false
+        onboarding = false
+        tab = 0
+        pendingDemoStart = true
     }
 
     // Restore persisted demo/vehicle prefs onto the process bus once.
@@ -75,9 +90,19 @@ fun IdrApp(bus: IdrBus) {
         bus.setReplayEnabled(prefs.replayMode)
         bus.setShowGhost(prefs.showGhostCar)
         bus.setZuptTabletop(prefs.zuptTabletop)
+        if (prefs.demoMode) {
+            bus.setBlackout(true)
+        }
         val quick = withContext(Dispatchers.Default) { DeviceProbe.inventory(ctx) }
         bus.publishDevice(quick)
         bus.publishLocation(LocationGate.status(ctx))
+    }
+
+    LaunchedEffect(pendingDemoStart, authDone, onboarding) {
+        if (pendingDemoStart && authDone && !onboarding) {
+            DemoMode.start(ctx, prefs, bus)
+            pendingDemoStart = false
+        }
     }
 
     if (!authDone || showAuthOverlay) {
@@ -88,6 +113,7 @@ fun IdrApp(bus: IdrBus) {
                 authDone = true
                 showAuthOverlay = false
             },
+            onDemoMode = { enterDemoMode() },
         )
         return
     }
@@ -96,11 +122,13 @@ fun IdrApp(bus: IdrBus) {
         OnboardingScreen(
             bus = bus,
             permsOk = permsOk,
+            coarseOnly = coarseOnly,
             requestPerms = request,
             onFinish = {
                 prefs.onboardingDone = true
                 onboarding = false
             },
+            onDemoMode = { enterDemoMode() },
         )
         return
     }
@@ -160,8 +188,10 @@ fun IdrApp(bus: IdrBus) {
                 0 -> DriveScreen(
                     bus = bus,
                     permsOk = permsOk,
+                    coarseOnly = coarseOnly,
                     requestPerms = request,
                     onOpenHelp = { tab = 3 },
+                    onStartDemo = { enterDemoMode() },
                 )
                 1 -> Column(Modifier.statusBarsPadding().fillMaxSize()) {
                     SessionsScreen()
@@ -172,6 +202,7 @@ fun IdrApp(bus: IdrBus) {
                         permsOk = permsOk,
                         requestPerms = request,
                         onOpenAccount = { showAuthOverlay = true },
+                        onStartDemo = { enterDemoMode() },
                     )
                 }
                 else -> Column(Modifier.statusBarsPadding().fillMaxSize()) {

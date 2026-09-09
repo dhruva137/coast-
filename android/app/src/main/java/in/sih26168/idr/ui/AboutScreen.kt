@@ -30,7 +30,7 @@ fun AboutScreen() {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Text("IDR", fontFamily = IdrSans, color = Fg, fontSize = 28.sp)
+        Text("COAST", fontFamily = IdrSans, color = Fg, fontSize = 28.sp)
         Text("INTELLIGENT DEAD RECKONING  ·  SIH 26168", fontFamily = IdrMono, color = Accent, fontSize = 11.sp, letterSpacing = 1.4.sp)
         Text(
             "v0.4.0 · on-device only. No network, no account, no analytics.",

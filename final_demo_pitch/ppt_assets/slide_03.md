@@ -2,14 +2,21 @@
 
 **Status:** final text for paste into official SIH template. **Not** a finished `.pptx`.
 
-## On-slide
+## Conclusion headline (largest type)
+
+**The same discipline ISRO flies — on a ₹15,000 phone.**
+
+## Dominant visual (one)
+
+Single stacked use-case ladder graphic (civilian → strategic). No second illustration.
+
+## Support (≤18 pt body)
 
 - **Civilian:** logistics · ride-hailing · quick-commerce · ambulances · metro riders
 - **Strategic (why ISRO owns this PS):**
   - GNSS jamming / spoofing is a sovereignty issue
   - NavIC exists for this reason
   - Inertial nav is the fallback on launch vehicles and spacecraft
-- Punch line: *The same discipline ISRO flies — on a ₹15,000 phone.*
 - Footer (small): `docs/ISRO_RELEVANCE.md`
 
 ## Speaker (~25 s)

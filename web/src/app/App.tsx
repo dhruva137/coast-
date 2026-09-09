@@ -3,13 +3,17 @@ import { Landing } from "./Landing";
 import { Console } from "./Console";
 import { EvidenceRoom } from "./EvidenceRoom";
 import { Operations } from "./Operations";
+import { ApkPreview } from "./ApkPreview";
 import type { ActId } from "../lib/runDemo";
 
-type View = "landing" | "console" | "evidence" | "operations";
+type View = "landing" | "console" | "evidence" | "operations" | "apk";
 
 function viewFromHash(): View {
   const route = window.location.hash.replace(/^#\/?/, "");
-  return route === "console" || route === "evidence" || route === "operations" ? route : "landing";
+  if (route === "console" || route === "evidence" || route === "operations" || route === "apk") {
+    return route;
+  }
+  return "landing";
 }
 
 export function App() {
@@ -26,8 +30,9 @@ export function App() {
     document.body.classList.toggle("view-landing", view === "landing");
     document.body.classList.toggle("view-console", view === "console");
     document.body.classList.toggle("view-enterprise", view === "evidence" || view === "operations");
+    document.body.classList.toggle("view-apk", view === "apk");
     return () => {
-      document.body.classList.remove("view-landing", "view-console", "view-enterprise");
+      document.body.classList.remove("view-landing", "view-console", "view-enterprise", "view-apk");
     };
   }, [view]);
 
@@ -61,6 +66,8 @@ export function App() {
         <Console key={autoAct ?? "manual"} onBack={backToProduct} onNavigate={navigate} autoAct={autoAct} />
       ) : view === "evidence" ? (
         <EvidenceRoom navigate={navigate} />
+      ) : view === "apk" ? (
+        <ApkPreview onBack={backToProduct} />
       ) : (
         <Operations navigate={navigate} />
       )}

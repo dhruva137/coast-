@@ -9,16 +9,10 @@ import androidx.compose.ui.unit.sp
 /**
  * Platform fonts only.
  *
- * This used to pull IBM Plex through Play Services downloadable fonts. That is a
- * network fetch, and it was the ONLY thing in the app that needed the INTERNET
- * permission. Keeping it would have meant either shipping a privacy note that
- * was not quite true, or explaining a network permission in an app whose entire
- * pitch is that it works with the phone offline. The instrument look comes from
- * the monospace family, which every Android device already has, so it also
- * cannot fail to arrive at a venue with no wifi.
- *
- * If the team ever wants Plex specifically, bundle the .ttf files in
- * `res/font/` -- that is offline and needs no permission. Do not put the
+ * This used to pull IBM Plex through Play Services downloadable fonts. That was
+ * a network fetch. Fonts are now platform families only so typography never
+ * depends on the radio. INTERNET today is only for optional public OSM/Carto
+ * basemap tiles (basemap off => zero tile traffic); do not put the
  * downloadable-font provider back.
  */
 val IdrMono: FontFamily = FontFamily.Monospace

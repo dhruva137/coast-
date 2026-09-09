@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Themed-icon layer (Android 13+). Single flat colour; the system tints it.
+  Same geometry as ic_launcher_foreground so the silhouette is identical.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108"
+    android:tint="#FFFFFF">
+
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,24 L70,60 L54,51 L38,60 Z"
+        android:strokeLineJoin="round" />
+
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="7"
+        android:strokeLineCap="round"
+        android:strokeAlpha="0.75"
+        android:pathData="M54,67 L54,73" />
+
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="7"
+        android:strokeLineCap="round"
+        android:strokeAlpha="0.4"
+        android:pathData="M54,80 L54,84" />
+</vector>

@@ -50,6 +50,7 @@ fun AuthScreen(
     onFinished: () -> Unit,
     allowDismiss: Boolean = false,
     onDismiss: () -> Unit = {},
+    onDemoMode: (() -> Unit)? = null,
 ) {
     val ctx = LocalContext.current
     val prefs = remember { Prefs(ctx) }
@@ -98,6 +99,25 @@ fun AuthScreen(
 
         Spacer(Modifier.height(8.dp))
 
+        if (onDemoMode != null) {
+            Button(
+                onClick = onDemoMode,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Bg),
+                shape = RoundedCornerShape(12.dp),
+            ) {
+                Text("DEMO MODE", fontFamily = IdrMono, letterSpacing = 1.4.sp, fontWeight = FontWeight.Bold)
+            }
+            Text(
+                "One tap · no setup · works in airplane mode",
+                color = Mute,
+                fontFamily = IdrSans,
+                fontSize = 13.sp,
+            )
+        }
+
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = Bg2),
@@ -118,7 +138,10 @@ fun AuthScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Bg),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (onDemoMode != null) Accent.copy(alpha = 0.2f) else Accent,
+                        contentColor = if (onDemoMode != null) Accent else Bg,
+                    ),
                     shape = RoundedCornerShape(12.dp),
                 ) {
                     Text("CONTINUE AS GUEST", fontFamily = IdrMono, letterSpacing = 1.2.sp)

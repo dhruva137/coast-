@@ -58,6 +58,14 @@ class Prefs(context: Context) {
         set(v) = sp.edit().putBoolean(KEY_REPLAY, v).apply()
 
     /**
+     * Judge-facing Demo Mode: one-tap blackout replay. Survives rotate; cleared
+     * when the user stops the session or turns Replay off in Settings.
+     */
+    var demoMode: Boolean
+        get() = sp.getBoolean(KEY_DEMO_MODE, false)
+        set(v) = sp.edit().putBoolean(KEY_DEMO_MODE, v).apply()
+
+    /**
      * Draw the naive/ghost track (red puck) when the estimator publishes one.
      * Restored onto [IdrBus.setShowGhost] at launch.
      */
@@ -160,6 +168,7 @@ class Prefs(context: Context) {
         const val KEY_MAP_DARK = "map_dark_theme"
         const val KEY_VEHICLE = "vehicle_kind"
         const val KEY_REPLAY = "replay_mode"
+        const val KEY_DEMO_MODE = "demo_mode"
         const val KEY_GHOST = "show_ghost_car"
         const val KEY_ZUPT_TABLETOP = "zupt_tabletop"
         const val KEY_TRACKER_OPT_IN = "tracker_opt_in"

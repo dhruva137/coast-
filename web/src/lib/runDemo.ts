@@ -25,8 +25,8 @@ export interface DemoBundle {
 
 const ACTS: Record<ActId, { key: keyof ReturnType<typeof defaultConfigs>; title: string; line: string }> = {
   1: { key: "act1", title: "The handoff", line: "GPS dies in the basement. The dot keeps moving. Loop closure is the score." },
-  2: { key: "act2", title: "The vehicle", line: "Same bicycle ride. Car-style baseline vs lean-aware IDR. Watch the turns." },
-  3: { key: "act3", title: "The benchmark", line: "Underpass replay. ISRO asked <10% drift and <100 m per km." },
+  2: { key: "act2", title: "The vehicle", line: "Same bicycle ride. Car-style baseline vs lean-aware COAST. Watch the turns." },
+  3: { key: "act3", title: "The benchmark", line: "Underpass replay. ISRO asked <10% drift and <100 m/km." },
   4: { key: "act4", title: "The metric", line: "Not drift %. Did we take the right ramp?" },
   5: { key: "act2", title: "The ask", line: "200M two-wheelers. Any phone. Zero extra hardware. Ships as an SDK." },
 };

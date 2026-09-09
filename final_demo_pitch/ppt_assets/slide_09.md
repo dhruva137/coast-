@@ -2,9 +2,17 @@
 
 **Status:** final text for paste into official SIH template. **Not** a finished `.pptx`.
 
-## On-slide
+## Conclusion headline (largest type)
 
-- **Impact:** works on phones people already own · no extra hardware · works underground
+**No new hardware. No cloud. No data plan required.**
+
+## Dominant visual (one)
+
+Four-row inclusivity table (no internet / cheap phone / no account / zero run cost). One table — no second graphic.
+
+## Support (≤18 pt body)
+
+- **Impact:** works on phones people already own · works underground
 - **Sustainability:** zero cloud · zero marginal cost · zero extra e-waste hardware
 - **Business:** free consumer app · **SDK licensing** to OEMs / logistics / ride-hailing · edge-engine licensing for defence / industrial IMUs
 

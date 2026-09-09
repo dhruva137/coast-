@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { CoastWordmark } from "../components/CoastMark";
 
 type EvidenceClass = "REAL CAR" | "INJECTED LEAN";
 type ProofSummary = {
@@ -171,7 +172,7 @@ export function EvidenceRoom({ navigate }: { navigate: (view: "landing" | "conso
 
 export function EnterpriseNav({ active, navigate }: { active: "evidence" | "operations"; navigate: (view: "landing" | "console" | "operations" | "evidence") => void }) {
   return <nav className="enterprise-nav">
-    <button className="wordmark" type="button" onClick={() => navigate("landing")}>IDR<span>.</span></button>
+    <button className="wordmark" type="button" onClick={() => navigate("landing")}><CoastWordmark size={20} /></button>
     <div className="enterprise-nav-links">
       <button className={active === "evidence" ? "active" : ""} type="button" onClick={() => navigate("evidence")}>Evidence Room</button>
       <button className={active === "operations" ? "active" : ""} type="button" onClick={() => navigate("operations")}>Operations</button>

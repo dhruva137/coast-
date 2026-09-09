@@ -2,14 +2,19 @@
 
 **Status:** final text for paste into official SIH template. **Not** a finished `.pptx`.
 
-## On-slide
+## Conclusion headline (largest type)
 
-- **Live now:** the app · GNSS-blackout replay on **real** IO-VNBD data · `python -m lab.demo` regenerates these plots in ~90 s (fast method re-run; **2.02×** cites full mapfilter)
-- **Honest roadmap (next, not done):**
-  - GNSS+INS tight fusion
-  - On-phone latency measurement
-  - Field scooter loop-closure logs
-  - Calibrated uncertainty *(we do **not** show a confidence radius today)*
+**Live now: one-tap Demo Mode on real data through the real estimator.**
+
+## Dominant visual (one)
+
+Phone screenshot of mid-blackout Drive with REPLAY label + GNSS→COAST pill visible. No second roadmap diagram on this slide (roadmap is text).
+
+## Support (≤18 pt body)
+
+- GNSS-blackout replay on **real** IO-VNBD data · works in airplane mode
+- `python -m lab.demo` regenerates plots in ~90 s (fast method re-run; **2.02×** median position error still cites full mapfilter)
+- **Honest roadmap (next, not done):** GNSS+INS tight fusion · on-phone latency · field scooter loop-closure · calibrated uncertainty *(we do **not** show a confidence radius today)*
 
 ## Speaker (~20 s)
 
@@ -21,3 +26,4 @@
 - Do not claim ZUPT drift reduction as a measured end-to-end win.
 - Do not display confidence radius.
 - Do not claim `.pptx` / official SIH template is finished — this folder is paste-ready text + figures only.
+- **2.02×** = median position error only.

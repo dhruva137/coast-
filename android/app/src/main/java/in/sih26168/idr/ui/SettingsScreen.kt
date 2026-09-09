@@ -65,6 +65,7 @@ fun SettingsScreen(
     permsOk: Boolean,
     requestPerms: () -> Unit,
     onOpenAccount: () -> Unit = {},
+    onStartDemo: (() -> Unit)? = null,
 ) {
     val ctx = LocalContext.current
     val prefs = remember { Prefs(ctx) }
@@ -195,6 +196,58 @@ fun SettingsScreen(
         Section("DEMO")
         SettingsCard {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                if (onStartDemo != null) {
+                    Button(
+                        onClick = onStartDemo,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp)
+                            .semantics { contentDescription = "Start Demo Mode" },
+                        colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Bg),
+                        shape = RoundedCornerShape(12.dp),
+                    ) {
+                        Text("DEMO MODE", fontFamily = IdrMono, fontSize = 13.sp, letterSpacing = 1.2.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Text(
+                        "One tap · blackout replay · works offline",
+                        fontFamily = IdrSans,
+                        color = Mute,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(bottom = 6.dp),
+                    )
+                }
+                Button(
+                    onClick = {
+                        DemoMode.arm(prefs, bus)
+                        showGhost = true
+                    },
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Accent.copy(alpha = 0.22f),
+                        contentColor = Accent,
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Text("ARM DEMO (next Start)", fontFamily = IdrMono, fontSize = 12.sp, letterSpacing = 1.sp)
+                }
+                if (prefs.demoMode || blackout) {
+                    Button(
+                        onClick = {
+                            DemoMode.clear(prefs, bus)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(44.dp)
+                            .semantics { contentDescription = "Clear Demo Mode" },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Amber.copy(alpha = 0.2f),
+                            contentColor = Amber,
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                    ) {
+                        Text("CLEAR DEMO", fontFamily = IdrMono, fontSize = 12.sp, letterSpacing = 1.sp)
+                    }
+                }
                 SettingsToggle(
                     title = "Replay mode",
                     subtitle = "Next drive uses the bundled IO-VNBD-style stream.",
@@ -202,6 +255,7 @@ fun SettingsScreen(
                     onCheckedChange = {
                         bus.setReplayEnabled(it)
                         prefs.replayMode = it
+                        if (!it) DemoMode.clear(prefs, bus)
                     },
                     bordered = false,
                 )

@@ -190,7 +190,7 @@ object SessionStore {
         return Intent(Intent.ACTION_SEND).apply {
             type = "application/zip"
             putExtra(Intent.EXTRA_STREAM, uri)
-            putExtra(Intent.EXTRA_SUBJECT, "IDR session ${zip.nameWithoutExtension}")
+            putExtra(Intent.EXTRA_SUBJECT, "COAST session ${zip.nameWithoutExtension}")
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
     }

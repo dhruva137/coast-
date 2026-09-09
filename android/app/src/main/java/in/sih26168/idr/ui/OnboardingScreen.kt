@@ -59,8 +59,10 @@ import `in`.sih26168.idr.ui.theme.Text as Fg
 fun OnboardingScreen(
     bus: IdrBus,
     permsOk: Boolean,
+    coarseOnly: Boolean = false,
     requestPerms: () -> Unit,
     onFinish: () -> Unit,
+    onDemoMode: (() -> Unit)? = null,
 ) {
     var page by remember { mutableIntStateOf(0) }
     val last = 4
@@ -100,8 +102,8 @@ fun OnboardingScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             when (page) {
-                0 -> PageWhat()
-                1 -> PagePermissions(bus, permsOk, requestPerms)
+                0 -> PageWhat(onDemoMode = onDemoMode)
+                1 -> PagePermissions(bus, permsOk, coarseOnly, requestPerms)
                 2 -> PageMount()
                 3 -> PageCalibrate(bus)
                 else -> PageReadScreen()
@@ -140,7 +142,7 @@ fun OnboardingScreen(
 // ---------------------------------------------------------------------------
 
 @Composable
-private fun PageWhat() {
+private fun PageWhat(onDemoMode: (() -> Unit)? = null) {
     Title("It keeps navigating when GPS stops.")
     Body(
         "In a tunnel, a basement car park, or between tall buildings, satellite " +
@@ -148,6 +150,30 @@ private fun PageWhat() {
             "app carries on from the motion sensors in the phone and keeps showing " +
             "where you are going.",
     )
+    if (onDemoMode != null) {
+        Button(
+            onClick = onDemoMode,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Bg),
+            shape = RoundedCornerShape(10.dp),
+        ) {
+            Text(
+                "DEMO MODE",
+                fontFamily = IdrMono,
+                fontSize = 16.sp,
+                letterSpacing = 1.6.sp,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+        Text(
+            "One tap · no permissions · works offline",
+            fontFamily = IdrSans,
+            color = Mute,
+            fontSize = 13.sp,
+        )
+    }
     Card(Telem) {
         Text(
             "What it will always tell you",
@@ -165,7 +191,7 @@ private fun PageWhat() {
 }
 
 @Composable
-private fun PagePermissions(bus: IdrBus, permsOk: Boolean, requestPerms: () -> Unit) {
+private fun PagePermissions(bus: IdrBus, permsOk: Boolean, coarseOnly: Boolean, requestPerms: () -> Unit) {
     Title("What it needs, and why.")
 
     Card(Accent) {
@@ -211,8 +237,14 @@ private fun PagePermissions(bus: IdrBus, permsOk: Boolean, requestPerms: () -> U
 
     if (permsOk) {
         Text(
-            "Permissions granted.",
-            fontFamily = IdrMono, color = Telem, fontSize = 13.sp,
+            if (coarseOnly) {
+                "Approximate location granted — precision is reduced. Precise GPS is optional."
+            } else {
+                "Permissions granted."
+            },
+            fontFamily = IdrMono,
+            color = if (coarseOnly) Amber else Telem,
+            fontSize = 13.sp,
         )
     } else {
         Button(

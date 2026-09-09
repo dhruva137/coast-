@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Splash animation: the arrow settles into place, then the trail appears behind
+  it. Total 620ms — inside the ~1000ms platform cap for a splash AVD, and short
+  enough that it never delays a fast cold start.
+-->
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/ic_splash_logo">
+
+    <target
+        android:name="arrow"
+        android:animation="@animator/splash_arrow_settle" />
+
+    <target
+        android:name="arrowPath"
+        android:animation="@animator/splash_arrow_fade" />
+
+    <target
+        android:name="dash1"
+        android:animation="@animator/splash_dash_one" />
+
+    <target
+        android:name="dash2"
+        android:animation="@animator/splash_dash_two" />
+</animated-vector>

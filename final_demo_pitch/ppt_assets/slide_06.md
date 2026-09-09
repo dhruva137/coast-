@@ -2,11 +2,18 @@
 
 **Status:** final text for paste into official SIH template. **Not** a finished `.pptx`.
 
-## On-slide
+## Conclusion headline (largest type)
 
-- We found a **unit error in our own pipeline** — a dataset column labelled km/h was actually m/s
+**We found a 3.6× unit bug in our own pipeline — and fixed it.**
+
+## Dominant visual (one)
+
+Before/after number pair only: **972% → 2.4%** drift (same code, units corrected). No second chart.
+
+## Support (≤18 pt body)
+
+- Dataset column labelled km/h was actually m/s
 - That error had been inflating every drift figure **3.6×**
-- Same code: reported **972%** drift → **2.4%** once fixed
 - Why it matters: you only find that by understanding the physics and the data
 
 ## Speaker (~20 s)

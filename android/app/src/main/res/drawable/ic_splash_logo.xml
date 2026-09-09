@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Splash icon. Platform spec for a splash icon WITHOUT an icon background is a
+  288dp canvas with the art inside a 192dp circle. The paths below are authored
+  in the same 108 space as the launcher icon and scaled 2.667x, which puts the
+  art inside an 88dp radius — comfortably within the 96dp limit.
+
+  Groups are named so avd_splash_logo.xml can animate them.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="288dp"
+    android:height="288dp"
+    android:viewportWidth="288"
+    android:viewportHeight="288">
+
+    <group
+        android:name="root"
+        android:scaleX="2.667"
+        android:scaleY="2.667">
+
+        <group
+            android:name="arrow"
+            android:pivotX="54"
+            android:pivotY="48">
+            <path
+                android:name="arrowPath"
+                android:fillColor="#00D4AA"
+                android:pathData="M54,24 L70,60 L54,51 L38,60 Z"
+                android:strokeLineJoin="round" />
+        </group>
+
+        <path
+            android:name="dash1"
+            android:strokeColor="#00D4AA"
+            android:strokeWidth="7"
+            android:strokeLineCap="round"
+            android:strokeAlpha="0.75"
+            android:pathData="M54,67 L54,73" />
+
+        <path
+            android:name="dash2"
+            android:strokeColor="#00D4AA"
+            android:strokeWidth="7"
+            android:strokeLineCap="round"
+            android:strokeAlpha="0.4"
+            android:pathData="M54,80 L54,84" />
+    </group>
+</vector>

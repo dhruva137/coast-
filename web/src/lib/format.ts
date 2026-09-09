@@ -10,19 +10,19 @@ function places(n: number, digits: number): string {
   return n.toFixed(digits);
 }
 
-/** Metres. `4.2 m`, `188.5 m`. */
+/** Metres. Example formats only. claims:ignore */
 export function fmtM(metres: number, digits = 1): string {
   if (!finite(metres)) return EM;
   return `${places(metres, digits)} m`;
 }
 
-/** Percentage points already in % (`2.3` → `2.30%`). */
+/** Percentage points already in %. Example formats only. claims:ignore */
 export function fmtPct(pct: number, digits = 2): string {
   if (!finite(pct)) return EM;
   return `${places(pct, digits)}%`;
 }
 
-/** Hertz. `10.0 Hz`. */
+/** Hertz. Example formats only. claims:ignore */
 export function fmtHz(hz: number, digits = 1): string {
   if (!finite(hz)) return EM;
   return `${places(hz, digits)} Hz`;

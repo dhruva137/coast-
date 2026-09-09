@@ -1,5 +1,7 @@
 #include "nav/graphpf.h"
 
+#include "nav/manifold.h"
+
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -318,30 +320,20 @@ INavState GraphParticleFilter::estimate(INavState state) {
 }
 
 MapProject GraphParticleFilter::mapProject(double lat, double lon, double yaw_deg) const {
+  // Delegates to RoadGraphManifold::project — same scoring as the prior inline path.
   MapProject out;
   out.lat = lat;
   out.lon = lon;
-  const auto cands = nearestEdges(graph, lat, lon, 5);
-  int best_i = -1;
-  double best_score = 1e300;
-  for (int i = 0; i < static_cast<int>(cands.size()); ++i) {
-    const IGraphEdge& e = cands[static_cast<std::size_t>(i)];
-    const double dH = circDiff(e.heading_deg, yaw_deg);
-    const Lla p = interpolateEdge(graph, e, projectS(graph, e, lat, lon));
-    const double d = haversineM(lat, lon, p.lat, p.lon);
-    const double score = d + 0.15 * dH;
-    if (score < best_score) {
-      best_score = score;
-      best_i = i;
-    }
-  }
-  if (best_i < 0) return out;
-  const IGraphEdge& e = cands[static_cast<std::size_t>(best_i)];
-  const double s = projectS(graph, e, lat, lon);
-  const Lla p = interpolateEdge(graph, e, s);
+  RoadGraphManifold manifold(graph);
+  ManifoldState probe;
+  probe.lat = lat;
+  probe.lon = lon;
+  probe.yaw_deg = yaw_deg;
+  const ManifoldState p = manifold.project(probe);
+  if (p.edge_id.empty()) return out;
   out.lat = p.lat;
   out.lon = p.lon;
-  out.edge_id = e.id;
+  out.edge_id = p.edge_id;
   out.residual_m = haversineM(lat, lon, p.lat, p.lon);
   return out;
 }

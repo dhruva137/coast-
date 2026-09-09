@@ -1,0 +1,9 @@
+{
+  "drive": "S-M.csv",
+  "distance_m": 1068.2228511166645,
+  "png": "C:\\Users\\Dhruva P Gowda\\Desktop\\New folder\\SIH 2026\\final_demo_pitch\\ppt_assets\\diagrams\\money_shot.png",
+  "gif": "C:\\Users\\Dhruva P Gowda\\Desktop\\New folder\\SIH 2026\\final_demo_pitch\\ppt_assets\\diagrams\\money_shot.gif",
+  "mp4": null,
+  "mp4_error": "Could not find a backend to open `C:\\Users\\Dhruva P Gowda\\Desktop\\New folder\\SIH 2026\\final_demo_pitch\\ppt_assets\\diagrams\\money_shot.mp4`` with iomode `wI`.\nBased on the extension, the following plugins might add capable backends:\n  FFMPEG:  pip install imageio[ffmpeg]\n  pyav:  pip install imageio[pyav]",
+  "note": "Single measured outage window for the five-second visual. Aggregate median position-error improvement remains 2.02\u00d7 from lab/stress/results/mapfilter/summary.md \u2014 do not read a ratio off this plot."
+}

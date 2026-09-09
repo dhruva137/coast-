@@ -19,7 +19,9 @@ GET  /train/status  JSON snapshot of the current / last train run
 GET  /metrics     baseline ledger from committed measured summary files
 GET  /figures/<name>  serve PNGs under figures/
 
-Stdlib only (http.server + SSE). Bind 0.0.0.0:8787.
+Stdlib only (http.server + SSE). Bind 0.0.0.0:8787 so a phone on LAN can POST /ingest.
+Cold start with no network and no phone must still render a useful page (CDN map/chart
+are optional; Train/ledger stay local).
 """
 
 from __future__ import annotations
@@ -46,13 +48,15 @@ FIGURES = REPO / "figures"
 
 _MAPFILTER_REPORT = REPO / "lab" / "stress" / "results" / "mapfilter" / "report.json"
 _MAPFILTER_SUMMARY = "lab/stress/results/mapfilter/summary.md"
+_ISRO_REPORT = REPO / "lab" / "stress" / "results" / "isro_benchmark" / "report.json"
 _ISRO_SUMMARY = "lab/stress/results/isro_benchmark/summary.md"
+_HEADING_REPORT = REPO / "lab" / "stress" / "results" / "heading_ablation" / "report.json"
 _HEADING_SUMMARY = "lab/stress/results/heading_ablation/summary.md"
 _SPEED_SUMMARY = "lab/models/results/speed_bakeoff/summary.md"
 
-# lab.demo prints: "epoch 1/4  loss=1.2345  (MSE)  2.3s"
+# lab.demo prints: "epoch 1/4  loss=1.2345  rmse=0.456  (MSE)  2.3s"
 _EPOCH_RE = re.compile(
-    r"epoch\s+(\d+)\s*/\s*(\d+)\s+loss=([0-9.eE+-]+)\s+\((\w+)\)\s+([0-9.]+)s",
+    r"epoch\s+(\d+)\s*/\s*(\d+)\s+loss=([0-9.eE+-]+)(?:\s+rmse=([0-9.eE+-]+))?\s+\((\w+)\)\s+([0-9.]+)s",
     re.IGNORECASE,
 )
 _RMSE_RE = re.compile(
@@ -76,7 +80,7 @@ _train_status: dict[str, Any] = {
     "finished_at": None,
     "returncode": None,
     "mode": "idle",
-    "label": "fast re-run (lab.demo quick AVNet) - full 2.02x cites mapfilter summary",
+    "label": "fast re-run (lab.demo quick AVNet) - full 2.02x lower median position error cites mapfilter",
     "epochs": [],
     "last_line": None,
     "error": None,
@@ -89,9 +93,7 @@ PAGE = r"""<!DOCTYPE html>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>COAST · live console</title>
-<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet"/>
-<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" media="print" onload="this.media='all'"/>
 <style>
   :root {
     --bg: #0B0E11;
@@ -181,6 +183,20 @@ PAGE = r"""<!DOCTYPE html>
   .figures img { width: 100%; display: block; background: #000; min-height: 80px; }
   .figures figcaption { padding: 6px 8px; font-size: 10px; color: var(--mute); }
   .empty-fig { padding: 18px; color: var(--mute); font-size: 12px; }
+  .intro {
+    margin: 0; padding: 10px 18px; font-size: 12px; line-height: 1.45; color: var(--mute);
+    border-bottom: 1px solid var(--border); background: #0e1218;
+  }
+  .intro strong { color: var(--text); font-weight: 600; }
+  .map-fallback {
+    flex: 1; min-height: 320px; display: flex; flex-direction: column; justify-content: center;
+    gap: 10px; padding: 24px; color: var(--mute); font-size: 13px; line-height: 1.5;
+  }
+  .map-fallback h3 { margin: 0; color: var(--text); font-size: 14px; letter-spacing: 0.06em; }
+  .chart-fallback {
+    height: 100%; display: flex; align-items: center; justify-content: center;
+    color: var(--mute); font-size: 12px; text-align: center; padding: 12px;
+  }
 </style>
 </head>
 <body>
@@ -188,6 +204,12 @@ PAGE = r"""<!DOCTYPE html>
   <h1>COAST <span>LIVE CONSOLE</span></h1>
   <div id="lanBadge" class="badge wait">Waiting for phone stream over LAN</div>
 </header>
+<p class="intro" id="introBanner">
+  <strong>What this is:</strong> a localhost presenter console for COAST —
+  optional live phone map (LAN <code>/ingest</code>), real <code>python -m lab.demo</code> training
+  (loss from stdout only — never simulated), and a measured algorithm ledger from committed
+  <code>report.json</code> files. Works without a phone; offline CDN may disable the basemap/chart scripts only.
+</p>
 <main>
   <section class="panel">
     <h2>Live phone map</h2>
@@ -208,10 +230,10 @@ PAGE = r"""<!DOCTYPE html>
       </div>
       <p class="honest">
         Train runs the same code as <code>python -m lab.demo</code> (quick AVNet).
-        Loss curve is real stdout epochs — not simulated.
-        Headline <strong>2.02×</strong> always cites the full committed mapfilter run, not this fast re-run.
+        Loss curve is real stdout epochs — not simulated. If training fails, the real error is shown; no invented curve.
+        Headline <strong>2.02× lower median position error</strong> always cites the full committed mapfilter run, not this fast re-run.
       </p>
-      <div class="chart-wrap"><canvas id="lossChart"></canvas></div>
+      <div class="chart-wrap" id="chartWrap"><canvas id="lossChart"></canvas></div>
       <div id="log"></div>
     </div>
   </section>
@@ -238,66 +260,121 @@ PAGE = r"""<!DOCTYPE html>
     </div>
   </section>
 </footer>
+<noscript>
+  <p class="intro">JavaScript is off. This page is the COAST live console at localhost:8787 —
+  phone LAN ingest, Train via lab.demo, and measured ledger. Enable JS for interactivity.</p>
+</noscript>
 <script>
+window.__coastCdn = { maplibre: false, chart: false };
+function __coastMaybeBoot() {
+  if (window.__coastBooted) return;
+  if (typeof maplibregl !== 'undefined') window.__coastCdn.maplibre = true;
+  if (typeof Chart !== 'undefined') window.__coastCdn.chart = true;
+  // Boot once DOM is ready; do not wait forever for CDN.
+  if (document.readyState === 'loading') return;
+  window.__coastBooted = true;
+  if (typeof window.__coastBoot === 'function') window.__coastBoot();
+}
+</script>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"
+  async onload="__coastMaybeBoot()" onerror="__coastMaybeBoot()"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"
+  async onload="__coastMaybeBoot()" onerror="__coastMaybeBoot()"></script>
+<script>
+(function () {
+function boot() {
 const SURFACE = '#0B0E11';
 const GNSS = '#4FC3F7';
 const IDR = '#00E0A4';
 const FIGURE_NAMES = ['drift_comparison.png', 'cdf_error.png', 'trajectory_overlay.png'];
 
-const map = new maplibregl.Map({
-  container: 'map',
-  style: {
-    version: 8,
-    sources: {
-      osm: {
-        type: 'raster',
-        tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-        tileSize: 256,
-        attribution: '© OpenStreetMap'
-      }
-    },
-    layers: [
-      { id: 'bg', type: 'background', paint: { 'background-color': SURFACE } },
-      { id: 'osm', type: 'raster', source: 'osm', paint: { 'raster-opacity': 0.55, 'raster-saturation': -0.85, 'raster-brightness-min': 0.05 } }
-    ]
-  },
-  center: [77.59, 12.97],
-  zoom: 14
-});
-
-map.on('load', () => {
-  map.addSource('trail', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-  map.addLayer({
-    id: 'trail-line', type: 'line', source: 'trail',
-    paint: {
-      'line-width': 4,
-      'line-color': ['match', ['get', 'mode'], 'GNSS', GNSS, IDR],
-      'line-opacity': 0.9
-    }
-  });
-  map.addSource('dot', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-  map.addLayer({
-    id: 'phone-dot', type: 'circle', source: 'dot',
-    paint: {
-      'circle-radius': 8,
-      'circle-color': ['match', ['get', 'mode'], 'GNSS', GNSS, IDR],
-      'circle-stroke-width': 2,
-      'circle-stroke-color': '#fff'
-    }
-  });
-  pollFeed();
-  setInterval(pollFeed, 400);
-});
-
+let map = null;
 let follow = true;
-map.on('dragstart', () => { follow = false; });
+let lossChart = null;
+
+function showMapFallback(reason) {
+  const el = document.getElementById('map');
+  if (!el) return;
+  el.innerHTML =
+    '<div class="map-fallback">' +
+    '<h3>Map unavailable offline</h3>' +
+    '<div>' + reason + '</div>' +
+    '<div>This console still serves Train, the measured ledger, and LAN ingest when a phone connects. ' +
+    'Reconnect to load MapLibre / OSM tiles, or stream the phone with the tracker APK.</div>' +
+    '</div>';
+  const badge = document.getElementById('lanBadge');
+  if (badge && badge.classList.contains('wait')) {
+    badge.textContent = 'No phone · map CDN optional · Train & ledger work locally';
+  }
+}
+
+function initMap() {
+  if (typeof maplibregl === 'undefined') {
+    showMapFallback('MapLibre GL failed to load from the CDN (typical on airplane mode / no network).');
+    pollFeed();
+    setInterval(pollFeed, 400);
+    return;
+  }
+  try {
+    map = new maplibregl.Map({
+      container: 'map',
+      style: {
+        version: 8,
+        sources: {
+          osm: {
+            type: 'raster',
+            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+            tileSize: 256,
+            attribution: '© OpenStreetMap'
+          }
+        },
+        layers: [
+          { id: 'bg', type: 'background', paint: { 'background-color': SURFACE } },
+          { id: 'osm', type: 'raster', source: 'osm', paint: { 'raster-opacity': 0.55, 'raster-saturation': -0.85, 'raster-brightness-min': 0.05 } }
+        ]
+      },
+      center: [77.59, 12.97],
+      zoom: 14
+    });
+  } catch (err) {
+    showMapFallback('MapLibre init error: ' + err);
+    pollFeed();
+    setInterval(pollFeed, 400);
+    return;
+  }
+  map.on('error', () => { /* tile failures offline — keep shell */ });
+  map.on('load', () => {
+    map.addSource('trail', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+    map.addLayer({
+      id: 'trail-line', type: 'line', source: 'trail',
+      paint: {
+        'line-width': 4,
+        'line-color': ['match', ['get', 'mode'], 'GNSS', GNSS, IDR],
+        'line-opacity': 0.9
+      }
+    });
+    map.addSource('dot', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+    map.addLayer({
+      id: 'phone-dot', type: 'circle', source: 'dot',
+      paint: {
+        'circle-radius': 8,
+        'circle-color': ['match', ['get', 'mode'], 'GNSS', GNSS, IDR],
+        'circle-stroke-width': 2,
+        'circle-stroke-color': '#fff'
+      }
+    });
+    pollFeed();
+    setInterval(pollFeed, 400);
+  });
+  map.on('dragstart', () => { follow = false; });
+}
 
 async function pollFeed() {
   try {
     const r = await fetch('/feed');
     if (!r.ok) return;
     renderFeed(await r.json());
-  } catch (e) { /* silent */ }
+  } catch (e) { /* silent — localhost may still be fine */ }
 }
 
 function renderFeed(data) {
@@ -310,7 +387,9 @@ function renderFeed(data) {
     pill.className = 'pill idle';
     pill.textContent = 'WAITING';
     badge.className = 'badge wait';
-    badge.textContent = 'Waiting for phone stream over LAN';
+    badge.textContent = map
+      ? 'Waiting for phone stream over LAN'
+      : 'No phone · map CDN optional · Train & ledger work locally';
     return;
   }
   badge.className = 'badge live';
@@ -321,6 +400,8 @@ function renderFeed(data) {
   const spd = Number(latest.speed_mps);
   const kmh = Number.isFinite(spd) ? (spd * 3.6).toFixed(0) : '--';
   meta.textContent = kmh + ' km/h · session ' + (latest.session || '?');
+
+  if (!map) return;
 
   const coords = [];
   const feats = [];
@@ -336,50 +417,78 @@ function renderFeed(data) {
       });
     }
   }
-  map.getSource('trail').setData({ type: 'FeatureCollection', features: feats });
-  const lon = Number(latest.lon), lat = Number(latest.lat);
-  if (Number.isFinite(lon) && Number.isFinite(lat)) {
-    map.getSource('dot').setData({
-      type: 'FeatureCollection',
-      features: [{
-        type: 'Feature',
-        properties: { mode },
-        geometry: { type: 'Point', coordinates: [lon, lat] }
-      }]
-    });
-    if (follow) map.easeTo({ center: [lon, lat], duration: 300 });
-  }
+  try {
+    const trailSrc = map.getSource('trail');
+    if (trailSrc) trailSrc.setData({ type: 'FeatureCollection', features: feats });
+    const lon = Number(latest.lon), lat = Number(latest.lat);
+    if (Number.isFinite(lon) && Number.isFinite(lat)) {
+      const dotSrc = map.getSource('dot');
+      if (dotSrc) {
+        dotSrc.setData({
+          type: 'FeatureCollection',
+          features: [{
+            type: 'Feature',
+            properties: { mode },
+            geometry: { type: 'Point', coordinates: [lon, lat] }
+          }]
+        });
+      }
+      if (follow) map.easeTo({ center: [lon, lat], duration: 300 });
+    }
+  } catch (_) { /* map not ready */ }
 }
 
-const lossChart = new Chart(document.getElementById('lossChart'), {
-  type: 'line',
-  data: {
-    labels: [],
-    datasets: [{
-      label: 'train loss (real)',
-      data: [],
-      borderColor: IDR,
-      backgroundColor: 'rgba(0,224,164,0.12)',
-      tension: 0.25,
-      pointRadius: 3,
-      borderWidth: 2
-    }]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    animation: { duration: 200 },
-    scales: {
-      x: { ticks: { color: '#8A929B' }, grid: { color: 'rgba(255,255,255,0.04)' }, title: { display: true, text: 'epoch', color: '#8A929B' } },
-      y: { ticks: { color: '#8A929B' }, grid: { color: 'rgba(255,255,255,0.06)' }, title: { display: true, text: 'loss', color: '#8A929B' } }
-    },
-    plugins: { legend: { labels: { color: '#E8EDF2' } } }
+function initChart() {
+  const wrap = document.getElementById('chartWrap');
+  if (typeof Chart === 'undefined') {
+    if (wrap) {
+      wrap.innerHTML =
+        '<div class="chart-fallback">Chart.js CDN unavailable offline. ' +
+        'Train still runs; real epoch lines appear in the log below — no fake curve.</div>';
+    }
+    return;
   }
-});
+  const canvas = document.getElementById('lossChart');
+  if (!canvas) return;
+  lossChart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{
+        label: 'train loss (real)',
+        data: [],
+        borderColor: IDR,
+        backgroundColor: 'rgba(0,224,164,0.12)',
+        tension: 0.25,
+        pointRadius: 3,
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 200 },
+      scales: {
+        x: { ticks: { color: '#8A929B' }, grid: { color: 'rgba(255,255,255,0.04)' }, title: { display: true, text: 'epoch', color: '#8A929B' } },
+        y: { ticks: { color: '#8A929B' }, grid: { color: 'rgba(255,255,255,0.06)' }, title: { display: true, text: 'loss', color: '#8A929B' } }
+      },
+      plugins: { legend: { labels: { color: '#E8EDF2' } } }
+    }
+  });
+}
 
 function resetChart() {
+  if (!lossChart) return;
   lossChart.data.labels = [];
   lossChart.data.datasets[0].data = [];
+  lossChart.update();
+}
+
+function appendEpoch(epoch, loss) {
+  if (!lossChart) return;
+  if (typeof loss !== 'number' || !Number.isFinite(loss)) return;
+  lossChart.data.labels.push(String(epoch));
+  lossChart.data.datasets[0].data.push(loss);
   lossChart.update();
 }
 
@@ -403,9 +512,10 @@ async function startTrain() {
   setTrainUi(true, 'starting…');
   try {
     const r = await fetch('/train', { method: 'POST' });
-    const body = await r.json();
-    if (!r.ok) {
-      appendLog('ERROR: ' + (body.error || r.status));
+    let body = {};
+    try { body = await r.json(); } catch (_) { body = {}; }
+    if (!r.ok || body.ok === false) {
+      appendLog('ERROR: ' + (body.error || ('HTTP ' + r.status)));
       setTrainUi(false, 'error');
       return;
     }
@@ -422,15 +532,16 @@ async function startTrain() {
     try { msg = JSON.parse(ev.data); } catch (_) { return; }
     if (msg.type === 'line' && msg.text) appendLog(msg.text);
     if (msg.type === 'epoch') {
-      lossChart.data.labels.push(String(msg.epoch));
-      lossChart.data.datasets[0].data.push(msg.loss);
-      lossChart.update();
+      appendEpoch(msg.epoch, msg.loss);
       setTrainUi(true, 'epoch ' + msg.epoch + '/' + msg.epochs + ' · real loss');
     }
     if (msg.type === 'rmse') {
       appendLog('quick RMSE model=' + msg.model_rmse + ' hold=' + msg.hold_rmse + ' (' + msg.seconds + 's)');
     }
     if (msg.type === 'done') {
+      if (msg.returncode !== 0) {
+        appendLog('ERROR: training subprocess exited with code ' + msg.returncode + ' (no invented loss curve)');
+      }
       setTrainUi(false, msg.returncode === 0 ? 'done · fast re-run' : 'failed rc=' + msg.returncode);
       es.close(); es = null;
       refreshFigures();
@@ -443,7 +554,7 @@ async function startTrain() {
     }
   };
   es.onerror = () => {
-    /* browser may reconnect; status poll covers hang */
+    /* browser may reconnect; do not invent chart points */
   };
 }
 
@@ -455,6 +566,14 @@ async function loadMetrics() {
     const data = await r.json();
     const tb = document.getElementById('ledgerBody');
     tb.innerHTML = '';
+    if (data.report_error) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = '<td colspan="3" style="color:#ff8a80">' +
+        escapeHtml(data.report_error) + '</td>';
+      tb.appendChild(tr);
+      document.getElementById('ledgerNote').textContent = data.honesty || '';
+      return;
+    }
     for (const row of (data.ledger || [])) {
       const tr = document.createElement('tr');
       tr.innerHTML = '<td>' + escapeHtml(row.component) +
@@ -466,7 +585,8 @@ async function loadMetrics() {
     document.getElementById('ledgerNote').textContent = data.honesty || '';
   } catch (e) {
     document.getElementById('ledgerBody').innerHTML =
-      '<tr><td colspan="3">Failed to load /metrics</td></tr>';
+      '<tr><td colspan="3" style="color:#ff8a80">Failed to load /metrics: ' +
+      escapeHtml(String(e)) + '</td></tr>';
   }
 }
 
@@ -495,8 +615,25 @@ async function refreshFigures() {
     : '<div class="empty-fig">No figures yet — press Train (writes figures/ via lab.demo).</div>';
 }
 
+initMap();
+initChart();
 loadMetrics();
 refreshFigures();
+} // end boot
+
+window.__coastBoot = boot;
+// Prefer waiting briefly for CDN; always boot by 1.5s so offline is useful.
+setTimeout(function () {
+  if (!window.__coastBooted) {
+    window.__coastBooted = true;
+    boot();
+  }
+}, 1500);
+document.addEventListener('DOMContentLoaded', function () {
+  // If both CDNs already resolved (cached), boot early via __coastMaybeBoot.
+  __coastMaybeBoot();
+});
+})();
 </script>
 </body>
 </html>
@@ -523,6 +660,22 @@ def _broadcast(event: dict[str, Any]) -> None:
 
 def _parse_train_line(line: str) -> list[dict[str, Any]]:
     events: list[dict[str, Any]] = [{"type": "line", "text": line.rstrip("\n")}]
+    marker = "COAST_EVENT "
+    idx = line.find(marker)
+    if idx >= 0:
+        try:
+            ev = json.loads(line[idx + len(marker) :])
+            if isinstance(ev, dict) and ev.get("type") == "epoch":
+                with _train_lock:
+                    _train_status["epochs"].append(ev)
+                    _train_status["last_line"] = line.rstrip("\n")
+                events.append(ev)
+                return events
+            if isinstance(ev, dict):
+                events.append(ev)
+                return events
+        except json.JSONDecodeError:
+            pass
     m = _EPOCH_RE.search(line)
     if m:
         epoch_ev = {
@@ -530,8 +683,9 @@ def _parse_train_line(line: str) -> list[dict[str, Any]]:
             "epoch": int(m.group(1)),
             "epochs": int(m.group(2)),
             "loss": float(m.group(3)),
-            "mode": m.group(4),
-            "elapsed_s": float(m.group(5)),
+            "rmse": float(m.group(4)) if m.group(4) is not None else None,
+            "mode": m.group(5),
+            "elapsed_s": float(m.group(6)),
             "source": "lab.demo stdout",
         }
         events.append(epoch_ev)
@@ -590,6 +744,22 @@ def _broadcast_end() -> None:
                 pass
 
 
+def _clear_demo_output() -> dict[str, Any]:
+    with _train_lock:
+        if _train_proc is not None and _train_proc.poll() is None:
+            return {"ok": False, "error": "training still running", "deleted": []}
+    deleted: list[str] = []
+    if not FIGURES.is_dir():
+        return {"ok": True, "deleted": deleted}
+    for p in FIGURES.iterdir():
+        if p.name == "_reference" or p.is_dir():
+            continue
+        if p.suffix.lower() == ".png" or p.name == "demo_run.json":
+            p.unlink()
+            deleted.append(p.name)
+    return {"ok": True, "deleted": deleted}
+
+
 def _list_figures() -> list[str]:
     if not FIGURES.is_dir():
         return []
@@ -615,7 +785,7 @@ def _start_train() -> dict[str, Any]:
                 "mode": "quick",
                 "label": (
                     "fast re-run (python -m lab.demo) - "
-                    "full 2.02x cites lab/stress/results/mapfilter/summary.md"
+                    "full 2.02x lower median position error cites lab/stress/results/mapfilter/summary.md"
                 ),
                 "epochs": [],
                 "last_line": None,
@@ -653,92 +823,196 @@ def _start_train() -> dict[str, Any]:
             "mode": "quick",
             "note": (
                 "This is a fast re-run of the training path. "
-                "Headline 2.02× / 28%→17% come from committed mapfilter results, "
-                "not from this short session."
+                "Headline 2.02× lower median position error cites committed "
+                "mapfilter results, not this short session."
             ),
         }
 
 
+def _best_isro_arm_pct(isro_report: dict[str, Any], arm: str) -> int:
+    rates = [
+        float(v["pass_rate"])
+        for k, v in isro_report["summary"].items()
+        if k.startswith(f"{arm}/")
+    ]
+    if not rates:
+        raise KeyError(f"no {arm} rows")
+    return int(round(max(rates) * 100))
+
+
 def _load_metrics() -> dict[str, Any]:
     """Baseline ledger from committed measured files only — no invented rows."""
-    free_drift = 27.6
-    coast_drift = 16.8
-    improvement_x = 2.02
-    free_pass = 8
-    pf_pass = 17
-    n_outages = 43
+    report_err: str | None = None
+    ledger: list[dict[str, Any]] = []
+
     try:
         report = json.loads(_MAPFILTER_REPORT.read_text(encoding="utf-8"))
         junc = report["scenarios"]["junctions"]
+        free_err = float(junc["free_median_error_m"])
+        coast_err = float(junc["pf_median_error_m"])
         free_drift = float(junc["free_median_drift_pct"])
         coast_drift = float(junc["pf_median_drift_pct"])
         improvement_x = float(junc["improvement_x"])
         free_pass = int(junc["free_pass"])
         pf_pass = int(junc["pf_pass"])
         n_outages = int(junc["n"])
-    except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
-        report_err = str(exc)
-    else:
-        report_err = None
+    except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError):
+        report_err = (
+            "Could not read lab/stress/results/mapfilter/report.json — "
+            "no measured numbers to show."
+        )
+        return {
+            "ledger": [],
+            "story": "",
+            "honesty": (
+                "Browser Train = python -m lab.demo (quick AVNet + figure regen). "
+                "Measured ledger requires lab/stress/results/mapfilter/report.json."
+            ),
+            "sources": {
+                "mapfilter": _MAPFILTER_SUMMARY,
+                "heading_ablation": _HEADING_SUMMARY,
+                "isro": _ISRO_SUMMARY,
+                "speed_bakeoff": _SPEED_SUMMARY,
+            },
+            "figures": _list_figures(),
+            "report_error": report_err,
+            "research_ref": "cursor_induction_v2/RESEARCH_2025.md §C",
+        }
 
-    # Perfect gyro: F_oracle 84/186 pass → fail 55% (decision layer / RESEARCH §C).
-    oracle_pass = 84
-    oracle_n = 186
-    oracle_fail_pct = round(100.0 * (1.0 - oracle_pass / oracle_n))
+    # Perfect gyro: F_oracle from heading_ablation/report.json
+    try:
+        heading = json.loads(_HEADING_REPORT.read_text(encoding="utf-8"))
+        oracle = heading["aggregate"]["F_oracle"]
+        oracle_pass = int(oracle["pass_isro"])
+        oracle_n = int(oracle["n_rows"])
+        oracle_fail_pct = round(100.0 * (1.0 - oracle_pass / oracle_n))
+    except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+        oracle_pass = oracle_n = oracle_fail_pct = None
+        heading_err = str(exc)
+    else:
+        heading_err = None
+
+    # ISRO free-DR arms from isro_benchmark/report.json
+    try:
+        isro = json.loads(_ISRO_REPORT.read_text(encoding="utf-8"))
+        short_pct = _best_isro_arm_pct(isro, "ARM_SHORT")
+        tunnel_pct = _best_isro_arm_pct(isro, "ARM_TUNNEL")
+    except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+        short_pct = tunnel_pct = None
+        isro_err = str(exc)
+    else:
+        isro_err = None
 
     ledger = [
         {
             "component": "Free DR (junctions / open road)",
-            "metric": "median drift %",
-            "value": free_drift,
-            "display": f"{free_drift:.0f}%",
+            "metric": "median position error",
+            "value": free_err,
+            "display": f"{free_err:.2f} m",
             "source": _MAPFILTER_SUMMARY,
-            "note": f"Measured {free_drift:.1f}% on {n_outages} outages; pitch rounds to ~28%.",
+            "note": f"Measured on {n_outages} outages; CAN ground truth.",
         },
         {
             "component": "+ Map-in-loop particle filter (COAST)",
-            "metric": "median drift %",
-            "value": coast_drift,
-            "display": f"{coast_drift:.0f}%  ({improvement_x:.2f}x vs free)",
+            "metric": "median position error",
+            "value": coast_err,
+            "display": (
+                f"{coast_err:.2f} m  ({improvement_x:.2f}× lower median position error)"
+            ),
             "source": _MAPFILTER_SUMMARY,
             "note": (
                 f"Pass {free_pass}->{pf_pass} of {n_outages}. "
-                "Full committed run - not the browser fast re-run."
+                "Full committed run - not the browser fast re-run. "
+                "2.02× is median position error, not drift %."
             ),
         },
         {
-            "component": "Perfect gyro still fails (heading ceiling)",
-            "metric": "fail rate @ 60 s (oracle yaw)",
-            "value": oracle_fail_pct,
-            "display": f"{oracle_fail_pct}% fail ({oracle_pass}/{oracle_n} pass)",
-            "source": _HEADING_SUMMARY,
-            "note": "Config F_oracle = CAN yaw rate. Why map must sit inside the loop.",
-        },
-        {
-            "component": "ISRO free-DR short arm",
-            "metric": "pass rate",
-            "value": 17,
-            "display": "17%",
-            "source": _ISRO_SUMMARY,
-            "note": "ARM_SHORT best free-DR methods on IO-VNBD.",
-        },
-        {
-            "component": "ISRO free-DR tunnel arm / ISRO bar",
-            "metric": "pass rate / drift bar",
-            "value": 10,
-            "display": "10%",
-            "source": _ISRO_SUMMARY,
-            "note": "ARM_TUNNEL free-DR pass ~10%; problem statement drift bar is 10%.",
+            "component": "Free DR → COAST (junctions)",
+            "metric": "median drift %",
+            "value": coast_drift,
+            "display": f"{free_drift:.2f}% → {coast_drift:.2f}%",
+            "source": _MAPFILTER_SUMMARY,
+            "note": (
+                "Drift % is a separate quantity from the 2.02× position-error ratio. "
+                "No multiplier on this row."
+            ),
         },
     ]
 
+    if oracle_fail_pct is not None and oracle_pass is not None and oracle_n is not None:
+        ledger.append(
+            {
+                "component": "Perfect gyro still fails (heading ceiling)",
+                "metric": "fail rate @ 60 s (oracle yaw)",
+                "value": oracle_fail_pct,
+                "display": f"{oracle_fail_pct}% fail ({oracle_pass}/{oracle_n} pass)",
+                "source": _HEADING_SUMMARY,
+                "note": "Config F_oracle = CAN yaw rate. Why map must sit inside the loop.",
+            }
+        )
+    elif heading_err:
+        ledger.append(
+            {
+                "component": "Perfect gyro still fails (heading ceiling)",
+                "metric": "fail rate @ 60 s (oracle yaw)",
+                "value": None,
+                "display": "unavailable",
+                "source": _HEADING_SUMMARY,
+                "note": f"Could not read heading_ablation/report.json: {heading_err}",
+            }
+        )
+
+    if short_pct is not None:
+        ledger.append(
+            {
+                "component": "ISRO free-DR short arm",
+                "metric": "pass rate",
+                "value": short_pct,
+                "display": f"{short_pct}%",
+                "source": _ISRO_SUMMARY,
+                "note": "Best free-DR method on ARM_SHORT (from isro_benchmark/report.json).",
+            }
+        )
+    if tunnel_pct is not None:
+        ledger.append(
+            {
+                "component": "ISRO free-DR tunnel arm / ISRO bar",
+                "metric": "pass rate / drift bar",
+                "value": tunnel_pct,
+                "display": f"{tunnel_pct}%",
+                "source": _ISRO_SUMMARY,
+                "note": (
+                    "Best free-DR method on ARM_TUNNEL; problem statement drift bar is 10%."
+                    + (f" ({isro_err})" if isro_err else "")
+                ),
+            }
+        )
+    elif isro_err:
+        ledger.append(
+            {
+                "component": "ISRO free-DR arms",
+                "metric": "pass rate",
+                "value": None,
+                "display": "unavailable",
+                "source": _ISRO_SUMMARY,
+                "note": f"Could not read isro_benchmark/report.json: {isro_err}",
+            }
+        )
+
     return {
         "ledger": ledger,
-        "story": "free DR ~28% -> map-in-loop ~17% (2.02x); perfect gyro fails 55%; ISRO 10%",
+        "story": (
+            f"{improvement_x:.2f}× lower median position error "
+            f"({free_err:.2f} m → {coast_err:.2f} m); "
+            f"median drift {free_drift:.2f}% → {coast_drift:.2f}%; "
+            f"perfect gyro fails ~55%; ISRO free-DR arms "
+            f"{short_pct if short_pct is not None else '?'}%/"
+            f"{tunnel_pct if tunnel_pct is not None else '?'}%"
+        ),
         "honesty": (
             "Browser Train = python -m lab.demo (quick AVNet + figure regen). "
             "It does not re-score the full map-in-loop stress suite. "
-            "Cite 2.02x / 28%->17% from "
+            "Cite 2.02× lower median position error / drift 27.6%→16.8% from "
             f"{_MAPFILTER_SUMMARY}; 55% from {_HEADING_SUMMARY}; "
             f"17%/10% arms from {_ISRO_SUMMARY}."
         ),
@@ -919,6 +1193,10 @@ class Handler(BaseHTTPRequestHandler):
             self._json(200 if result.get("ok") else 409, result)
             return
 
+        if path == "/train/clear":
+            self._json(200, _clear_demo_output())
+            return
+
         if path != "/ingest":
             self.send_error(404, "not found")
             return
@@ -968,7 +1246,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     print(
         "Train = python -m lab.demo (fast re-run). "
-        "Full 2.02x cites lab/stress/results/mapfilter/summary.md",
+        "Full 2.02x lower median position error cites lab/stress/results/mapfilter/summary.md",
         flush=True,
     )
     try:

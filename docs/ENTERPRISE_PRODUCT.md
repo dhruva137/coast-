@@ -48,7 +48,7 @@ The Operations thin slice contains only a clearly marked seeded demo fleet. It i
 
 ## Sellable now
 
-- Evaluation pilot with the TypeScript core, replay console, stress harness, golden vectors, and joint acceptance protocol.
+- Evaluation pilot with the TypeScript core, replay console, dataset adapter harness (synthetic plumbing fixture), golden vectors, and joint acceptance protocol.
 - Lean-aware kinematics as a laboratory method, with the injected-lean claim explicitly labelled.
 - Real-car sanity and forced GNSS-outage evaluation on the available IO-VNBD logs.
 - Integration work for map-aided known-route or corridor fallback, provided limitations are contractually explicit.

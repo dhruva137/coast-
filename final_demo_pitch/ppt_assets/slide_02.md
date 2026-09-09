@@ -2,9 +2,16 @@
 
 **Status:** final text for paste into official SIH template. **Not** a finished `.pptx`.
 
-## On-slide
+## Conclusion headline (largest type)
 
-- Headline: GPS dies. The map freezes. The dot stops.
+**GPS dies. The map freezes. The dot stops.**
+
+## Dominant visual (one)
+
+Photo: phone in a handlebar mount at a tunnel mouth. Cut any competing icons or multi-panel collage.
+
+## Support (≤18 pt body)
+
 - Tunnels, underpasses, metros, multi-level car parks, and GNSS jamming
 - Most vehicles on Indian roads — trucks, older cars, **200M+ two-wheelers** — have **no built-in inertial navigation**
 - Their only navigation device is the driver’s phone

@@ -1,0 +1,122 @@
+﻿# win_tuning/CLAIMS_ALLOWLIST.txt
+# Non-claim numbers the claims linter (tools/verify_claims.py) should ignore.
+# One pattern / token per line. Comments start with #.
+# Used for years, version strings, slide numbers, particle counts as config,
+# and other literals that are not measured performance claims.
+
+# --- calendar / fiscal years ---
+2020
+2021
+2022
+2023
+2024
+2025
+2026
+2027
+2028
+FY2024-25
+FY18
+H2 2024
+
+# --- version / build / schema tokens ---
+C++17
+CMake
+g++ 15.2.0
+ONNX
+avnet_tiny
+avnet_v2
+sha256
+API 24
+Android 13
+
+# --- slide / section / problem-statement labels ---
+SIH26168
+F1
+F2
+F3
+F4
+F5
+F6
+F7
+F8
+F9
+F10
+L1
+L2
+Phase 0
+Phase 1
+Phase 2
+slide 2
+slide 3
+slide 4
+slide 5
+slide 6
+slide 7
+Block B1
+B7
+FIX-1
+FIX-2
+FIX-3
+FIX-4
+FIX-5
+FIX-6
+
+# --- estimator / harness knobs (not headline results) ---
+600 particles
+180 particles
+0.3 rad/s
+0.5 Hz
+8 Hz
+10 Hz
+50 Hz
+200 Hz
+1000 Hz
+60 s
+50 m
+5 m
+2 s
+1.5 s
+0.40 hPa
+seed 26168
+epochs 4
+epochs 12
+folds 23
+cap 24000
+cap 80000
+
+# --- map / graph bookkeeping (structural, not pitch metrics) ---
+35631 edges
+3271 km
+139078 nodes
+n=43
+n=186
+n=37
+n=151
+n=19
+n=403
+n=328
+
+# --- layout / CSS / SVG sizing (not measured claims) ---
+width: "100%"
+width: 100%
+width="100%"
+height: "100%"
+height: 100%
+height: 100%;
+min-height: 100%
+
+# --- ISRO problem-statement targets (not measured results) ---
+100 m/km
+100 m / km
+<100 m
+< 100 m
+Target 95%
+95% endpoint
+over_50m
+failure_rate_over_50m
+
+# --- docstring / formatter examples ---
+2.30%
+10.0 Hz
+4.2 m
+188.5 m

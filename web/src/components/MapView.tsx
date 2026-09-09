@@ -3,19 +3,6 @@ import maplibregl from "maplibre-gl";
 import type { DemoBundle } from "../lib/runDemo";
 import type { INavState, IRoadGraph } from "@sih26168/nav-core";
 
-const STYLE: maplibregl.StyleSpecification = {
-  version: 8,
-  sources: {
-    carto: {
-      type: "raster",
-      tiles: ["https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png"],
-      tileSize: 256,
-      attribution: "© OpenStreetMap © CARTO",
-    },
-  },
-  layers: [{ id: "carto", type: "raster", source: "carto" }],
-};
-
 function graphFc(graph: IRoadGraph) {
   return {
     type: "FeatureCollection" as const,
@@ -80,7 +67,7 @@ export function MapView({ demo, idx }: { demo: DemoBundle | null; idx: number })
     if (!ref.current || mapRef.current) return;
     const map = new maplibregl.Map({
       container: ref.current,
-      style: STYLE,
+      style: "https://tiles.openfreemap.org/styles/dark",
       center: [77.5523, 12.9912],
       zoom: 16.2,
       pitch: 48,
@@ -88,6 +75,9 @@ export function MapView({ demo, idx }: { demo: DemoBundle | null; idx: number })
       attributionControl: false,
     });
     map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
+    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "bottom-right");
+    const ro = new ResizeObserver(() => map.resize());
+    ro.observe(ref.current);
     map.on("load", () => {
       map.addSource("graph", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
       map.addSource("ours", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
@@ -147,6 +137,7 @@ export function MapView({ demo, idx }: { demo: DemoBundle | null; idx: number })
     });
     mapRef.current = map;
     return () => {
+      ro.disconnect();
       map.remove();
       mapRef.current = null;
     };

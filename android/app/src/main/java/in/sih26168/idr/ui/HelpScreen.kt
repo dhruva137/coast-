@@ -70,11 +70,11 @@ fun HelpScreen(bus: IdrBus, onReplayOnboarding: () -> Unit) {
         )
         Qa(
             "Does it need the internet?",
-            "No, and it cannot use it: the app does not hold the internet permission, so " +
-                "Android blocks any connection at the operating-system level. There is no " +
-                "server and no map download. The trained model runs on the phone. The map " +
-                "is a metre grid rather than street tiles precisely so that it cannot go " +
-                "blank when the network does.",
+            "Navigation does not. INTERNET is declared for public OSM/Carto basemap tiles " +
+                "only; with basemap off, network traffic is zero. Turn the basemap off " +
+                "(SHOW GRID) for a fully offline map. There is no account, no analytics, " +
+                "and no upload of your position or sessions on the standard build. The " +
+                "trained model runs on the phone.",
         )
         Qa(
             "What does it record, and where does it go?",

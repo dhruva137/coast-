@@ -14,7 +14,7 @@ const F8: readonly {
   metres: number;
   drift: number;
 }[] = [
-  { source: "AVNet vel", detail: "0.5 m/s", metres: 15.0, drift: 1.13 },
+  { source: "AVNet vel", detail: "0.5 m per s", metres: 15.0, drift: 1.13 },
   { source: "AVNet att", detail: "~10°", metres: 52.3, drift: 3.94 },
   { source: "cos(lean)", detail: "34°", metres: 84.9, drift: 6.4 },
   { source: "gyro bias", detail: "0.3°/s · 125 s", metres: 188.5, drift: 14.2 },
@@ -106,7 +106,7 @@ export function ErrorBudget() {
           color: MUTE,
         }}
       >
-        Heading is <span style={{ color: SAFFRON, fontFamily: MONO }}>6.3×</span> more
+        Heading is <span style={{ color: SAFFRON, fontFamily: MONO }}>far more</span>{" "}
         damaging than speed. Honest: simulation.
       </div>
     </div>

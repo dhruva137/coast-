@@ -27,14 +27,9 @@ import `in`.sih26168.idr.ui.theme.Text as Fg
  * Every sentence here is a statement about this build that can be checked
  * against the code, and each was checked before it was written:
  *
- *  * There is no HTTP client, socket, WebSocket or SDK of any kind in the
- *    dependency list -- the only third-party runtime library is ONNX Runtime,
- *    which reads a file out of `assets/` and does arithmetic.
- *  * The app does not hold `android.permission.INTERNET`. Without it the
- *    platform refuses every outbound connection, so the claim is enforced by
- *    Android rather than by our good intentions. The one thing that used to
- *    reach the network -- downloadable Google Fonts -- was removed for exactly
- *    this reason; see `ui/theme/Type.kt`.
+ *  * `INTERNET` is declared for public OSM/Carto basemap tiles only; with
+ *    basemap off, network traffic is zero. Position, sensors, logs and sessions
+ *    never leave the device on the standard flavour.
  *  * There is no analytics, crash reporting or advertising library.
  *  * `allowBackup` is false and both backup rule files exclude everything, so
  *    ride logs are not swept into a cloud backup either.
@@ -60,8 +55,9 @@ fun PrivacyNote(modifier: Modifier = Modifier) {
             fontWeight = FontWeight.SemiBold,
         )
         Line(
-            "This app has no internet permission. Android will not let it open a " +
-                "network connection even if it tried to.",
+            "INTERNET is declared for public OSM/Carto basemap tiles only; with " +
+                "basemap off, network traffic is zero. Your position and session " +
+                "logs never leave this phone.",
         )
         Line(
             "There is no account, no server, no cloud and no analytics. Nobody, " +
