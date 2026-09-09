@@ -18,10 +18,9 @@ import androidx.core.content.ContextCompat
  * on the motion sensors, which need no runtime grant, and every refusal is
  * handled as a named mode rather than an error.
  *
- * `BODY_SENSORS` used to be in this list and in the manifest. It was never
- * needed -- an accelerometer and a gyroscope are not body sensors and Android
- * grants them without a prompt. Asking for a dangerous permission the code never
- * uses is the fastest way to make a stranger refuse the ones that matter.
+ * Location and notifications are **separate** asks. Bundling them made Android
+ * 13+ report "not granted" after the user only allowed location (POST_NOTIFICATIONS
+ * still missing). The Drive banner must use [rememberLocationPermissionGate].
  */
 fun requiredPermissions(): Array<String> = locationPermissions() + notificationPermissions()
 
@@ -36,30 +35,38 @@ fun notificationPermissions(): Array<String> =
     if (Build.VERSION.SDK_INT >= 33) arrayOf(Manifest.permission.POST_NOTIFICATIONS) else emptyArray()
 
 /**
- * Whether every permission is held, plus a lambda that asks for the lot.
+ * Location-only gate for the Drive / onboarding "Allow location" path.
  *
- * There is deliberately NO automatic request. The previous version fired the
- * system location dialog from a `LaunchedEffect` on first composition, so a
- * returning user was met with a permission sheet before the app had drawn
- * anything. A cold prompt with no context is what people refuse, and once
- * refused twice Android stops asking at all. Every request in this app now comes
- * from a control the user pressed, next to the sentence explaining it: the
- * GRANT PERMISSIONS button on the onboarding page, ALLOW LOCATION on the Drive
- * banner, or START asking for notifications only.
+ * [onResult] fires after every system dialog result so callers can refresh
+ * [in.sih26168.idr.IdrBus.location] immediately (banner clears without Start).
  */
 @Composable
-fun rememberPermissionGate(): Pair<Boolean, () -> Unit> {
+fun rememberLocationPermissionGate(
+    onResult: (granted: Boolean) -> Unit = {},
+): Pair<Boolean, () -> Unit> {
     val ctx = LocalContext.current
-    fun granted(): Boolean = requiredPermissions().all {
+    val needed = locationPermissions()
+    fun granted(): Boolean = needed.all {
         ContextCompat.checkSelfPermission(ctx, it) == PackageManager.PERMISSION_GRANTED
     }
     var ok by remember { mutableStateOf(granted()) }
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
-    ) { ok = granted() }
-    val request: () -> Unit = { launcher.launch(requiredPermissions()) }
+    ) {
+        ok = granted()
+        onResult(ok)
+    }
+    val request: () -> Unit = { launcher.launch(needed) }
     return ok to request
 }
+
+/**
+ * @deprecated Prefer [rememberLocationPermissionGate] for location UI and
+ * [rememberNotificationGate] at Start. Kept for any call site that still wants
+ * the combined list (should not drive the location banner).
+ */
+@Composable
+fun rememberPermissionGate(): Pair<Boolean, () -> Unit> = rememberLocationPermissionGate()
 
 /**
  * A notification-only gate, used by the START buttons.

@@ -62,9 +62,12 @@ fun IdrApp(bus: IdrBus) {
     var authDone by remember { mutableStateOf(prefs.authDone) }
     var showAuthOverlay by remember { mutableStateOf(false) }
     var onboarding by remember { mutableStateOf(!prefs.onboardingDone) }
-    // No autoRequest argument any more: nothing asks for a permission until the
-    // user presses something that explains it. See Permissions.kt.
-    val (permsOk, request) = rememberPermissionGate()
+    // Location-only gate for banners/onboarding. Notifications stay a separate
+    // ask at START (see rememberNotificationGate). Refresh bus.location as soon
+    // as the system dialog returns so the banner clears without needing Start.
+    val (permsOk, request) = rememberLocationPermissionGate { _ ->
+        bus.publishLocation(LocationGate.status(ctx))
+    }
 
     // Restore persisted demo/vehicle prefs onto the process bus once.
     LaunchedEffect(Unit) {
