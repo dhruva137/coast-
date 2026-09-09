@@ -128,6 +128,15 @@ fun DriveScreen(
         }
     }
 
+    // Ghost puck only in demo contexts — never on a plain live Start.
+    val drawGhost = showGhost && (blackout || replayActive || zuptTabletop)
+    val motionLabel = when {
+        !live -> "IDLE"
+        !hud.speedMps.isFinite() -> "—"
+        hud.speedMps < 0.35 -> "STILL"
+        else -> "MOVING"
+    }
+
     val speedText by remember {
         derivedStateOf { if (hud.speedMps.isFinite()) "%.0f".format(hud.speedMps * 3.6) else "--" }
     }
@@ -151,7 +160,7 @@ fun DriveScreen(
             onLongPress = { showOriginDialog = true },
             showBasemapToggle = true,
             ghostTrack = ghostTrack,
-            showGhost = showGhost,
+            showGhost = drawGhost,
         )
 
         if (zuptTabletop) {
@@ -198,6 +207,10 @@ fun DriveScreen(
                 ModePill(navMode = navMode, nSats = hud.nSats, live = live)
                 // Balance the HELP chip so the pill stays visually centred.
                 Spacer(Modifier.width(64.dp))
+            }
+
+            if (live) {
+                MotionChip(label = motionLabel, speedKmh = speedText)
             }
 
             if (replayActive || replayEnabled) {
@@ -404,6 +417,28 @@ private fun ZuptTabletopOverlay(
             Text("m/s · ZUPT hold", fontFamily = IdrSans, color = Mute, fontSize = 11.sp)
         }
     }
+}
+
+@Composable
+private fun MotionChip(label: String, speedKmh: String) {
+    val tint = when (label) {
+        "MOVING" -> Accent
+        "STILL" -> Mute
+        else -> Mute
+    }
+    Text(
+        "$label  ·  $speedKmh km/h",
+        modifier = Modifier
+            .clip(RoundedCornerShape(99.dp))
+            .background(Bg2.copy(alpha = 0.92f))
+            .border(1.dp, tint.copy(alpha = 0.55f), RoundedCornerShape(99.dp))
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+            .semantics { contentDescription = "Motion $label, speed $speedKmh kilometers per hour" },
+        color = tint,
+        fontFamily = IdrMono,
+        fontSize = 11.sp,
+        letterSpacing = 1.0.sp,
+    )
 }
 
 @Composable

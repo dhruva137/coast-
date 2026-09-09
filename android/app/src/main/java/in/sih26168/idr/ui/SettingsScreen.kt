@@ -185,7 +185,7 @@ fun SettingsScreen(
         )
         SettingsToggle(
             title = "Show ghost car",
-            subtitle = "Red naive-DR puck + trail beside COAST (same IMU, no ZUPT / map lock).",
+            subtitle = "Red naive-DR puck — only drawn during blackout/replay or ZUPT tabletop (not on a normal live Start).",
             checked = showGhost,
             onCheckedChange = {
                 showGhost = it
