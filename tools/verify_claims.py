@@ -252,6 +252,45 @@ CLAIMS: list[Claim] = [
         tolerance=1.0,
     ),
     Claim(
+        "heading_gyro_drift_pct",
+        "Heading-induced drift over a 60 s outage using gyro integration alone "
+        "(today's behaviour), 655 windows across 34 drives",
+        "%",
+        "lab/stress/results/heading_fusion/report.json",
+        lambda: float(
+            _json("lab/stress/results/heading_fusion/report.json")["policies"]["gyro"][
+                "median_drift_pct"
+            ]
+        ),
+        tolerance=0.05,
+    ),
+    Claim(
+        "heading_compass_drift_pct",
+        "Same, using an onset-calibrated compass for heading. Calibration uses "
+        "only the last GNSS bearing before the outage, so it is implementable.",
+        "%",
+        "lab/stress/results/heading_fusion/report.json",
+        lambda: float(
+            _json("lab/stress/results/heading_fusion/report.json")["policies"]["compass"][
+                "median_drift_pct"
+            ]
+        ),
+        tolerance=0.05,
+    ),
+    Claim(
+        "heading_compass_pass_pct",
+        "Share of 60 s outage windows meeting the ISRO <10% drift criterion on "
+        "the heading channel with the compass, vs 32% for gyro alone",
+        "%",
+        "lab/stress/results/heading_fusion/report.json",
+        lambda: float(
+            _json("lab/stress/results/heading_fusion/report.json")["policies"]["compass"][
+                "pass_rate_under_10pct"
+            ]
+        ),
+        tolerance=0.5,
+    ),
+    Claim(
         "unit_bug_inflation_x",
         "The km/h-vs-m/s loader bug we found in our OWN pipeline, which inflated "
         "every reported drift %. Historical, not a current measurement -- the "

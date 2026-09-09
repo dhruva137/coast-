@@ -128,6 +128,33 @@
       "note": ""
     },
     {
+      "id": "heading_gyro_drift_pct",
+      "value": 16.871,
+      "unit": "%",
+      "statement": "Heading-induced drift over a 60 s outage using gyro integration alone (today's behaviour), 655 windows across 34 drives",
+      "source_file": "lab/stress/results/heading_fusion/report.json",
+      "confidence": "measured",
+      "note": ""
+    },
+    {
+      "id": "heading_compass_drift_pct",
+      "value": 7.216,
+      "unit": "%",
+      "statement": "Same, using an onset-calibrated compass for heading. Calibration uses only the last GNSS bearing before the outage, so it is implementable.",
+      "source_file": "lab/stress/results/heading_fusion/report.json",
+      "confidence": "measured",
+      "note": ""
+    },
+    {
+      "id": "heading_compass_pass_pct",
+      "value": 60.0,
+      "unit": "%",
+      "statement": "Share of 60 s outage windows meeting the ISRO <10% drift criterion on the heading channel with the compass, vs 32% for gyro alone",
+      "source_file": "lab/stress/results/heading_fusion/report.json",
+      "confidence": "measured",
+      "note": ""
+    },
+    {
       "id": "unit_bug_inflation_x",
       "value": 3.6,
       "unit": "x",
