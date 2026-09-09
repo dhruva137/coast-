@@ -60,6 +60,7 @@ import `in`.sih26168.idr.data.LocationStatus
 import `in`.sih26168.idr.data.NavMode
 import `in`.sih26168.idr.data.OriginSource
 import `in`.sih26168.idr.data.Prefs
+import `in`.sih26168.idr.demo.TrackerHooks
 import `in`.sih26168.idr.record.RecordService
 import `in`.sih26168.idr.record.SessionLastFix
 import `in`.sih26168.idr.record.SessionStore
@@ -183,6 +184,22 @@ fun DriveScreen(
                         .border(1.dp, Amber.copy(alpha = 0.45f), RoundedCornerShape(99.dp))
                         .padding(horizontal = 12.dp, vertical = 6.dp),
                     color = Amber,
+                    fontFamily = IdrMono,
+                    fontSize = 10.sp,
+                    letterSpacing = 1.0.sp,
+                )
+            }
+
+            // tracker flavor only (standard TrackerHooks always returns false)
+            if (TrackerHooks.bannerVisible(prefs)) {
+                Text(
+                    "Streaming to laptop · LAN",
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(99.dp))
+                        .background(Bg2.copy(alpha = 0.92f))
+                        .border(1.dp, Accent.copy(alpha = 0.55f), RoundedCornerShape(99.dp))
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    color = Accent,
                     fontFamily = IdrMono,
                     fontSize = 10.sp,
                     letterSpacing = 1.0.sp,

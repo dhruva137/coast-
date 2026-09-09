@@ -64,6 +64,23 @@ android {
         }
     }
 
+    // standard = shippable F8 privacy build (uploads nothing).
+    // tracker  = demo-only LAN uploader (src/tracker); never the Play artifact.
+    flavorDimensions += "distribution"
+    productFlavors {
+        create("standard") {
+            dimension = "distribution"
+            isDefault = true
+            buildConfigField("boolean", "LAN_TRACKER", "false")
+        }
+        create("tracker") {
+            dimension = "distribution"
+            applicationIdSuffix = ".tracker"
+            versionNameSuffix = "-tracker"
+            buildConfigField("boolean", "LAN_TRACKER", "true")
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true

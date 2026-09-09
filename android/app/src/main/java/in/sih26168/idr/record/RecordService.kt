@@ -107,6 +107,7 @@ class RecordService : LifecycleService() {
         synchronized(insLock) { ins.reset() }
         bus.setMode(mode)
         startedAt = SystemClock.elapsedRealtimeNanos()
+        sessionId = UUID.randomUUID().toString().take(8)
         lastHudNs = 0L
         lastTrackNs = 0L
         lastStatsNs = 0L
@@ -317,7 +318,10 @@ class RecordService : LifecycleService() {
     private fun maybePublishHudLocked(tNs: Long, force: Boolean = false) {
         if (!force && lastHudNs != 0L && tNs - lastHudNs < HUD_PERIOD_NS) return
         lastHudNs = tNs
-        bus.publishHud(ins.snapshot(tNs, AppMode.NAVIGATE))
+        val snap = ins.snapshot(tNs, AppMode.NAVIGATE)
+        bus.publishHud(snap)
+        // Flavor-specific: standard no-ops; tracker may POST off a bg thread.
+        TrackerHooks.onHud(this, snap, sessionId)
         if (force || lastTrackNs == 0L || tNs - lastTrackNs >= TRACK_PERIOD_NS) {
             lastTrackNs = tNs
             // No-ops unless the estimator actually appended a point.

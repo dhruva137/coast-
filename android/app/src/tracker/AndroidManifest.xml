@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+        Demo flavor only. Main already declares INTERNET for OSM tiles.
+        Cleartext is required for http://<laptop-ip>:8787/ingest on the LAN;
+        standard keeps usesCleartextTraffic=false and has no uploader.
+    -->
+    <application
+        android:usesCleartextTraffic="true"
+        tools:replace="android:usesCleartextTraffic">
+    </application>
+</manifest>
