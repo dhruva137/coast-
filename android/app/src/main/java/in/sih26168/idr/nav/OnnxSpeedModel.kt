@@ -90,7 +90,7 @@ class OnnxSpeedModel : AutoCloseable {
     var hz: Double = 0.0
         private set
 
-    /** Latency of the most recent successful [OrtSession.run], ms. */
+    /** Latency of the most recent successful [OrtSession.run], ms (wall clock). */
     @Volatile
     var lastLatencyMs: Double = 0.0
         private set
@@ -262,6 +262,7 @@ class OnnxSpeedModel : AutoCloseable {
         val e = env ?: return null
 
         val out: FloatArray
+        // B4: real wall-clock inference — never a constant / estimate.
         val t0 = System.nanoTime()
         try {
             OnnxTensor.createTensor(e, FloatBuffer.wrap(window), SHAPE).use { tensor ->
