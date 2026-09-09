@@ -1,0 +1,14 @@
+{
+  "phone_model": "Fixture Phone (synthetic)",
+  "mount_type": "handlebar",
+  "vehicle": "scooter",
+  "rider": "dry_run",
+  "route_id": "fixture_campus_loop",
+  "loop_closure": {
+    "lat": 12.9716,
+    "lon": 77.5946
+  },
+  "notes": "SYNTHETIC dry-run fixture \u2014 NOT a real field log. PENDING_REAL_FIELD_LOG.",
+  "imu_hz": 50.0,
+  "leans": true
+}

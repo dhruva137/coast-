@@ -1,0 +1,27 @@
+{
+  "session_dir": "C:\\Users\\Dhruva P Gowda\\Desktop\\New folder\\SIH 2026\\lab\\eval\\fixtures\\field_session_dry_run",
+  "phone_model": "Fixture Phone (synthetic)",
+  "vehicle": "scooter",
+  "mount_type": "handlebar",
+  "rider": "dry_run",
+  "route_id": "fixture_campus_loop",
+  "loop_closure_marker": {
+    "lat": 12.9716,
+    "lon": 77.5946
+  },
+  "imu_rows": 2000,
+  "gnss_rows": 40,
+  "distance_m": 378.79995089137486,
+  "loop_closure_m": 5.0,
+  "loop_closure_kind": "estimate_vs_marker",
+  "loop_closure_source": "est.csv east/north",
+  "drift_pct": 1.3199579324744437,
+  "gnss_end_vs_start_m": 1.200021397261162,
+  "gnss_end_vs_marker_m": 1.200021397261162,
+  "has_estimate_trail": true,
+  "isro_drift_bar_pct": 10.0,
+  "pass_isro_drift": true,
+  "data_status": "PENDING_REAL_FIELD_LOG",
+  "fixture": true,
+  "honesty": "Dry-run on a synthetic RecordService-shaped fixture. No qualifying real scooter/bicycle field log is in-repo yet (lab/stress/results/CURRENT_VERDICT.md \u2014 RED). Do not cite these numbers as field proof."
+}
