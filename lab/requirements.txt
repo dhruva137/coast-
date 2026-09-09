@@ -4,3 +4,6 @@ matplotlib>=3.9
 torch>=2.3
 pandas>=2.2
 onnx>=1.16
+
+# QR codes for the console's phone-pairing flow (pure Python, no deps).
+segno>=1.6
