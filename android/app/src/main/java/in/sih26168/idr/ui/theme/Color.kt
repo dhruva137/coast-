@@ -9,7 +9,8 @@ val Bg2 = Color(0xFF161A1F)
 val Panel = Color(0xC7161A1F)
 val Line = Color(0x17E8EDF2)
 val Text = Color(0xFFFFFFFF)
-val Mute = Color(0xFF8A929B)
+/** Secondary labels on dark surfaces — kept ≥ ~4.5:1 vs Bg/Bg2. */
+val Mute = Color(0xFFA3ABB4)
 /** Our track, active states, CTA — teal. */
 val Accent = Color(0xFF00E0A4)
 /** Alias for telem/success readouts (same teal family). */
