@@ -1,0 +1,194 @@
+{
+  "device": "cuda",
+  "epochs": 4,
+  "cap": 80000,
+  "seed": 26168,
+  "protocol": "leave-file-out CAN speed bakeoff + gravity-axis canon ablation",
+  "paper": "EqNIO arXiv 2408.06321",
+  "gravity_diagnostics": {
+    "raw_median_gxy": 0.6863662172363804,
+    "raw_median_gz": 9.856844997406006,
+    "canon_median_gxy": 3.673710473499451e-09,
+    "canon_median_gz": 9.894312381744385
+  },
+  "conditions": {
+    "raw": {
+      "aggregate": {
+        "condition": "raw",
+        "n_folds": 3,
+        "model_median_rmse": 4.651268983056355,
+        "hold_median_rmse": 1.4813829880473774,
+        "mean_median_rmse": 7.394259406033234,
+        "folds_model_beats_hold": 0,
+        "median_improvement_pct": -213.98153081177404,
+        "median_cov68": 0.4246857186001737,
+        "median_cov95": 0.7791158594133414,
+        "mount_probe_median_rmse": 6.926557698997587,
+        "mount_probe_median_delta_rmse": 2.110283283348311,
+        "outage_model_dist_err_m": 100.02005354892026,
+        "outage_frozen_dist_err_m": 228.49964610372263,
+        "outage_model_drift_pct": 22.760302601113285,
+        "outage_frozen_drift_pct": 59.47625543459682,
+        "outage_folds_model_wins": 3,
+        "outage_folds": 3
+      },
+      "folds": [
+        {
+          "held": "S-M",
+          "n": 52978,
+          "outage": {
+            "n": 12,
+            "model_dist_err_m": 113.06514234896918,
+            "frozen_dist_err_m": 168.70687311546112,
+            "model_drift_pct": 23.31303730922115,
+            "frozen_drift_pct": 41.99658807994393,
+            "model_beats_frozen": true
+          },
+          "model_rmse": 4.651268983056355,
+          "model_mae": 3.681588079932086,
+          "hold_rmse": 3.447910117945928,
+          "hold_mae": 1.75337471786074,
+          "mean_rmse": 6.573658886243656,
+          "beats_hold": false,
+          "cov68": 0.4246857186001737,
+          "cov95": 0.7791158594133414,
+          "mount_probe_rmse": 6.761552266404666,
+          "mount_probe_delta_rmse": 2.110283283348311
+        },
+        {
+          "held": "S-S1",
+          "n": 25864,
+          "outage": {
+            "n": 12,
+            "model_dist_err_m": 100.02005354892026,
+            "frozen_dist_err_m": 228.49964610372263,
+            "model_drift_pct": 22.760302601113285,
+            "frozen_drift_pct": 59.983354979380515,
+            "model_beats_frozen": true
+          },
+          "model_rmse": 3.502571755617603,
+          "model_mae": 2.814357615867039,
+          "hold_rmse": 1.3236378463417378,
+          "hold_mae": 0.944672238875896,
+          "mean_rmse": 7.394259406033234,
+          "beats_hold": false,
+          "cov68": 0.5408676152180637,
+          "cov95": 0.8890736158366842,
+          "mount_probe_rmse": 8.55199007450564,
+          "mount_probe_delta_rmse": 5.049418318888038
+        },
+        {
+          "held": "S-S2",
+          "n": 46929,
+          "outage": {
+            "n": 12,
+            "model_dist_err_m": 74.24666474007563,
+            "frozen_dist_err_m": 229.10321714787278,
+            "model_drift_pct": 14.882753071482195,
+            "frozen_drift_pct": 59.47625543459682,
+            "model_beats_frozen": true
+          },
+          "model_rmse": 5.339072458119355,
+          "model_mae": 4.211519746445349,
+          "hold_rmse": 1.4813829880473774,
+          "hold_mae": 0.9690981724360277,
+          "mean_rmse": 7.970093637835143,
+          "beats_hold": false,
+          "cov68": 0.3778900040486693,
+          "cov95": 0.7183617805621257,
+          "mount_probe_rmse": 6.926557698997587,
+          "mount_probe_delta_rmse": 1.587485240878232
+        }
+      ]
+    },
+    "gravity_canon": {
+      "aggregate": {
+        "condition": "gravity_canon",
+        "n_folds": 3,
+        "model_median_rmse": 4.688739447519549,
+        "hold_median_rmse": 1.4813829880473774,
+        "mean_median_rmse": 7.394259406033234,
+        "folds_model_beats_hold": 0,
+        "median_improvement_pct": -216.5109553269417,
+        "median_cov68": 0.421042696968553,
+        "median_cov95": 0.7736230133262864,
+        "mount_probe_median_rmse": 5.176479023661442,
+        "mount_probe_median_delta_rmse": 0.7852664380568877,
+        "outage_model_dist_err_m": 80.24838564791162,
+        "outage_frozen_dist_err_m": 228.49964610372263,
+        "outage_model_drift_pct": 17.047261761814674,
+        "outage_frozen_drift_pct": 59.47625543459682,
+        "outage_folds_model_wins": 3,
+        "outage_folds": 3
+      },
+      "folds": [
+        {
+          "held": "S-M",
+          "n": 52978,
+          "outage": {
+            "n": 12,
+            "model_dist_err_m": 127.0899613028671,
+            "frozen_dist_err_m": 168.70687311546112,
+            "model_drift_pct": 24.330616990942993,
+            "frozen_drift_pct": 41.99658807994393,
+            "model_beats_frozen": true
+          },
+          "model_rmse": 4.688739447519549,
+          "model_mae": 3.72669939690854,
+          "hold_rmse": 3.447910117945928,
+          "hold_mae": 1.75337471786074,
+          "mean_rmse": 6.573658886243656,
+          "beats_hold": false,
+          "cov68": 0.421042696968553,
+          "cov95": 0.7736230133262864,
+          "mount_probe_rmse": 5.176479023661442,
+          "mount_probe_delta_rmse": 0.4877395761418928
+        },
+        {
+          "held": "S-S1",
+          "n": 25864,
+          "outage": {
+            "n": 12,
+            "model_dist_err_m": 79.86018830446847,
+            "frozen_dist_err_m": 228.49964610372263,
+            "model_drift_pct": 17.047261761814674,
+            "frozen_drift_pct": 59.983354979380515,
+            "model_beats_frozen": true
+          },
+          "model_rmse": 3.3545005022349637,
+          "model_mae": 2.664166316966461,
+          "hold_rmse": 1.3236378463417378,
+          "hold_mae": 0.944672238875896,
+          "mean_rmse": 7.394259406033234,
+          "beats_hold": false,
+          "cov68": 0.5719532941540365,
+          "cov95": 0.9023352922981751,
+          "mount_probe_rmse": 4.773276748134161,
+          "mount_probe_delta_rmse": 1.4187762458991973
+        },
+        {
+          "held": "S-S2",
+          "n": 46929,
+          "outage": {
+            "n": 12,
+            "model_dist_err_m": 80.24838564791162,
+            "frozen_dist_err_m": 229.10321714787278,
+            "model_drift_pct": 15.533834334411626,
+            "frozen_drift_pct": 59.47625543459682,
+            "model_beats_frozen": true
+          },
+          "model_rmse": 5.378212180670191,
+          "model_mae": 4.26175014053758,
+          "hold_rmse": 1.4813829880473774,
+          "hold_mae": 0.9690981724360277,
+          "mean_rmse": 7.970093637835143,
+          "beats_hold": false,
+          "cov68": 0.3602676383472906,
+          "cov95": 0.712011762449658,
+          "mount_probe_rmse": 6.163478618727079,
+          "mount_probe_delta_rmse": 0.7852664380568877
+        }
+      ]
+    }
+  }
+}

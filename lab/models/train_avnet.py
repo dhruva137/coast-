@@ -32,6 +32,7 @@ if str(_LAB) not in sys.path:
 from datasets.io_vnbd import load_windows  # noqa: E402
 from datasets.synthetic_tw import WindowBatch, generate_windows  # noqa: E402
 from models.backbone import avnet_loss, build_model, default_config  # noqa: E402
+from models.gravity_canonical import canonicalize_imu  # noqa: E402
 
 WEIGHTS_DIR = Path(__file__).resolve().parent / "weights"
 CKPT_NAME = "avnet_tiny.pt"
@@ -179,6 +180,7 @@ def train(
     exclude_names: set[str] | frozenset[str] | None = None,
     weights_dir: Path | str | None = None,
     ckpt_name: str = CKPT_NAME,
+    gravity_canon: bool = False,
 ) -> dict:
     if epochs < 1:
         raise ValueError("epochs must be >= 1")
@@ -190,9 +192,16 @@ def train(
     batch, data_source = _load_batch(
         source, n_windows=n_windows, seed=seed, exclude_names=exclude_names
     )
-    print(f"device={device}  source={data_source}  windows={len(batch)}  shape={batch.imu.shape}")
+    print(
+        f"device={device}  source={data_source}  windows={len(batch)}  "
+        f"shape={batch.imu.shape}  gravity_canon={gravity_canon}"
+    )
 
-    imu = np.transpose(batch.imu, (0, 2, 1))  # (N, 6, T)
+    # batch.imu is (N, T, 6) from the dataset loaders; canonicalize in that layout.
+    imu_ntc = batch.imu
+    if gravity_canon:
+        imu_ntc = canonicalize_imu(imu_ntc)
+    imu = np.transpose(imu_ntc, (0, 2, 1))  # (N, 6, T)
     y = batch.y()
     ds = _WinDS(imu, y)
     n_val = max(256, int(0.15 * len(ds)))
@@ -275,6 +284,7 @@ def train(
         "seed": int(seed),
         "source": data_source,
         "exclude_names": sorted(exclude_names) if exclude_names else [],
+        "gravity_canon": bool(gravity_canon),
         "best_score": float(best_val),
         "history": history,
     }
@@ -318,6 +328,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Comma-separated CSV basenames to hold out (leave-file-out)",
     )
     p.add_argument("--weights-dir", type=str, default="", help="Override weights output dir")
+    p.add_argument(
+        "--gravity-canon",
+        action="store_true",
+        help="EqNIO-style gravity-axis canonicalization on IMU windows before train",
+    )
     return p.parse_args(argv)
 
 
@@ -337,6 +352,7 @@ def main(argv: list[str] | None = None) -> None:
         source=args.source,
         exclude_names=exclude or None,
         weights_dir=args.weights_dir or None,
+        gravity_canon=bool(args.gravity_canon),
     )
 
 

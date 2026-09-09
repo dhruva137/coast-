@@ -36,9 +36,24 @@ Our measured rows a judge can open:
 
 Priority order, each writes a `summary.md` with the honest result:
 1. **Mount-invariant speed model (EqNIO-style)** — add gravity-axis canonicalization to AVNet input; measure per-window + closed-loop vs current. Expect: better generalization across phone orientations.
+   - **Status:** implemented + measured — `lab/models/gravity_canonical.py`,
+     `lab/models/run_mount_invariant.py`, results in
+     `lab/models/results/mount_invariant/summary.md` (report the real delta; wash OK).
 2. **Neural-augmented filter gain (KalmanNet / road-network)** — learn the filter's trust between AI-speed, gyro, and map; measure vs the hand-tuned particle filter.
+   - **Status: BACKLOG.** Paper:
+     [Neural-Augmented KF for Road-Network-assisted GNSS (arXiv 2507.00654)](https://arxiv.org/pdf/2507.00654).
+     Not built this pass — would need a learned gain head vs the current hand-tuned
+     particle / map-in-loop trust schedule, with a closed-loop ablation vs 2.02×.
 3. **Differentiable particle filter** — end-to-end train the map-in-loop filter; measure vs current 2.02×.
+   - **Status: BACKLOG.** No code yet. Would replace the hand-rolled map-in-loop
+     update with a differentiable PF / soft map potential and re-score against
+     `lab/stress/results/mapfilter/summary.md`. Related framing:
+     [Neural-Augmented KF (arXiv 2507.00654)](https://arxiv.org/pdf/2507.00654).
 4. **Outage-robust deep KF (Tracing-KalmanNet)** — handle intermittent GNSS; measure handover.
+   - **Status: BACKLOG.** Paper:
+     [Tracing-KalmanNet (UbiComp 2025)](https://dl.acm.org/doi/10.1145/3714394.3756276).
+     Target metric: GNSS→IDR handover error over the first 1–5 s of outage vs
+     today's freeze-and-coast onset.
 
 ## Sources
 - [Shared-bike inertial, GNSS-blocked (arXiv 2605.07412)](https://arxiv.org/pdf/2605.07412)
