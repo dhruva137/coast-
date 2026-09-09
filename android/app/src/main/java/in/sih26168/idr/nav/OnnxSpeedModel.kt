@@ -72,7 +72,7 @@ data class SpeedEstimate(
  * DROPPED ([droppedWindows] counts them). Queueing would be worse: stale speed
  * is wrong speed, and this is a live navigation display.
  */
-class OnnxSpeedModel(context: Context) : AutoCloseable {
+class OnnxSpeedModel : AutoCloseable {
 
     private var env: OrtEnvironment? = null
     private var session: OrtSession? = null
@@ -132,7 +132,7 @@ class OnnxSpeedModel(context: Context) : AutoCloseable {
     var droppedWindows: Long = 0L
         private set
 
-    init {
+    constructor(context: Context) {
         try {
             val bytes = context.assets.open(ASSET).use { it.readBytes() }
             val e = OrtEnvironment.getEnvironment()
@@ -147,6 +147,14 @@ class OnnxSpeedModel(context: Context) : AutoCloseable {
         } catch (t: Throwable) {
             error = "$ASSET load failed: ${t.javaClass.simpleName}: ${t.message ?: "no message"}"
         }
+    }
+
+    /**
+     * Forced-failure constructor for unit tests: never opens a session, so
+     * [ready] stays false and [onImu] always returns null (physics fallback).
+     */
+    constructor(loadError: String) {
+        error = loadError
     }
 
     fun reset() {

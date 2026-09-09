@@ -295,6 +295,11 @@ class SimpleIns(
         lastKeptEast = Double.NaN
         lastKeptNorth = Double.NaN
         lastKeptNs = 0L
+        sanitizeEast.reset()
+        sanitizeNorth.reset()
+        sanitizeSpeed.reset()
+        sanitizeYaw.reset()
+        sanitizeUncertainty.reset(Double.NaN)
         minEast = 0.0
         maxEast = 0.0
         minNorth = 0.0
@@ -352,8 +357,21 @@ class SimpleIns(
         locationStatus = status
     }
 
+    private val sanitizeEast = SanitizeGate()
+    private val sanitizeNorth = SanitizeGate()
+    private val sanitizeSpeed = SanitizeGate()
+    private val sanitizeYaw = SanitizeGate()
+    private val sanitizeUncertainty = SanitizeGate(Double.NaN)
+
     fun onImu(frame: SensorFrame) {
         noteHz(frame.tNs)
+        // Garbage / frozen samples must not divide-by-zero or poison the state.
+        if (!sensorFrameChannelsFinite(
+                frame.ax, frame.ay, frame.az, frame.gx, frame.gy, frame.gz,
+            )
+        ) {
+            return
+        }
         if (lastTns == 0L) {
             lastTns = frame.tNs
             return
@@ -690,16 +708,27 @@ class SimpleIns(
             else -> LocationStatus.WAITING_FOR_FIX
         }
 
+        // Hold last good finite values for the fields the HUD actually draws.
+        val eastOut = sanitizeEast.accept(east)
+        val northOut = sanitizeNorth.accept(north)
+        val speedOut = sanitizeSpeed.accept(speed)
+        val yawOut = sanitizeYaw.accept(yaw)
+        val uncOut = if (uncertainty.isFinite()) {
+            sanitizeUncertainty.accept(uncertainty)
+        } else {
+            uncertainty
+        }
+
         return HudState(
             tNs = nowNs,
             lat = lat,
             lon = lon,
             alt = alt,
-            east = east,
-            north = north,
-            speedMps = speed,
+            east = eastOut,
+            north = northOut,
+            speedMps = speedOut,
             leanDeg = rad2deg(lean),
-            headingDeg = compassDeg(yaw),
+            headingDeg = compassDeg(yawOut),
             headingCarDeg = compassDeg(yawCar),
             distanceM = distanceM,
             imuHz = imuHz,
@@ -726,7 +755,7 @@ class SimpleIns(
             navMode = navMode,
             originSource = originSource,
             hasAbsolutePosition = hasOrigin,
-            uncertaintyM = uncertainty,
+            uncertaintyM = uncOut,
             uncertaintyBasis = basis,
             driftRateUsed = k,
             driftRateMeasured = measuredDrift,
