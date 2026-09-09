@@ -53,7 +53,7 @@ pitch/Q&A/teamwork (Round 2). For each criterion, the artifact that scores it:
 | **F5** | Technical Execution | Prototype, code quality, stack | Working APK + **live on-laptop training that generates figures in front of the judge** → `06_LIVE_TRAINING_AND_FIGURES_SPEC.md` |
 | **F6** | Sustainability & Future Scope | Long-term viability, eco | Zero extra hardware, zero cloud, offline, runs on phones people already own; roadmap to FOG-grade IMU edge box → PPT slide 9 |
 | **F7** | Business Viability | Market, revenue, affordability | SDK licensing to OEMs/logistics; free consumer app; ₹0 marginal cost → PPT slide 9, `docs/ENTERPRISE_PRODUCT.md` |
-| **F8** | Security & Privacy | Data protection, compliance | **No user data ever leaves the device** (no uploads/analytics/account); only traffic is public OSM tile GETs, and **basemap-off = zero network**. Checkable in the manifest comment. App has INTERNET *only* for tiles. Phone-tracker (file 07) is opt-in, LAN-only → PPT slide 8 |
+| **F8** | Security & Privacy | Data protection, compliance | **No user data leaves the device**; **basemap-off = zero network**. App still declares INTERNET for public OSM/Carto tiles only (B6 offline-only drop not done — do **not** claim “no INTERNET permission”). Phone-tracker (file 07) is opt-in, LAN-only → PPT slide 8 |
 | **F9** | Presentation & Communication | Clarity, pitch, Q&A | The 3-act demo + the Q&A bank → `03_PPT_SPEC.md` §Q&A, `docs/JUDGE_CROSS_EXAM.md` |
 | **F10** | Collaboration & Teamwork | Team dynamics, ownership | Per-member code ownership + rehearsed handoffs → `03_PPT_SPEC.md` §Team |
 
@@ -112,7 +112,9 @@ Put these on slides and say them out loud. Each has a source file; a judge can
 be shown the file.
 
 - **2.02×** — map-in-loop vs. free dead-reckoning, 43 outages, CAN ground truth.
-  `lab/stress/results/mapfilter/summary.md`.
+  Cite the **full** run: `lab/stress/results/mapfilter/summary.md`. Live
+  `python -m lab.demo` is a **fast re-run of the method** that regenerates
+  figures; it does not replace the committed 2.02× headline.
 - **Perfect gyro still fails 55%** of 60 s segments (84/186 pass). The negative
   result. `lab/stress/results/heading_ablation/summary.md`.
 - **17%** short-arm / **10%** tunnel-arm free-DR pass rates (baseline we beat).

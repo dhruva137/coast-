@@ -141,25 +141,31 @@
 - Free DR baseline: **17%** (short arm) / **10%** (tunnel arm) pass
 - **Perfect gyro still fails 55%** → why the map is in the loop
 - Footer: *Every number here has a source file we can open on request.*
-- Plot: 3-line trajectory overlay — green truth / red naive / teal ours (**[ASSET: `figures/trajectory_overlay.png` or live `lab.demo` output]**)
+- Plot: 3-line trajectory overlay — green truth / red naive / teal ours (**[ASSET: `ppt_assets/trajectory_overlay.png`]**; regenerable live via `python -m lab.demo`)
 
 ### Sources (say if asked)
 
 | Claim | Source |
 |---|---|
-| 2.02×, 43 outages | `lab/stress/results/mapfilter/summary.md` |
+| 2.02×, 43 outages (8→17 pass) | **Full** mapfilter run: `lab/stress/results/mapfilter/summary.md` |
 | 17% / 10% free DR | `lab/stress/results/isro_benchmark/summary.md` |
-| 55% perfect-yaw fail | `lab/stress/results/heading_ablation/summary.md` |
+| 55% perfect-yaw fail (84/186 pass) | `lab/stress/results/heading_ablation/summary.md` |
+
+### `lab.demo` framing (live training)
+
+- Headline **2.02×** always cites the **full** committed mapfilter run above — never a quick-run recomputation.
+- On stage, `python -m lab.demo` is a **fast re-run of the method** (short train + regenerate the three figures in ≤90 s). It reprints the committed headline numbers; it does not invent a new 2.02×.
 
 ### Speaker notes (~30 s)
 
-> “On forty-three real GNSS outages, against the car’s own CAN ground truth, map-in-loop is two-point-oh-two times better than free dead reckoning. Free DR itself only passes seventeen percent on the short arm and ten percent on the tunnel arm — that’s the baseline we beat, not a claim that we already hit the hard ISRO tunnel bar. Perfect gyro still fails fifty-five percent — that’s why the map is in the loop. Every number has a file we can open.”
+> “On forty-three real GNSS outages, against the car’s own CAN ground truth, map-in-loop is two-point-oh-two times better than free dead reckoning — that’s the full mapfilter result file, not a live recompute. Free DR itself only passes seventeen percent on the short arm and ten percent on the tunnel arm — that’s the baseline we beat, not a claim that we already hit the hard ISRO tunnel bar. Perfect gyro still fails fifty-five percent — that’s why the map is in the loop. Live, `lab.demo` is a fast re-run that regenerates these plots; the headline stays the full run.”
 
 ### Honesty guard
 
 - Do **not** claim a sub-10% tunnel result for *our* filter.
 - **10%** is the **free-DR tunnel-arm baseline**, not a COAST pass rate.
 - Do **not** show a confidence radius.
+- Do **not** present a `lab.demo` wall-clock number as a replacement for the full-run **2.02×**.
 
 ---
 
@@ -235,20 +241,21 @@
 ### On-slide
 
 - **[OFFICIAL SIH TEMPLATE]** slide chrome
-- **No user data ever leaves the device** — no uploads, no analytics, no crash reporting, no account
+- **No user data leaves the device** — no uploads, no analytics, no crash reporting, no account
 - The navigation runs **with the radio off** — that is the whole product
-- The only outbound traffic is **public OpenStreetMap map-tile requests** (no API key, no account); **turn the basemap off → zero network calls**
-- Optional live phone-tracker for demos is **LAN-only and opt-in** (separate flavor)
+- **Basemap-off = zero network** — the only optional outbound traffic is public OSM/Carto tile GETs (no API key, no account)
+- Optional live phone-tracker for demos is **LAN-only and opt-in** (separate `tracker` flavor)
 - No accounts required to navigate (login is optional)
 
 ### Speaker notes (~15 s)
 
-> “Privacy is a property, not a promise. No sensor sample, no location, no track ever leaves the device — no uploads, no analytics, no account. The only network use is fetching public map tiles, which cache for offline use; switch the basemap off and the app makes zero network calls. The navigation itself runs with the radio off — that’s the whole point.”
+> “Privacy is a property, not a promise. No user data leaves the device — no uploads, no analytics, no account. Turn the basemap off and the app makes zero network calls. With the basemap on, the only traffic is public map tiles. The navigation itself runs with the radio off — that’s the whole point.”
 
 ### Honesty / F8 guard
 
-- Do **not** claim "no INTERNET permission" — the app declares INTERNET *only* to fetch/cache OSM tiles (documented in the manifest comment). The true, checkable claim is **no data leaves the device** + **basemap-off = zero network**.
-- Stronger P1 upgrade: an offline-only `standard` flavor (bundled/cached tiles only) that drops INTERNET entirely — then "no INTERNET permission" becomes true again. See `07_LOCALHOST_PHONE_TRACKER_SPEC.md`.
+- **Checked:** main `AndroidManifest.xml` still declares `INTERNET` (and `ACCESS_NETWORK_STATE`) for MapLibre tiles. B6 offline-only drop of INTERNET was **not** done.
+- Therefore the checkable F8 claim is exactly: **no user data leaves the device; basemap-off = zero network**.
+- Do **not** claim "no INTERNET permission".
 
 ---
 
@@ -368,7 +375,7 @@ Use only these measured claims on slides / aloud:
 
 | Number | Meaning |
 |---|---|
-| **2.02×** | Map-in-loop vs free DR, 43 outages, CAN GT |
+| **2.02×** | Map-in-loop vs free DR, 43 outages, CAN GT — cite full `lab/stress/results/mapfilter/summary.md`; `lab.demo` = fast method re-run only |
 | **55%** fail (84/186 pass) | Perfect-yaw free DR still fails |
 | **17%** / **10%** | Free-DR short / tunnel arm pass rates |
 | **120,305 Hz** | Edge engine throughput (200 Hz req. met 600×) |
