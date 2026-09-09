@@ -1,0 +1,26 @@
+{
+  "trajectory": {
+    "drive": "S-M.csv",
+    "distance_m": 1068.2228511166645,
+    "free_error_m": 794.7491284251751,
+    "coast_error_m": 97.12396093760951,
+    "free_drift_pct": 74.39918810895925,
+    "coast_drift_pct": 9.092106655093662
+  },
+  "cdf": {
+    "n": 43,
+    "free_median_error_m": 252.6617997285065,
+    "coast_median_error_m": 125.19966812248491,
+    "improvement_x": 2.018070842498746,
+    "pct_free_under_10m": 0.0,
+    "pct_coast_under_10m": 2.3255813953488373
+  },
+  "drift": {
+    "n": 43,
+    "free_median_drift_pct": 27.5800532747417,
+    "coast_median_drift_pct": 16.767284028482106,
+    "improvement_x": 2.018070842498746,
+    "free_pass": 8,
+    "pf_pass": 17
+  }
+}

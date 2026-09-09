@@ -1,0 +1,62 @@
+{
+  "wall_seconds": 29.28656816482544,
+  "quick_train": {
+    "held": "S-M",
+    "epochs": 4,
+    "cap": 24000,
+    "device": "cuda",
+    "final_loss": 3.7320288519064584,
+    "model_rmse": 5.390117000851992,
+    "hold_rmse": 3.447910117945928,
+    "seconds": 4.333418846130371,
+    "note": "quick-run only; PPT cites full bakeoff summary.md"
+  },
+  "headlines": {
+    "mapfilter_improvement_x": 2.018070842498746,
+    "free_pass": 8,
+    "pf_pass": 17,
+    "n_outages": 43,
+    "free_median_error_m": 252.6617997285065,
+    "pf_median_error_m": 125.19966812248491,
+    "free_median_drift_pct": 27.5800532747417,
+    "pf_median_drift_pct": 16.767284028482106,
+    "free_dr_short_arm_pct": 17,
+    "free_dr_tunnel_arm_pct": 10,
+    "sources": {
+      "mapfilter": "lab\\stress\\results\\mapfilter\\summary.md",
+      "isro": "lab\\stress\\results\\isro_benchmark\\summary.md",
+      "speed": "lab\\models\\results\\speed_bakeoff\\summary.md"
+    }
+  },
+  "figures": {
+    "trajectory": {
+      "drive": "S-M.csv",
+      "distance_m": 1068.2228511166645,
+      "free_error_m": 794.7491284251751,
+      "coast_error_m": 97.12396093760951,
+      "free_drift_pct": 74.39918810895925,
+      "coast_drift_pct": 9.092106655093662
+    },
+    "cdf": {
+      "n": 43,
+      "free_median_error_m": 252.6617997285065,
+      "coast_median_error_m": 125.19966812248491,
+      "improvement_x": 2.018070842498746,
+      "pct_free_under_10m": 0.0,
+      "pct_coast_under_10m": 2.3255813953488373
+    },
+    "drift": {
+      "n": 43,
+      "free_median_drift_pct": 27.5800532747417,
+      "coast_median_drift_pct": 16.767284028482106,
+      "improvement_x": 2.018070842498746,
+      "free_pass": 8,
+      "pf_pass": 17
+    },
+    "paths": {
+      "trajectory_overlay": "C:\\Users\\Dhruva P Gowda\\Desktop\\New folder\\SIH 2026\\figures\\trajectory_overlay.png",
+      "cdf_error": "C:\\Users\\Dhruva P Gowda\\Desktop\\New folder\\SIH 2026\\figures\\cdf_error.png",
+      "drift_comparison": "C:\\Users\\Dhruva P Gowda\\Desktop\\New folder\\SIH 2026\\figures\\drift_comparison.png"
+    }
+  }
+}
