@@ -235,18 +235,20 @@
 ### On-slide
 
 - **[OFFICIAL SIH TEMPLATE]** slide chrome
-- The app has **no INTERNET permission** and makes **zero network calls**
-- All sensing and inference is **on-device** — verify it in the **manifest**, not a promise
+- **No user data ever leaves the device** — no uploads, no analytics, no crash reporting, no account
+- The navigation runs **with the radio off** — that is the whole product
+- The only outbound traffic is **public OpenStreetMap map-tile requests** (no API key, no account); **turn the basemap off → zero network calls**
 - Optional live phone-tracker for demos is **LAN-only and opt-in** (separate flavor)
 - No accounts required to navigate (login is optional)
 
 ### Speaker notes (~15 s)
 
-> “Privacy is a property, not a promise: the standard app declares no internet permission and makes zero network calls — check the manifest. Optional demo phone-tracking is LAN-only and opt-in. You can navigate with no account.”
+> “Privacy is a property, not a promise. No sensor sample, no location, no track ever leaves the device — no uploads, no analytics, no account. The only network use is fetching public map tiles, which cache for offline use; switch the basemap off and the app makes zero network calls. The navigation itself runs with the radio off — that’s the whole point.”
 
 ### Honesty / F8 guard
 
-- Do not imply the tracker flavor is the scored privacy build; **standard** = network-free.
+- Do **not** claim "no INTERNET permission" — the app declares INTERNET *only* to fetch/cache OSM tiles (documented in the manifest comment). The true, checkable claim is **no data leaves the device** + **basemap-off = zero network**.
+- Stronger P1 upgrade: an offline-only `standard` flavor (bundled/cached tiles only) that drops INTERNET entirely — then "no INTERNET permission" becomes true again. See `07_LOCALHOST_PHONE_TRACKER_SPEC.md`.
 
 ---
 
