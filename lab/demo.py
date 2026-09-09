@@ -194,8 +194,20 @@ def _write_figures() -> dict:
         p.unlink()
 
     meta = dp.write_all_figures(_FIGURES)
-    for name, path in meta.get("paths", {}).items():
+    paths = meta.get("paths") or {}
+    for name, path in paths.items():
         print(f"      wrote {path}")
+    cdf_path = Path(paths.get("cdf_error", _FIGURES / "cdf_error.png"))
+    if not cdf_path.is_file():
+        raise RuntimeError(
+            "cdf_error.png missing after write_all_figures — "
+            "screening Figure B requires measured mapfilter CDF"
+        )
+    if meta.get("cdf") is None:
+        raise RuntimeError(
+            "CDF metadata empty — mapfilter report had no measured errors; "
+            "refusing to invent CDF points"
+        )
     print()
     return meta
 

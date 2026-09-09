@@ -1,14 +1,14 @@
 {
-  "wall_seconds": 29.28656816482544,
+  "wall_seconds": 42.630648374557495,
   "quick_train": {
     "held": "S-M",
     "epochs": 4,
     "cap": 24000,
     "device": "cuda",
-    "final_loss": 3.7320288519064584,
-    "model_rmse": 5.390117000851992,
+    "final_loss": 3.732026239236196,
+    "model_rmse": 5.390109302772953,
     "hold_rmse": 3.447910117945928,
-    "seconds": 4.333418846130371,
+    "seconds": 7.725415468215942,
     "note": "quick-run only; PPT cites full bakeoff summary.md"
   },
   "headlines": {

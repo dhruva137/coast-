@@ -256,12 +256,19 @@ def cdf_error(out_dir: Path) -> dict | None:
     ax.set_ylabel("Cumulative probability (%)", color="#8a94a6")
     pct_free_10 = 100.0 * float(np.mean(free < 10.0))
     pct_coast_10 = 100.0 * float(np.mean(coast < 10.0))
+    # Honesty: never imply a 95%<10 m pass we did not measure.
+    gate_note = (
+        f"COAST 95%<10 m: NOT claimed (measured share <10 m = {pct_coast_10:.0f}%)"
+        if pct_coast_10 < 95.0
+        else f"COAST share <10 m = {pct_coast_10:.0f}%"
+    )
     ax.set_title(
         f"Measured error CDF — {len(rows)} IO-VNBD outages (CAN truth)\n"
         f"share <10 m: free {pct_free_10:.0f}%  |  COAST {pct_coast_10:.0f}%  "
         f"(median err {junc['free_median_error_m']:.0f}->"
-        f"{junc['pf_median_error_m']:.0f} m = {junc['improvement_x']:.2f}x)",
-        color="white", fontsize=12,
+        f"{junc['pf_median_error_m']:.0f} m = {junc['improvement_x']:.2f}x)\n"
+        f"{gate_note}",
+        color="white", fontsize=11,
     )
     ax.tick_params(colors="#8a94a6")
     for s in ax.spines.values():
