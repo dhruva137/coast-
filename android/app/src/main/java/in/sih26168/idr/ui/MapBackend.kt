@@ -47,19 +47,22 @@ data class MapChoice(
  * produces a map that would be empty, broken or a lie, and each one falls back
  * to the Canvas with a sentence a stranger can act on.
  *
+ * Preference when a georeferenced basemap is wanted (P0-4):
+ *  **bundled mbtiles → cached live tiles → honest Canvas grid.**
+ *
  * MapLibre + OpenStreetMap removed two of the old conditions outright: OSM's
  * tile server needs **no API key** (a fresh clone and CI draw a real map), and
  * MapLibre is a plain Android view, **not** a Play-services client, so a
- * de-Googled phone draws a real map too. What remains are the three reasons a
+ * de-Googled phone draws a real map too. What remains are the reasons a
  * basemap genuinely cannot help:
  *
  *  1. The user asked for the grid.
  *  2. No absolute position. In [NavMode.RELATIVE] there is no anchor on the
  *     Earth at all, so the track cannot be georeferenced. Drawing it over a
  *     basemap would put a real-looking route on real streets it was never on.
- *  3. Offline, with nothing cached yet. Once tiles HAVE loaded, going offline
- *     keeps the map: MapLibre serves what it cached, which is the whole point
- *     of a tunnel demo.
+ *  3. Offline, with nothing cached yet **and** no bundled `.mbtiles`. Once
+ *     tiles HAVE loaded (or bundled mbtiles are present), going offline keeps
+ *     the map — the whole point of a tunnel demo.
  */
 fun chooseMapBackend(
     basemapWanted: Boolean,
@@ -67,12 +70,17 @@ fun chooseMapBackend(
     tilesEverLoaded: Boolean,
     navMode: NavMode,
     hasAbsolutePosition: Boolean,
+    bundledMbtilesAvailable: Boolean = false,
 ): MapChoice = when {
     !basemapWanted ->
         MapChoice(MapBackend.CANVAS, "Basemap off — showing track only")
 
     navMode == NavMode.RELATIVE || !hasAbsolutePosition ->
         MapChoice(MapBackend.CANVAS, "No absolute position — showing displacement only")
+
+    // Bundled offline neighbourhood tiles beat live/cached preference when present.
+    bundledMbtilesAvailable ->
+        MapChoice(MapBackend.OSM, null)
 
     !online && !tilesEverLoaded ->
         MapChoice(MapBackend.CANVAS, "Offline, no tiles cached — showing track only")

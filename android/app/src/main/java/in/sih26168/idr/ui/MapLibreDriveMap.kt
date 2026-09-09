@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -58,6 +57,7 @@ import `in`.sih26168.idr.ui.theme.Gnss
 import `in`.sih26168.idr.ui.theme.IdrMono
 import `in`.sih26168.idr.ui.theme.Mute
 import `in`.sih26168.idr.ui.theme.Text as Fg
+import java.io.File
 import org.maplibre.android.MapLibre
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
@@ -122,6 +122,11 @@ fun DriveMapPanel(
     // them from its own cache, so dropping the network must NOT tear the map
     // down. That case -- moving map, no signal -- is the entire demo.
     var tilesEverLoaded by rememberSaveable { mutableStateOf(false) }
+    // P0-4: bundled neighbourhood .mbtiles → MapLibre even with airplane on
+    // and an empty HTTP tile cache. Copied out of assets once (mbtiles://
+    // cannot read APK assets directly — maplibre-native#3559).
+    val bundledMbtilesPath = remember(ctx) { ensureBundledMbtilesOnDisk(ctx)?.absolutePath }
+    val hasBundledMbtiles = bundledMbtilesPath != null
 
     val origin = originFrom(hud.lat, hud.lon, hud.east, hud.north)
     val choice = chooseMapBackend(
@@ -130,6 +135,7 @@ fun DriveMapPanel(
         tilesEverLoaded = tilesEverLoaded,
         navMode = navMode,
         hasAbsolutePosition = hud.hasAbsolutePosition && origin != null,
+        bundledMbtilesAvailable = hasBundledMbtiles,
     )
 
     Box(modifier) {
@@ -143,6 +149,7 @@ fun DriveMapPanel(
                 onLongPress = onLongPress,
                 onMapLoaded = { tilesEverLoaded = true },
                 showUncertaintyRadius = showUncertainty,
+                bundledMbtilesAbsolutePath = bundledMbtilesPath,
             )
         } else {
             DriveMap(
@@ -195,10 +202,13 @@ private const val LYR_VEHICLE = "coast-vehicle-layer"
 private const val LYR_UNC_FILL = "coast-uncertainty-fill"
 private const val LYR_UNC_LINE = "coast-uncertainty-line"
 
+/** Asset path for the P0-4 offline neighbourhood pack (see assets/maps/README.md). */
+internal const val BUNDLED_MBTILES_ASSET = "maps/demo_neighbourhood.mbtiles"
+
 /**
  * Dark night-mode raster basemap (Carto dark_all). No API key / billing.
  * Attribution is shown on-map; OSM data remains the underlying source.
- * Bundled mbtiles (P0-4 offline) will prefer local tiles when present.
+ * Prefer [bundledMbtilesStyleJson] when the neighbourhood `.mbtiles` is on disk.
  */
 private val OSM_STYLE_JSON = """
 {
@@ -219,6 +229,56 @@ private val OSM_STYLE_JSON = """
   ]
 }
 """.trimIndent()
+
+/**
+ * Style that reads a local raster MBTiles file via MapLibre's `mbtiles://` scheme.
+ * [absolutePath] must be a real filesystem path (assets must be copied first).
+ */
+internal fun bundledMbtilesStyleJson(absolutePath: String): String {
+    // MapLibre expects mbtiles:///<abs-path> (three slashes + absolute Unix path).
+    val uri = "mbtiles://" + absolutePath
+    return """
+{
+  "version": 8,
+  "sources": {
+    "osm": {
+      "type": "raster",
+      "url": "$uri",
+      "tileSize": 256,
+      "minzoom": 13,
+      "maxzoom": 17,
+      "attribution": "© OpenStreetMap contributors © CARTO (bundled demo neighbourhood)"
+    }
+  },
+  "layers": [
+    { "id": "bg", "type": "background", "paint": { "background-color": "#0B0E11" } },
+    { "id": "osm", "type": "raster", "source": "osm", "paint": { "raster-opacity": 0.92 } }
+  ]
+}
+""".trimIndent()
+}
+
+/**
+ * Copy the bundled `.mbtiles` from APK assets into [Context.getFilesDir] once.
+ * Returns null when the asset is absent or the copy fails.
+ */
+internal fun ensureBundledMbtilesOnDisk(context: Context): File? {
+    val present = runCatching {
+        context.assets.open(BUNDLED_MBTILES_ASSET).close()
+        true
+    }.getOrDefault(false)
+    if (!present) return null
+
+    val dest = File(context.filesDir, BUNDLED_MBTILES_ASSET)
+    if (dest.exists() && dest.length() > 0L) return dest
+    return runCatching {
+        dest.parentFile?.mkdirs()
+        context.assets.open(BUNDLED_MBTILES_ASSET).use { input ->
+            dest.outputStream().use { output -> input.copyTo(output) }
+        }
+        if (dest.exists() && dest.length() > 0L) dest else null
+    }.getOrNull()
+}
 /** Live references into the map, filled once the style is ready. */
 private class MapRefs {
     var map: MapLibreMap? = null
@@ -281,6 +341,11 @@ fun MapLibreDriveMap(
     onMapLoaded: () -> Unit = {},
     /** Off by default — uncertainty correlates −0.23 with true error. */
     showUncertaintyRadius: Boolean = false,
+    /**
+     * Absolute filesystem path to the bundled neighbourhood `.mbtiles`, or null
+     * to use live Carto dark tiles. Prefer bundled for airplane-mode demos.
+     */
+    bundledMbtilesAbsolutePath: String? = null,
 ) {
     val ctx = LocalContext.current
     val density = LocalDensity.current
@@ -288,6 +353,10 @@ fun MapLibreDriveMap(
 
     val oLat = quantiseDeg(origin.lat)
     val oLon = quantiseDeg(origin.lon)
+    val styleJson = remember(bundledMbtilesAbsolutePath) {
+        val path = bundledMbtilesAbsolutePath
+        if (!path.isNullOrBlank()) bundledMbtilesStyleJson(path) else OSM_STYLE_JSON
+    }
 
     val refs = remember { MapRefs() }
     val smoother = remember { VehicleSmoother() }
@@ -379,7 +448,7 @@ fun MapLibreDriveMap(
             })
 
             val directional = hud.headingReferenced
-            map.setStyle(Style.Builder().fromJson(OSM_STYLE_JSON)) { style ->
+            map.setStyle(Style.Builder().fromJson(styleJson)) { style ->
                 refs.style = style
 
                 style.addImage(
@@ -446,9 +515,9 @@ fun MapLibreDriveMap(
                 refs.iconDirectional = directional
                 refs.ready = true
 
-                // Style is up and the raster source is wired; once we are online
-                // its tiles load. Report loaded so the panel latches
-                // tilesEverLoaded and keeps the map if the radio then drops.
+                // Style is up and the raster source is wired. For bundled
+                // mbtiles the basemap is already local; for live tiles this
+                // latches so dropping the radio keeps the map.
                 onMapLoaded()
                 pushTrail(refs, track, oLat, oLon)
             }

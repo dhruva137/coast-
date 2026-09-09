@@ -31,8 +31,10 @@ class MapBackendTest {
         tilesEverLoaded: Boolean = true,
         navMode: NavMode = NavMode.GNSS,
         hasAbsolutePosition: Boolean = true,
+        bundledMbtilesAvailable: Boolean = false,
     ) = chooseMapBackend(
         basemapWanted, online, tilesEverLoaded, navMode, hasAbsolutePosition,
+        bundledMbtilesAvailable,
     )
 
     @Test
@@ -81,6 +83,29 @@ class MapBackendTest {
             MapBackend.CANVAS,
             choose(online = false, tilesEverLoaded = false).backend,
         )
+    }
+
+    @Test
+    fun `bundled mbtiles preferred offline even with empty tile cache`() {
+        // P0-4: airplane mode at the venue must still show a basemap when the
+        // neighbourhood .mbtiles is bundled — ahead of live/cached tiles.
+        val c = choose(online = false, tilesEverLoaded = false, bundledMbtilesAvailable = true)
+        assertEquals(MapBackend.OSM, c.backend)
+        assertNull(c.reason)
+    }
+
+    @Test
+    fun `relative mode still canvas even when mbtiles are bundled`() {
+        val c = choose(navMode = NavMode.RELATIVE, bundledMbtilesAvailable = true)
+        assertEquals(MapBackend.CANVAS, c.backend)
+        assertNotNull(c.reason)
+    }
+
+    @Test
+    fun `no absolute position still canvas even when mbtiles are bundled`() {
+        val c = choose(hasAbsolutePosition = false, bundledMbtilesAvailable = true)
+        assertEquals(MapBackend.CANVAS, c.backend)
+        assertNotNull(c.reason)
     }
 
     @Test
