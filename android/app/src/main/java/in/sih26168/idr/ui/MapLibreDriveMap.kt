@@ -111,10 +111,12 @@ fun DriveMapPanel(
     modifier: Modifier = Modifier,
     mapModifier: Modifier = Modifier,
     onLongPress: () -> Unit = {},
+    showBasemapToggle: Boolean = true,
 ) {
     val ctx = LocalContext.current
     val prefs = remember { Prefs(ctx) }
     var basemapWanted by remember { mutableStateOf(prefs.basemapEnabled) }
+    val showUncertainty = prefs.showUncertaintyRadius
     val online by rememberOnline()
     // Survives rotation deliberately: once tiles have arrived, MapLibre serves
     // them from its own cache, so dropping the network must NOT tear the map
@@ -130,39 +132,41 @@ fun DriveMapPanel(
         hasAbsolutePosition = hud.hasAbsolutePosition && origin != null,
     )
 
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Box(modifier) {
         if (choice.backend == MapBackend.OSM && origin != null) {
             MapLibreDriveMap(
                 hud = hud,
                 track = track,
                 navMode = navMode,
                 origin = origin,
-                modifier = mapModifier,
+                modifier = mapModifier.fillMaxSize(),
                 onLongPress = onLongPress,
                 onMapLoaded = { tilesEverLoaded = true },
+                showUncertaintyRadius = showUncertainty,
             )
         } else {
             DriveMap(
                 hud = hud,
                 track = track,
                 navMode = navMode,
-                modifier = mapModifier,
+                modifier = mapModifier.fillMaxSize(),
                 onLongPress = onLongPress,
                 // Nothing to explain before the user has pressed START: the
                 // Canvas already says "Press START to begin tracking".
                 caption = if (navMode == NavMode.IDLE && track.ins.isEmpty()) null else choice.reason,
+                showUncertaintyRadius = showUncertainty,
             )
         }
 
-        // Always offered now: OSM needs no key and no Play services, so a
-        // basemap is available whenever there is (or was) a network. It is also
-        // the privacy control -- with the basemap off this app makes no network
-        // request at all.
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+        // Privacy control: basemap off → Canvas grid, no tile traffic.
+        if (showBasemapToggle) {
             Text(
-                if (basemapWanted) "SHOW GRID INSTEAD" else "SHOW MAP",
+                if (basemapWanted) "SHOW GRID" else "SHOW MAP",
                 modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(12.dp)
                     .clip(RoundedCornerShape(8.dp))
+                    .background(Bg.copy(alpha = 0.72f))
                     .clickable {
                         basemapWanted = !basemapWanted
                         prefs.basemapEnabled = basemapWanted
@@ -192,11 +196,9 @@ private const val LYR_UNC_FILL = "coast-uncertainty-fill"
 private const val LYR_UNC_LINE = "coast-uncertainty-line"
 
 /**
- * A MapLibre raster style built entirely in code, pointing at the standard
- * OpenStreetMap tile server. No token, no key, no Google. The `attribution`
- * field is what MapLibre's attribution control reads; the text is ALSO shown
- * verbatim on the map (see [MapLibreDriveMap]) because the OSM tile usage
- * policy requires visible attribution.
+ * Dark night-mode raster basemap (Carto dark_all). No API key / billing.
+ * Attribution is shown on-map; OSM data remains the underlying source.
+ * Bundled mbtiles (P0-4 offline) will prefer local tiles when present.
  */
 private val OSM_STYLE_JSON = """
 {
@@ -204,20 +206,19 @@ private val OSM_STYLE_JSON = """
   "sources": {
     "osm": {
       "type": "raster",
-      "tiles": ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+      "tiles": ["https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"],
       "tileSize": 256,
       "minzoom": 0,
       "maxzoom": 19,
-      "attribution": "© OpenStreetMap contributors"
+      "attribution": "© OpenStreetMap contributors © CARTO"
     }
   },
   "layers": [
-    { "id": "bg", "type": "background", "paint": { "background-color": "#07090D" } },
-    { "id": "osm", "type": "raster", "source": "osm" }
+    { "id": "bg", "type": "background", "paint": { "background-color": "#0B0E11" } },
+    { "id": "osm", "type": "raster", "source": "osm", "paint": { "raster-opacity": 0.92 } }
   ]
 }
 """.trimIndent()
-
 /** Live references into the map, filled once the style is ready. */
 private class MapRefs {
     var map: MapLibreMap? = null
@@ -278,6 +279,8 @@ fun MapLibreDriveMap(
     modifier: Modifier = Modifier,
     onLongPress: () -> Unit = {},
     onMapLoaded: () -> Unit = {},
+    /** Off by default — uncertainty correlates −0.23 with true error. */
+    showUncertaintyRadius: Boolean = false,
 ) {
     val ctx = LocalContext.current
     val density = LocalDensity.current
@@ -467,6 +470,7 @@ fun MapLibreDriveMap(
     val directional by rememberUpdatedState(hud.headingReferenced)
     val modelled by rememberUpdatedState(navMode != NavMode.GNSS)
     val uncertaintyM by rememberUpdatedState(hud.uncertaintyM)
+    val drawUncertainty by rememberUpdatedState(showUncertaintyRadius)
 
     LaunchedEffect(Unit) {
         var lastNs = 0L
@@ -497,10 +501,9 @@ fun MapLibreDriveMap(
                     PropertyFactory.iconRotate(if (dir) smoother.bearingDeg.toFloat() else 0f),
                 )
 
-                // Uncertainty: geometry every frame it is shown; colour/dash and
-                // visibility only when they change.
+                // Uncertainty radius is debug-only (anti-correlated with error).
                 val r = uncertaintyM
-                if (uncertaintyDrawable(r)) {
+                if (drawUncertainty && uncertaintyDrawable(r)) {
                     refs.unc?.setGeoJson(circlePolygonFeature(g.lat, g.lon, r))
                     val mdl = modelled
                     if (refs.uncShown != true || refs.uncModelled != mdl) {

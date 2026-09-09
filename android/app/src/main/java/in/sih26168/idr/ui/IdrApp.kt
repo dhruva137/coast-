@@ -1,6 +1,7 @@
 package `in`.sih26168.idr.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -118,11 +119,10 @@ fun IdrApp(bus: IdrBus) {
             }
         },
     ) { pad ->
-        Column(
+        Box(
             Modifier
                 .fillMaxSize()
                 .background(Bg)
-                .statusBarsPadding()
                 .padding(pad),
         ) {
             when (tab) {
@@ -132,9 +132,15 @@ fun IdrApp(bus: IdrBus) {
                     requestPerms = request,
                     onOpenHelp = { tab = 3 },
                 )
-                1 -> RecordScreen(bus, permsOk, request)
-                2 -> SessionsScreen()
-                else -> HelpScreen(bus = bus, onReplayOnboarding = { onboarding = true })
+                1 -> Column(Modifier.statusBarsPadding().fillMaxSize()) {
+                    RecordScreen(bus, permsOk, request)
+                }
+                2 -> Column(Modifier.statusBarsPadding().fillMaxSize()) {
+                    SessionsScreen()
+                }
+                else -> Column(Modifier.statusBarsPadding().fillMaxSize()) {
+                    HelpScreen(bus = bus, onReplayOnboarding = { onboarding = true })
+                }
             }
         }
     }

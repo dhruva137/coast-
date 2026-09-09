@@ -2,9 +2,16 @@ package `in`.sih26168.idr.ui
 
 import android.content.Intent
 import android.provider.Settings
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,8 +20,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -31,8 +41,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
@@ -63,12 +75,9 @@ import `in`.sih26168.idr.ui.theme.Telem
 import `in`.sih26168.idr.ui.theme.Text as Fg
 
 /**
- * The screen a stranger picks up and uses.
- *
- * Priority order on screen, top to bottom: what mode we are in and how much to
- * trust it, the map, the two numbers that matter (speed and distance), the
- * button. Everything a developer wants is real and still available, one tap
- * away behind Diagnostics.
+ * Full-screen Uber-black drive map. The basemap is the bottom layer; HUD,
+ * controls, and the bottom sheet float over it. Nothing steals height from the
+ * map (the old 300.dp box is gone).
  */
 @Composable
 fun DriveScreen(
@@ -79,32 +88,21 @@ fun DriveScreen(
 ) {
     val ctx = LocalContext.current
     val hud by bus.hud.collectAsStateWithLifecycle()
-    // Separate flow: see the note on TrackSnapshot. The map's geometry must not
-    // be re-delivered every time the speed readout ticks.
     val track by bus.track.collectAsStateWithLifecycle()
     val mode by bus.mode.collectAsStateWithLifecycle()
-    // Before arming, the HUD carries no location state, so fall back to the
-    // standalone gate reading. Otherwise a denied permission would show as
-    // "checking" until the user pressed START.
     val idleLocation by bus.location.collectAsStateWithLifecycle()
     val device by bus.device.collectAsStateWithLifecycle()
+    val blackout by bus.gnssBlackout.collectAsStateWithLifecycle()
+    val replayEnabled by bus.replayEnabled.collectAsStateWithLifecycle()
+    val replayActive by bus.replayActive.collectAsStateWithLifecycle()
     val live = mode == AppMode.NAVIGATE
     val locationStatus = if (live) hud.locationStatus else idleLocation
-    // navMode is only meaningful while armed; after STOP the last value lingers
-    // on the HUD and must not be presented as the current state.
     val navMode = if (live) hud.navMode else NavMode.IDLE
     val prefs = remember { Prefs(ctx) }
-    // Asked for at START, where the reason is visible: tracking continues with
-    // the screen off, and the ongoing notice is how the user sees that.
     val (notifsOk, requestNotifs) = rememberNotificationGate()
-    var showDiagnostics by remember { mutableStateOf(prefs.diagnosticsOpen) }
+    var sheetExpanded by remember { mutableStateOf(prefs.diagnosticsOpen) }
     var showOriginDialog by remember { mutableStateOf(false) }
 
-    // PERFORMANCE. The big readouts are strings rounded to the nearest whole
-    // km/h and metre, so their VALUE changes perhaps twice a second even though
-    // the underlying double changes ten times a second. derivedStateOf means
-    // BigStat is only recomposed when the text it would print actually differs;
-    // formatting in the call arguments recomposed it on every frame.
     val speedText by remember {
         derivedStateOf { if (hud.speedMps.isFinite()) "%.0f".format(hud.speedMps * 3.6) else "--" }
     }
@@ -117,137 +115,144 @@ fun DriveScreen(
         onDispose { view.keepScreenOn = false }
     }
 
-    Column(
-        Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp)
-            .padding(top = 8.dp, bottom = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        // Narrow parameters, so this skips on every frame where the mode did
-        // not change -- which is nearly all of them.
-        ModeHeader(navMode = navMode, origin = hud.originSource, onOpenHelp = onOpenHelp)
-
-        // A missing or software-fused gyroscope is surfaced on the primary
-        // screen, not buried in Help. Failures are shown, never hidden.
-        DeviceWarningLine(device)
-
-        LocationBanner(
-            status = locationStatus,
-            hasAbsolutePosition = hud.hasAbsolutePosition,
-            live = live,
-            permsOk = permsOk,
-            onRequestPerms = requestPerms,
-            onOpenSettings = {
-                try {
-                    ctx.startActivity(
-                        Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
-                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                    )
-                } catch (_: Exception) {
-                    // Some OEM builds hide this activity; the banner text still
-                    // tells the user where to go.
-                }
-            },
-            onSetStart = { showOriginDialog = true },
-        )
-
-        // DriveMapPanel picks the surface: the OpenStreetMap (MapLibre) basemap
-        // when there is an absolute position and a network (or cached tiles);
-        // the Canvas grid with a one-line reason otherwise. It never shows a
-        // blank tile.
+    Box(Modifier.fillMaxSize()) {
+        // Bottom layer: map fills the entire drive viewport.
         DriveMapPanel(
             hud = hud,
             track = track,
-            // The completed track stays on screen after STOP, but the mode
-            // badge on it must read IDLE rather than the last live mode. This
-            // used to be `hud.copy(navMode = ...)`, which allocated a whole
-            // HudState on every recomposition of this screen.
             navMode = navMode,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(300.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .border(1.dp, Line, RoundedCornerShape(16.dp)),
+            modifier = Modifier.fillMaxSize(),
+            mapModifier = Modifier.fillMaxSize(),
             onLongPress = { showOriginDialog = true },
+            showBasemapToggle = true,
         )
 
-        if (live) AccuracyCard(hud)
-
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            BigStat(
-                label = "SPEED",
-                value = speedText,
-                unit = "km/h",
-                modifier = Modifier.weight(1f),
-            )
-            BigStat(
-                label = "DISTANCE",
-                value = distText,
-                unit = distUnit,
-                modifier = Modifier.weight(1f),
-            )
-        }
-
-        PrimaryControls(
-            live = live,
-            permsOk = permsOk,
-            onStartStop = {
-                if (live) {
-                    RecordService.stop(ctx)
-                } else {
-                    // Deliberately does NOT gate on the location permission. The
-                    // whole product claim is that it runs without it. The
-                    // notification ask is fire-and-forget for the same reason:
-                    // tracking starts either way, the notice is just visible.
-                    if (!notifsOk) requestNotifs()
-                    RecordService.start(ctx, AppMode.NAVIGATE)
-                }
-            },
-            onRequestPerms = requestPerms,
-        )
-
-        if (live) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                SecondaryButton("SET START POINT", Modifier.weight(1f)) { showOriginDialog = true }
-                SecondaryButton(
-                    if (hud.loopMarked) "CLOSE LOOP" else "MARK HERE",
-                    Modifier.weight(1f),
-                ) { bus.markRequested = true }
-            }
-            if (hud.loopMarked) {
-                TextButton(onClick = { bus.clearMarkRequested = true }) {
-                    Text("Clear mark", fontFamily = IdrSans, color = Mute, fontSize = 12.sp)
-                }
-            }
-        }
-
-        LoopClosureLine(
-            closureM = hud.loopClosureM,
-            driftPct = hud.driftPct,
-            loopMarked = hud.loopMarked,
-            loopDistanceM = hud.loopDistanceM,
-        )
-
-        TextButton(
-            onClick = {
-                showDiagnostics = !showDiagnostics
-                prefs.diagnosticsOpen = showDiagnostics
-            },
-            modifier = Modifier.fillMaxWidth(),
+        // Top overlays (status-bar safe).
+        Column(
+            Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(
-                if (showDiagnostics) "HIDE DIAGNOSTICS" else "DIAGNOSTICS",
-                fontFamily = IdrMono,
-                color = Mute,
-                fontSize = 12.sp,
-                letterSpacing = 1.4.sp,
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "HELP",
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(99.dp))
+                        .background(Bg2.copy(alpha = 0.88f))
+                        .border(1.dp, Line, RoundedCornerShape(99.dp))
+                        .clickable(onClick = onOpenHelp)
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    color = Mute,
+                    fontFamily = IdrMono,
+                    fontSize = 11.sp,
+                )
+                ModePill(navMode = navMode, nSats = hud.nSats, live = live)
+                // Balance the HELP chip so the pill stays visually centred.
+                Spacer(Modifier.width(64.dp))
+            }
+
+            if (replayActive || replayEnabled) {
+                Text(
+                    "REPLAY — real dataset, real estimator",
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(99.dp))
+                        .background(Bg2.copy(alpha = 0.92f))
+                        .border(1.dp, Amber.copy(alpha = 0.45f), RoundedCornerShape(99.dp))
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    color = Amber,
+                    fontFamily = IdrMono,
+                    fontSize = 10.sp,
+                    letterSpacing = 1.0.sp,
+                )
+            }
+
+            DeviceWarningLine(device)
+
+            LocationBanner(
+                status = locationStatus,
+                hasAbsolutePosition = hud.hasAbsolutePosition,
+                live = live,
+                permsOk = permsOk,
+                onRequestPerms = requestPerms,
+                onOpenSettings = {
+                    try {
+                        ctx.startActivity(
+                            Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                        )
+                    } catch (_: Exception) {
+                    }
+                },
+                onSetStart = { showOriginDialog = true },
             )
         }
-        if (showDiagnostics) DiagnosticsPanel(bus = bus, hud = hud)
 
-        Spacer(Modifier.height(8.dp))
+        // Bottom sheet + primary controls.
+        Column(
+            Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp)
+                .padding(bottom = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            if (live) {
+                DemoControls(
+                    blackout = blackout,
+                    replayEnabled = replayEnabled,
+                    onToggleBlackout = { bus.setBlackout(!blackout) },
+                    onToggleReplay = { bus.setReplayEnabled(!replayEnabled) },
+                )
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    SecondaryButton("SET START", Modifier.weight(1f)) { showOriginDialog = true }
+                    SecondaryButton(
+                        if (hud.loopMarked) "CLOSE LOOP" else "MARK HERE",
+                        Modifier.weight(1f),
+                    ) { bus.markRequested = true }
+                }
+                if (hud.loopMarked) {
+                    TextButton(onClick = { bus.clearMarkRequested = true }) {
+                        Text("Clear mark", fontFamily = IdrSans, color = Mute, fontSize = 12.sp)
+                    }
+                }
+            }
+
+            DriveBottomSheet(
+                expanded = sheetExpanded,
+                onToggle = {
+                    sheetExpanded = !sheetExpanded
+                    prefs.diagnosticsOpen = sheetExpanded
+                },
+                speedText = speedText,
+                distText = distText,
+                distUnit = distUnit,
+                navMode = navMode,
+                hud = hud,
+                bus = bus,
+            )
+
+            PrimaryControls(
+                live = live,
+                permsOk = permsOk,
+                onStartStop = {
+                    if (live) {
+                        RecordService.stop(ctx)
+                    } else {
+                        if (!notifsOk) requestNotifs()
+                        RecordService.start(ctx, AppMode.NAVIGATE)
+                    }
+                },
+                onRequestPerms = requestPerms,
+            )
+        }
     }
 
     if (showOriginDialog) {
@@ -273,74 +278,191 @@ fun DriveScreen(
 }
 
 // ---------------------------------------------------------------------------
-// Mode + trust
+// Mode pill (emotional core of the demo)
 // ---------------------------------------------------------------------------
 
 @Composable
-private fun ModeHeader(navMode: NavMode, origin: OriginSource, onOpenHelp: () -> Unit) {
-    Row(
-        Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
+private fun ModePill(navMode: NavMode, nSats: Int, live: Boolean) {
+    val idr = navMode == NavMode.DEAD_RECKONING || navMode == NavMode.RELATIVE
+    val pulse = rememberInfiniteTransition(label = "idrPulse")
+    val alpha by pulse.animateFloat(
+        initialValue = 1f,
+        targetValue = if (idr && live) 0.55f else 1f,
+        animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse),
+        label = "idrAlpha",
+    )
+    val tint by animateColorAsState(
+        targetValue = when {
+            !live || navMode == NavMode.IDLE -> Mute
+            navMode == NavMode.GNSS -> Gnss
+            else -> Amber
+        },
+        label = "pillTint",
+    )
+    val label = when {
+        !live || navMode == NavMode.IDLE -> "READY"
+        navMode == NavMode.GNSS -> "GPS  ·  $nSats sats"
+        navMode == NavMode.DEAD_RECKONING -> "IDR MODE — AI speed + road lock"
+        else -> "RELATIVE — no absolute fix"
+    }
+    Box(
+        Modifier
+            .alpha(alpha)
+            .widthIn(max = 260.dp)
+            .clip(RoundedCornerShape(99.dp))
+            .background(Bg2.copy(alpha = 0.92f))
+            .border(1.5.dp, tint.copy(alpha = 0.85f), RoundedCornerShape(99.dp))
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        contentAlignment = Alignment.Center,
     ) {
-        Column(Modifier.weight(1f)) {
-            Text(
-                modeTitle(navMode),
-                fontFamily = IdrMono,
-                color = modeColor(navMode),
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.5.sp,
-            )
-            Text(
-                modeSubtitle(navMode, origin),
-                fontFamily = IdrSans,
-                color = Mute,
-                fontSize = 13.sp,
-                lineHeight = 17.sp,
-            )
-        }
         Text(
-            "HELP",
-            modifier = Modifier
-                .clip(RoundedCornerShape(99.dp))
-                .border(1.dp, Line, RoundedCornerShape(99.dp))
-                .clickable(onClick = onOpenHelp)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            color = Mute,
+            label,
+            color = tint,
             fontFamily = IdrMono,
             fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 0.8.sp,
+            textAlign = TextAlign.Center,
+            maxLines = 2,
         )
     }
 }
 
-private fun modeTitle(mode: NavMode): String = when (mode) {
-    NavMode.GNSS -> "GNSS"
-    NavMode.DEAD_RECKONING -> "DEAD RECKONING"
-    NavMode.RELATIVE -> "RELATIVE"
-    NavMode.IDLE -> "READY"
+@Composable
+private fun DemoControls(
+    blackout: Boolean,
+    replayEnabled: Boolean,
+    onToggleBlackout: () -> Unit,
+    onToggleReplay: () -> Unit,
+) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        SecondaryButton(
+            if (replayEnabled) "REPLAY ON" else "REPLAY",
+            Modifier.weight(1f),
+            onToggleReplay,
+        )
+        SecondaryButton(
+            if (blackout) "RESTORE GNSS" else "SIMULATE BLACKOUT",
+            Modifier.weight(1.4f),
+            onToggleBlackout,
+        )
+    }
 }
 
-private fun modeColor(mode: NavMode) = when (mode) {
-    NavMode.GNSS -> Gnss
-    NavMode.DEAD_RECKONING -> Accent
-    NavMode.RELATIVE -> Amber
-    NavMode.IDLE -> Mute
-}
-
-private fun modeSubtitle(mode: NavMode, origin: OriginSource): String = when (mode) {
-    NavMode.GNSS -> "Live satellite fix. Your position on the map is absolute."
-    NavMode.DEAD_RECKONING ->
-        "No satellite fix. Position is carried forward from the motion sensors, " +
-            "anchored to " + when (origin) {
-                OriginSource.GNSS_FIX -> "your last real fix."
-                OriginSource.USER_MAP, OriginSource.USER_COORDS -> "the start point you set by hand."
-                OriginSource.NONE -> "nothing."
+@Composable
+private fun DriveBottomSheet(
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    speedText: String,
+    distText: String,
+    distUnit: String,
+    navMode: NavMode,
+    hud: HudState,
+    bus: IdrBus,
+) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp, bottomStart = 14.dp, bottomEnd = 14.dp))
+            .background(Bg2.copy(alpha = 0.94f))
+            .border(1.dp, Line, RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp, bottomStart = 14.dp, bottomEnd = 14.dp))
+            .pointerInput(Unit) {
+                detectVerticalDragGestures { _, drag ->
+                    if (drag < -20f && !expanded) onToggle()
+                    if (drag > 20f && expanded) onToggle()
+                }
             }
-    NavMode.RELATIVE ->
-        "No absolute position. Distance travelled and the shape of your route are " +
-            "real; where they are on the Earth is not known."
-    NavMode.IDLE -> "Press START. The app runs on the motion sensors, with or without GPS."
+            .padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Box(
+            Modifier
+                .align(Alignment.CenterHorizontally)
+                .width(36.dp)
+                .height(4.dp)
+                .clip(RoundedCornerShape(99.dp))
+                .background(Mute.copy(alpha = 0.45f))
+                .clickable(onClick = onToggle),
+        )
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Column {
+                Text("SPEED", fontFamily = IdrMono, color = Mute, fontSize = 10.sp, letterSpacing = 1.4.sp)
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(speedText, fontFamily = IdrMono, color = Fg, fontSize = 34.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.width(4.dp))
+                    Text("km/h", fontFamily = IdrMono, color = Mute, fontSize = 12.sp, modifier = Modifier.padding(bottom = 6.dp))
+                }
+            }
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("MODE", fontFamily = IdrMono, color = Mute, fontSize = 10.sp, letterSpacing = 1.4.sp)
+                Text(
+                    when (navMode) {
+                        NavMode.GNSS -> "GPS"
+                        NavMode.DEAD_RECKONING -> "IDR"
+                        NavMode.RELATIVE -> "REL"
+                        NavMode.IDLE -> "—"
+                    },
+                    fontFamily = IdrMono,
+                    color = modeColor(navMode),
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text("SINCE FIX", fontFamily = IdrMono, color = Mute, fontSize = 10.sp, letterSpacing = 1.4.sp)
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        if (hud.distanceSinceFixM.isFinite()) "%.0f".format(hud.distanceSinceFixM) else distText,
+                        fontFamily = IdrMono,
+                        color = Fg,
+                        fontSize = 34.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        if (hud.distanceSinceFixM.isFinite()) "m" else distUnit,
+                        fontFamily = IdrMono,
+                        color = Mute,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(bottom = 6.dp),
+                    )
+                }
+            }
+        }
+
+        LoopClosureLine(
+            closureM = hud.loopClosureM,
+            driftPct = hud.driftPct,
+            loopMarked = hud.loopMarked,
+            loopDistanceM = hud.loopDistanceM,
+        )
+
+        // Accuracy / uncertainty card is debug-only (broken confidence signal).
+        val prefs = Prefs(LocalContext.current)
+        if (prefs.showUncertaintyRadius && navMode != NavMode.IDLE) {
+            AccuracyCard(hud)
+        }
+
+        TextButton(onClick = onToggle, modifier = Modifier.fillMaxWidth()) {
+            Text(
+                if (expanded) "HIDE SYSTEM HEALTH" else "SYSTEM HEALTH",
+                fontFamily = IdrMono,
+                color = Mute,
+                fontSize = 11.sp,
+                letterSpacing = 1.2.sp,
+            )
+        }
+        if (expanded) {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 280.dp)
+                    .verticalScroll(rememberScrollState()),
+            ) {
+                DiagnosticsPanel(bus = bus, hud = hud)
+            }
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -357,10 +479,8 @@ private fun LocationBanner(
     onOpenSettings: () -> Unit,
     onSetStart: () -> Unit,
 ) {
-    // Nothing to say once a fix is live and everything is normal.
     if (status == LocationStatus.LIVE) return
     if (status == LocationStatus.UNKNOWN && permsOk) return
-    // Before arming, WAITING_FOR_FIX just means "not started yet".
     if (!live && status == LocationStatus.WAITING_FOR_FIX) return
 
     val tint = when (status) {
@@ -372,7 +492,7 @@ private fun LocationBanner(
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(tint.copy(alpha = 0.10f))
+            .background(Bg2.copy(alpha = 0.92f))
             .border(1.dp, tint.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -406,7 +526,7 @@ private fun LocationBanner(
 }
 
 // ---------------------------------------------------------------------------
-// Accuracy
+// Accuracy (debug flag only)
 // ---------------------------------------------------------------------------
 
 @Composable
@@ -424,57 +544,28 @@ private fun AccuracyCard(hud: HudState) {
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(Bg2)
+            .background(Bg.copy(alpha = 0.55f))
             .border(1.dp, tint.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                when {
-                    !known -> "ACCURACY UNKNOWN"
-                    hud.navMode == NavMode.RELATIVE -> "SHAPE ACCURATE TO ± " + metres(r)
-                    else -> "ACCURATE TO ± " + metres(r)
-                },
-                fontFamily = IdrMono,
-                color = tint,
-                fontSize = 17.sp,
-                fontWeight = FontWeight.Bold,
-            )
-            Spacer(Modifier.weight(1f))
-            Text(
-                if (hud.navMode == NavMode.GNSS) "MEASURED" else if (known) "MODELLED" else "--",
-                fontFamily = IdrMono,
-                color = Mute,
-                fontSize = 10.sp,
-                letterSpacing = 1.2.sp,
-            )
-        }
         Text(
-            if (known) {
-                hud.uncertaintyBasis.replaceFirstChar { it.uppercase() } + "."
-            } else {
-                "Nothing has been measured yet, so no honest figure can be given."
+            when {
+                !known -> "ACCURACY UNKNOWN"
+                hud.navMode == NavMode.RELATIVE -> "SHAPE ACCURATE TO ± " + metres(r)
+                else -> "ACCURATE TO ± " + metres(r)
             },
+            fontFamily = IdrMono,
+            color = tint,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+        )
+        Text(
+            "DEBUG — confidence radius is not shown by default (broken signal).",
             fontFamily = IdrSans,
             color = Mute,
-            fontSize = 12.sp,
-            lineHeight = 16.sp,
+            fontSize = 11.sp,
         )
-        if (hud.navMode != NavMode.GNSS && known) {
-            Text(
-                if (hud.driftRateMeasured) {
-                    "Growth rate is this session own measured loop-closure drift."
-                } else {
-                    "Growth rate is the project benchmark target, not a measurement " +
-                        "from this ride. Close a loop with MARK to replace it with a real one."
-                },
-                fontFamily = IdrSans,
-                color = Amber,
-                fontSize = 11.sp,
-                lineHeight = 15.sp,
-            )
-        }
     }
 }
 
@@ -500,8 +591,8 @@ private fun LoopClosureLine(
         text,
         fontFamily = IdrSans,
         color = if (closure != null) Telem else Mute,
-        fontSize = 13.sp,
-        lineHeight = 18.sp,
+        fontSize = 12.sp,
+        lineHeight = 16.sp,
     )
 }
 
@@ -520,29 +611,28 @@ private fun PrimaryControls(
         onClick = onStartStop,
         modifier = Modifier
             .fillMaxWidth()
-            .height(64.dp),
+            .height(56.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = if (live) Danger else Accent,
             contentColor = Bg,
         ),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(14.dp),
     ) {
         Text(
             if (live) "STOP" else "START",
             fontFamily = IdrMono,
-            fontSize = 20.sp,
+            fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 2.sp,
         )
     }
     if (!permsOk && !live) {
         Text(
-            "You can start without granting location. The app will track your route " +
-                "from the motion sensors and tell you plainly that the position is relative.",
+            "You can start without location. Tracking runs from motion sensors in relative mode.",
             fontFamily = IdrSans,
             color = Mute,
-            fontSize = 12.sp,
-            lineHeight = 16.sp,
+            fontSize = 11.sp,
+            lineHeight = 15.sp,
             modifier = Modifier.clickable(onClick = onRequestPerms),
         )
     }
@@ -552,9 +642,9 @@ private fun PrimaryControls(
 fun SecondaryButton(label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Box(
         modifier
-            .height(48.dp)
+            .height(44.dp)
             .clip(RoundedCornerShape(10.dp))
-            .background(Bg2)
+            .background(Bg2.copy(alpha = 0.92f))
             .border(1.dp, Line, RoundedCornerShape(10.dp))
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
@@ -563,42 +653,19 @@ fun SecondaryButton(label: String, modifier: Modifier = Modifier, onClick: () ->
             label,
             fontFamily = IdrMono,
             color = Fg,
-            fontSize = 12.sp,
-            letterSpacing = 1.sp,
+            fontSize = 11.sp,
+            letterSpacing = 0.8.sp,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = 8.dp),
         )
     }
 }
 
-@Composable
-private fun BigStat(label: String, value: String, unit: String, modifier: Modifier = Modifier) {
-    Column(
-        modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(Bg2)
-            .border(1.dp, Line, RoundedCornerShape(12.dp))
-            .padding(14.dp),
-    ) {
-        Text(label, fontFamily = IdrMono, color = Mute, fontSize = 10.sp, letterSpacing = 1.6.sp)
-        Row(verticalAlignment = Alignment.Bottom) {
-            Text(
-                value,
-                fontFamily = IdrMono,
-                color = Fg,
-                fontSize = 38.sp,
-                fontWeight = FontWeight.Bold,
-            )
-            Spacer(Modifier.width(6.dp))
-            Text(
-                unit,
-                fontFamily = IdrMono,
-                color = Mute,
-                fontSize = 13.sp,
-                modifier = Modifier.padding(bottom = 7.dp),
-            )
-        }
-    }
+private fun modeColor(mode: NavMode) = when (mode) {
+    NavMode.GNSS -> Gnss
+    NavMode.DEAD_RECKONING -> Accent
+    NavMode.RELATIVE -> Amber
+    NavMode.IDLE -> Mute
 }
 
 // ---------------------------------------------------------------------------

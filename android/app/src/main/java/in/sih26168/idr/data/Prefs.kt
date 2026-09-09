@@ -36,6 +36,14 @@ class Prefs(context: Context) {
         get() = sp.getBoolean(KEY_KMH, true)
         set(v) = sp.edit().putBoolean(KEY_KMH, v).apply()
 
+    /**
+     * Debug-only: draw the modelled uncertainty radius on the map.
+     * Off by default — that signal correlates negatively with true error (−0.23).
+     */
+    var showUncertaintyRadius: Boolean
+        get() = sp.getBoolean(KEY_UNCERTAINTY, false)
+        set(v) = sp.edit().putBoolean(KEY_UNCERTAINTY, v).apply()
+
     /** Free text describing the calibrated mount, shown on the Drive screen. */
     var mountNote: String
         get() = sp.getString(KEY_MOUNT_NOTE, "") ?: ""
@@ -85,6 +93,7 @@ class Prefs(context: Context) {
         const val KEY_DIAGNOSTICS = "diagnostics_open"
         const val KEY_KMH = "speed_kmh"
         const val KEY_BASEMAP = "basemap_enabled"
+        const val KEY_UNCERTAINTY = "show_uncertainty_radius"
         const val KEY_MOUNT_SET = "mount_set"
         const val KEY_MOUNT_NOTE = "mount_note"
         const val KEY_MOUNT_PREFIX = "mount_"

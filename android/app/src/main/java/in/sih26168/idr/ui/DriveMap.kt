@@ -102,12 +102,14 @@ fun DriveMap(
     modifier: Modifier = Modifier,
     onLongPress: () -> Unit = {},
     /**
-     * One honest line explaining why there is no Google basemap underneath,
-     * e.g. "No map key -- showing track only". Null when there is nothing to
-     * explain. Supplied by [DriveMapPanel]; a blank grey tile would be worse
-     * than a grid that admits what it is.
+     * One honest line explaining why there is no basemap underneath,
+     * e.g. "No absolute position -- showing track only". Null when there is
+     * nothing to explain. Supplied by [DriveMapPanel]; a blank grey tile would
+     * be worse than a grid that admits what it is.
      */
     caption: String? = null,
+    /** Off by default — uncertainty correlates −0.23 with true error. */
+    showUncertaintyRadius: Boolean = false,
 ) {
     val empty = track.ins.isEmpty()
 
@@ -239,7 +241,8 @@ fun DriveMap(
             if (!empty || navMode != NavMode.IDLE) {
                 val here = px(hud.east.toFloat(), hud.north.toFloat())
                 val r = hud.uncertaintyM
-                if (r.isFinite() && r > 0.0) {
+                // Debug-only: the modelled radius is anti-correlated with error.
+                if (showUncertaintyRadius && r.isFinite() && r > 0.0) {
                     val rp = (r * scale).toFloat()
                     // Do not paint the whole viewport when the circle grows huge;
                     // the number beside the map still tells the truth.
