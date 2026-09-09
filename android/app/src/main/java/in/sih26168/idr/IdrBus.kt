@@ -84,6 +84,16 @@ class IdrBus {
     private val _replayActive = MutableStateFlow(false)
     val replayActive: StateFlow<Boolean> = _replayActive.asStateFlow()
 
+    /**
+     * Naive double-integration ghost track (P1-1). Same IMU as COAST; no ZUPT /
+     * map lock. UI draws the red puck when [showGhost] is true.
+     */
+    private val _ghostTrack = MutableStateFlow(TrackSnapshot())
+    val ghostTrack: StateFlow<TrackSnapshot> = _ghostTrack.asStateFlow()
+
+    private val _showGhost = MutableStateFlow(false)
+    val showGhost: StateFlow<Boolean> = _showGhost.asStateFlow()
+
     fun setConfig(c: SessionConfig) {
         _config.value = c
     }
@@ -98,6 +108,10 @@ class IdrBus {
 
     fun setReplayActive(on: Boolean) {
         _replayActive.value = on
+    }
+
+    fun setShowGhost(on: Boolean) {
+        _showGhost.value = on
     }
 
     /**
@@ -126,6 +140,11 @@ class IdrBus {
     /** No-ops when the estimator has not appended a point since the last call. */
     fun publishTrack(t: TrackSnapshot) {
         if (_track.value.version != t.version) _track.value = t
+    }
+
+    /** No-ops when the ghost estimator has not appended a point since the last call. */
+    fun publishGhostTrack(t: TrackSnapshot) {
+        if (_ghostTrack.value.version != t.version) _ghostTrack.value = t
     }
 
     fun publishRecord(s: RecordStats) {

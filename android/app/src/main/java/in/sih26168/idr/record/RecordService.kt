@@ -20,6 +20,7 @@ import `in`.sih26168.idr.data.LocationStatus
 import `in`.sih26168.idr.data.OriginSource
 import `in`.sih26168.idr.data.Prefs
 import `in`.sih26168.idr.data.RecordStats
+import `in`.sih26168.idr.demo.TrackerHooks
 import `in`.sih26168.idr.nav.OnnxSpeedModel
 import `in`.sih26168.idr.nav.SimpleIns
 import `in`.sih26168.idr.sensor.GnssHub
@@ -33,6 +34,7 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.UUID
 
 /**
  * Foreground service: RECORD writes frozen CSV; NAVIGATE runs [SimpleIns].
@@ -60,6 +62,8 @@ class RecordService : LifecycleService() {
     private var lastStatsNs = 0L
     private var lastLocationCheckNs = 0L
     private var startedAt = 0L
+    /** Stable id for optional LAN tracker frames this arm (tracker flavor only). */
+    private var sessionId: String = ""
     @Volatile private var lastFixLat = Double.NaN
     @Volatile private var lastFixLon = Double.NaN
 
