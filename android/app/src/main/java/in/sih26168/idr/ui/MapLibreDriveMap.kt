@@ -116,13 +116,32 @@ fun DriveMapPanel(
     modifier: Modifier = Modifier,
     mapModifier: Modifier = Modifier,
     onLongPress: () -> Unit = {},
+    /**
+     * When true, draw the legacy text chip for map↔grid. Drive now uses an M3
+     * FAB instead — leave this false from [DriveScreen].
+     */
     showBasemapToggle: Boolean = true,
+    /** External basemap preference; null = own Prefs-backed state. */
+    basemapWanted: Boolean? = null,
+    onBasemapWantedChange: ((Boolean) -> Unit)? = null,
+    /** Increment to force camera follow + animate to the vehicle. */
+    recenterTick: Int = 0,
+    /** When false, hide the on-map RE-CENTRE chip (Drive FAB handles it). */
+    showRecenterChip: Boolean = true,
     ghostTrack: TrackSnapshot = TrackSnapshot(),
     showGhost: Boolean = false,
 ) {
     val ctx = LocalContext.current
     val prefs = remember { Prefs(ctx) }
-    var basemapWanted by remember { mutableStateOf(prefs.basemapEnabled) }
+    var internalBasemap by remember { mutableStateOf(prefs.basemapEnabled) }
+    val basemapOn = basemapWanted ?: internalBasemap
+    fun setBasemap(v: Boolean) {
+        if (basemapWanted == null) {
+            internalBasemap = v
+            prefs.basemapEnabled = v
+        }
+        onBasemapWantedChange?.invoke(v)
+    }
     val showUncertainty = prefs.showUncertaintyRadius
     val online by rememberOnline()
     // Survives rotation deliberately: once tiles have arrived, MapLibre serves
@@ -137,7 +156,7 @@ fun DriveMapPanel(
 
     val origin = originFrom(hud.lat, hud.lon, hud.east, hud.north)
     val choice = chooseMapBackend(
-        basemapWanted = basemapWanted,
+        basemapWanted = basemapOn,
         online = online,
         tilesEverLoaded = tilesEverLoaded,
         navMode = navMode,
@@ -159,6 +178,8 @@ fun DriveMapPanel(
                 bundledMbtilesAbsolutePath = bundledMbtilesPath,
                 ghostTrack = ghostTrack,
                 showGhost = showGhost,
+                recenterTick = recenterTick,
+                showRecenterChip = showRecenterChip,
             )
         } else {
             DriveMap(
@@ -178,7 +199,7 @@ fun DriveMapPanel(
 
         // Privacy control: basemap off → Canvas grid, no tile traffic.
         if (showBasemapToggle) {
-            val toggleLabel = if (basemapWanted) "SHOW GRID" else "SHOW MAP"
+            val toggleLabel = if (basemapOn) "SHOW GRID" else "SHOW MAP"
             Text(
                 toggleLabel,
                 modifier = Modifier
@@ -188,16 +209,13 @@ fun DriveMapPanel(
                     .clip(RoundedCornerShape(8.dp))
                     .background(Bg.copy(alpha = 0.72f))
                     .semantics {
-                        contentDescription = if (basemapWanted) {
+                        contentDescription = if (basemapOn) {
                             "Show metre grid instead of basemap; disables tile network"
                         } else {
                             "Show map basemap"
                         }
                     }
-                    .clickable {
-                        basemapWanted = !basemapWanted
-                        prefs.basemapEnabled = basemapWanted
-                    }
+                    .clickable { setBasemap(!basemapOn) }
                     .padding(horizontal = 12.dp, vertical = 12.dp),
                 color = Mute,
                 fontFamily = IdrMono,
@@ -379,6 +397,9 @@ fun MapLibreDriveMap(
     bundledMbtilesAbsolutePath: String? = null,
     ghostTrack: TrackSnapshot = TrackSnapshot(),
     showGhost: Boolean = false,
+    /** Increment from Drive FAB to re-enable follow and animate to the vehicle. */
+    recenterTick: Int = 0,
+    showRecenterChip: Boolean = true,
 ) {
     val ctx = LocalContext.current
     val density = LocalDensity.current
@@ -401,6 +422,23 @@ fun MapLibreDriveMap(
     val gesturing = remember { mutableStateOf(false) }
     var viewportMinPx by remember { mutableIntStateOf(0) }
     var followTick by remember { mutableIntStateOf(0) }
+
+    // Drive FAB / external recenter request.
+    LaunchedEffect(recenterTick) {
+        if (recenterTick == 0) return@LaunchedEffect
+        following.value = true
+        followTick++
+        val map = refs.map ?: return@LaunchedEffect
+        runCatching {
+            map.animateCamera(
+                CameraUpdateFactory.newLatLngZoom(
+                    LatLng(rendered[0], rendered[1]),
+                    maxOf(map.cameraPosition.zoom, FOLLOW_ZOOM),
+                ),
+                500,
+            )
+        }
+    }
 
     // MapLibre.getInstance MUST run before a MapView is constructed. No key is
     // passed -- the style carries its own tile URLs, so none is needed.
@@ -702,7 +740,7 @@ fun MapLibreDriveMap(
 
         // Read followTick so this leaf recomposes when follow flips.
         followTick
-        if (!following.value) {
+        if (showRecenterChip && !following.value) {
             Text(
                 "RE-CENTRE",
                 modifier = Modifier

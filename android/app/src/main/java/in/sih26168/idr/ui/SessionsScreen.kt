@@ -35,11 +35,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import `in`.sih26168.idr.record.QualityVerdict
@@ -252,10 +254,16 @@ private fun SessionListPane(
         Modifier
             .fillMaxSize()
             .background(Bg)
-            .padding(16.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text("SESSIONS", fontFamily = IdrMono, color = Accent, letterSpacing = 3.sp, fontSize = 12.sp)
+        Text(
+            "Sessions",
+            fontFamily = IdrSans,
+            color = Fg,
+            fontSize = 22.sp,
+            fontWeight = FontWeight.SemiBold,
+        )
         Text(
             "Past rides — tap a session to see its track.",
             color = Mute,
@@ -267,21 +275,24 @@ private fun SessionListPane(
                 onClick = onRefresh,
                 enabled = !busy,
                 colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Bg),
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(12.dp),
             ) {
                 Text("REFRESH", fontFamily = IdrMono, fontSize = 11.sp)
             }
             Button(
                 onClick = onRescoreAll,
                 enabled = !busy && sessions.isNotEmpty(),
-                colors = ButtonDefaults.buttonColors(containerColor = Telem, contentColor = Bg),
-                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Accent.copy(alpha = 0.18f),
+                    contentColor = Accent,
+                ),
+                shape = RoundedCornerShape(12.dp),
             ) {
                 Text("RE-SCORE ALL", fontFamily = IdrMono, fontSize = 11.sp)
             }
         }
         message?.let {
-            Text(it, color = Telem, fontFamily = IdrMono, fontSize = 11.sp)
+            Text(it, color = Accent, fontFamily = IdrMono, fontSize = 11.sp)
         }
         Text(
             SessionStore.logsRoot(ctx).absolutePath,
@@ -326,10 +337,11 @@ private fun SessionHistoryCard(s: SessionSummary, onClick: () -> Unit) {
     Column(
         Modifier
             .fillMaxWidth()
-            .background(Bg2, RoundedCornerShape(10.dp))
-            .border(1.dp, Line, RoundedCornerShape(10.dp))
+            .clip(RoundedCornerShape(16.dp))
+            .background(Bg2)
+            .border(1.dp, Line, RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
-            .padding(12.dp),
+            .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Row(

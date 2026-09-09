@@ -36,6 +36,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -122,7 +123,7 @@ fun SettingsScreen(
             fontFamily = IdrSans,
             color = Fg,
             fontSize = 22.sp,
-            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+            fontWeight = FontWeight.SemiBold,
         )
         Text(
             if (displayName.isBlank()) "Signed in as guest"
@@ -325,10 +326,10 @@ private fun Section(title: String) {
     Text(
         title,
         fontFamily = IdrMono,
-        color = Mute,
-        fontSize = 10.sp,
+        color = Accent,
+        fontSize = 11.sp,
         letterSpacing = 1.5.sp,
-        modifier = Modifier.padding(top = 4.dp),
+        modifier = Modifier.padding(top = 8.dp, bottom = 2.dp),
     )
 }
 
@@ -338,19 +339,28 @@ private fun SettingsToggle(
     subtitle: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
+    bordered: Boolean = true,
 ) {
+    val shape = RoundedCornerShape(12.dp)
     Row(
         Modifier
             .fillMaxWidth()
             .heightIn(min = 48.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(Bg2)
-            .border(1.dp, Line, RoundedCornerShape(12.dp))
+            .then(
+                if (bordered) {
+                    Modifier
+                        .clip(shape)
+                        .background(Bg2)
+                        .border(1.dp, Line, shape)
+                } else {
+                    Modifier
+                },
+            )
             .semantics {
                 contentDescription = "$title. $subtitle. ${if (checked) "On" else "Off"}"
             }
             .clickable { onCheckedChange(!checked) }
-            .padding(horizontal = 14.dp, vertical = 12.dp),
+            .padding(horizontal = if (bordered) 14.dp else 2.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {

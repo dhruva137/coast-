@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -29,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import `in`.sih26168.idr.data.Prefs
 import `in`.sih26168.idr.ui.theme.Accent
 import `in`.sih26168.idr.ui.theme.Bg
+import `in`.sih26168.idr.ui.theme.Bg2
 import `in`.sih26168.idr.ui.theme.IdrMono
 import `in`.sih26168.idr.ui.theme.IdrSans
 import `in`.sih26168.idr.ui.theme.Line
@@ -71,7 +74,7 @@ fun AuthScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(Modifier.height(48.dp))
+        Spacer(Modifier.height(36.dp))
         Text(
             "COAST",
             fontFamily = IdrSans,
@@ -93,75 +96,83 @@ fun AuthScreen(
             fontSize = 14.sp,
         )
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(8.dp))
 
-        Button(
-            onClick = {
-                // Guest: clear any prior local name and mark the gate done.
-                prefs.displayName = ""
-                prefs.authDone = true
-                localName = ""
-                onFinished()
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Bg),
-            shape = RoundedCornerShape(10.dp),
-        ) {
-            Text("CONTINUE AS GUEST", fontFamily = IdrMono, letterSpacing = 1.2.sp)
-        }
-
-        Text(
-            "OPTIONAL LOCAL SIGN-IN",
-            fontFamily = IdrMono,
-            color = Mute,
-            fontSize = 10.sp,
-            letterSpacing = 1.5.sp,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
-        )
-        OutlinedTextField(
-            value = email,
-            onValueChange = { email = it },
-            label = { Text("Email (display name only)") },
-            singleLine = true,
+        Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = fieldColors,
-        )
-        Button(
-            onClick = {
-                val trimmed = email.trim()
-                if (trimmed.isEmpty()) return@Button
-                // Local label only — never sent anywhere.
-                prefs.displayName = trimmed
-                prefs.authDone = true
-                localName = trimmed
-                onFinished()
-            },
-            enabled = email.trim().isNotEmpty(),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Accent.copy(alpha = 0.2f),
-                contentColor = Accent,
-            ),
-            shape = RoundedCornerShape(10.dp),
+            colors = CardDefaults.cardColors(containerColor = Bg2),
+            shape = RoundedCornerShape(16.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         ) {
-            Text("SIGN IN", fontFamily = IdrMono, letterSpacing = 1.2.sp)
-        }
-
-        if (localName.isNotBlank()) {
-            TextButton(
-                onClick = {
-                    prefs.displayName = ""
-                    localName = ""
-                    email = ""
-                },
+            Column(
+                Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                Text("SIGN OUT", fontFamily = IdrMono, color = Mute, fontSize = 12.sp)
+                Button(
+                    onClick = {
+                        prefs.displayName = ""
+                        prefs.authDone = true
+                        localName = ""
+                        onFinished()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Bg),
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Text("CONTINUE AS GUEST", fontFamily = IdrMono, letterSpacing = 1.2.sp)
+                }
+
+                Text(
+                    "OPTIONAL LOCAL SIGN-IN",
+                    fontFamily = IdrMono,
+                    color = Mute,
+                    fontSize = 10.sp,
+                    letterSpacing = 1.5.sp,
+                )
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    label = { Text("Email (display name only)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = fieldColors,
+                    shape = RoundedCornerShape(12.dp),
+                )
+                Button(
+                    onClick = {
+                        val trimmed = email.trim()
+                        if (trimmed.isEmpty()) return@Button
+                        prefs.displayName = trimmed
+                        prefs.authDone = true
+                        localName = trimmed
+                        onFinished()
+                    },
+                    enabled = email.trim().isNotEmpty(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Accent.copy(alpha = 0.2f),
+                        contentColor = Accent,
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Text("SIGN IN", fontFamily = IdrMono, letterSpacing = 1.2.sp)
+                }
+
+                if (localName.isNotBlank()) {
+                    TextButton(
+                        onClick = {
+                            prefs.displayName = ""
+                            localName = ""
+                            email = ""
+                        },
+                    ) {
+                        Text("SIGN OUT", fontFamily = IdrMono, color = Mute, fontSize = 12.sp)
+                    }
+                }
             }
         }
 
