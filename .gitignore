@@ -38,3 +38,4 @@ data/maps/overpass/
 
 # Windowed-dataset cache (rebuilt from data/raw)
 lab/models/results/speed_bakeoff/cache/
+console_run.log

@@ -1225,6 +1225,10 @@ class Handler(BaseHTTPRequestHandler):
             body = CONSOLE_PAGE.encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
+            # The page is served from source on every request, so a cached copy
+            # is always the stale one. Without this a browser left open across a
+            # restart keeps polling the old endpoints.
+            self.send_header("Cache-Control", "no-store, must-revalidate")
             self.send_header("Content-Length", str(len(body)))
             self._cors()
             self.end_headers()
