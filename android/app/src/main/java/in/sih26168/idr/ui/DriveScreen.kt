@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -48,6 +49,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -70,6 +73,7 @@ import `in`.sih26168.idr.ui.theme.Amber
 import `in`.sih26168.idr.ui.theme.Bg
 import `in`.sih26168.idr.ui.theme.Bg2
 import `in`.sih26168.idr.ui.theme.Danger
+import `in`.sih26168.idr.ui.theme.Ghost
 import `in`.sih26168.idr.ui.theme.Gnss
 import `in`.sih26168.idr.ui.theme.IdrMono
 import `in`.sih26168.idr.ui.theme.IdrSans
@@ -104,6 +108,11 @@ fun DriveScreen(
     val blackout by bus.gnssBlackout.collectAsStateWithLifecycle()
     val replayEnabled by bus.replayEnabled.collectAsStateWithLifecycle()
     val replayActive by bus.replayActive.collectAsStateWithLifecycle()
+    val ghostTrack by bus.ghostTrack.collectAsStateWithLifecycle()
+    val showGhost by bus.showGhost.collectAsStateWithLifecycle()
+    val zuptTabletop by bus.zuptTabletop.collectAsStateWithLifecycle()
+    val naiveGhostSpeed by bus.naiveGhostSpeedMps.collectAsStateWithLifecycle()
+    val coastSpeed by bus.coastSpeedMps.collectAsStateWithLifecycle()
     val live = mode == AppMode.NAVIGATE
     val locationStatus = if (live) hud.locationStatus else idleLocation
     val navMode = if (live) hud.navMode else NavMode.IDLE
@@ -141,7 +150,20 @@ fun DriveScreen(
             mapModifier = Modifier.fillMaxSize(),
             onLongPress = { showOriginDialog = true },
             showBasemapToggle = true,
+            ghostTrack = ghostTrack,
+            showGhost = showGhost,
         )
+
+        if (zuptTabletop) {
+            ZuptTabletopOverlay(
+                naiveMps = naiveGhostSpeed,
+                coastMps = coastSpeed,
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .padding(horizontal = 16.dp)
+                    .fillMaxWidth(),
+            )
+        }
 
         // Top overlays (status-bar safe).
         Column(
@@ -161,14 +183,17 @@ fun DriveScreen(
                 Text(
                     "HELP",
                     modifier = Modifier
+                        .defaultMinSize(minWidth = 44.dp, minHeight = 44.dp)
                         .clip(RoundedCornerShape(99.dp))
                         .background(Bg2.copy(alpha = 0.88f))
                         .border(1.dp, Line, RoundedCornerShape(99.dp))
+                        .semantics { contentDescription = "Open help" }
                         .clickable(onClick = onOpenHelp)
-                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
                     color = Mute,
                     fontFamily = IdrMono,
                     fontSize = 11.sp,
+                    textAlign = TextAlign.Center,
                 )
                 ModePill(navMode = navMode, nSats = hud.nSats, live = live)
                 // Balance the HELP chip so the pill stays visually centred.
@@ -320,6 +345,67 @@ fun DriveScreen(
 // Mode pill (emotional core of the demo)
 // ---------------------------------------------------------------------------
 
+/**
+ * P1-2 desk demo: still phone → naive speed climbs from IMU bias; COAST+ZUPT
+ * stays near 0.00 m/s. Speeds come from the live estimators, not a script.
+ */
+@Composable
+private fun ZuptTabletopOverlay(
+    naiveMps: Double,
+    coastMps: Double,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier
+            .clip(RoundedCornerShape(14.dp))
+            .background(Bg2.copy(alpha = 0.94f))
+            .border(1.dp, Line, RoundedCornerShape(14.dp))
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                "naive DR (no map)",
+                fontFamily = IdrMono,
+                color = Ghost,
+                fontSize = 10.sp,
+                letterSpacing = 0.6.sp,
+            )
+            Text(
+                if (naiveMps.isFinite()) "%.2f".format(naiveMps) else "--",
+                fontFamily = IdrMono,
+                color = Ghost,
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+            )
+            Text("m/s · drifting", fontFamily = IdrSans, color = Mute, fontSize = 11.sp)
+        }
+        Box(
+            Modifier
+                .width(1.dp)
+                .height(64.dp)
+                .background(Line),
+        )
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                "COAST",
+                fontFamily = IdrMono,
+                color = Accent,
+                fontSize = 10.sp,
+                letterSpacing = 0.6.sp,
+            )
+            Text(
+                if (coastMps.isFinite()) "%.2f".format(coastMps) else "--",
+                fontFamily = IdrMono,
+                color = Accent,
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+            )
+            Text("m/s · ZUPT hold", fontFamily = IdrSans, color = Mute, fontSize = 11.sp)
+        }
+    }
+}
+
 @Composable
 private fun ModePill(navMode: NavMode, nSats: Int, live: Boolean) {
     val idr = navMode == NavMode.DEAD_RECKONING || navMode == NavMode.RELATIVE
@@ -456,12 +542,25 @@ private fun DriveBottomSheet(
         Box(
             Modifier
                 .align(Alignment.CenterHorizontally)
-                .width(36.dp)
-                .height(4.dp)
-                .clip(RoundedCornerShape(99.dp))
-                .background(Mute.copy(alpha = 0.45f))
+                .defaultMinSize(minWidth = 48.dp, minHeight = 44.dp)
+                .semantics {
+                    contentDescription = if (expanded) {
+                        "Collapse system health sheet"
+                    } else {
+                        "Expand system health sheet"
+                    }
+                }
                 .clickable(onClick = onToggle),
-        )
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(
+                Modifier
+                    .width(36.dp)
+                    .height(4.dp)
+                    .clip(RoundedCornerShape(99.dp))
+                    .background(Mute.copy(alpha = 0.65f)),
+            )
+        }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Column {
                 Text("SPEED", fontFamily = IdrMono, color = Mute, fontSize = 10.sp, letterSpacing = 1.4.sp)
@@ -514,6 +613,16 @@ private fun DriveBottomSheet(
             loopMarked = hud.loopMarked,
             loopDistanceM = hud.loopDistanceM,
         )
+
+        if (hud.floorChanged) {
+            Text(
+                "FLOOR CHANGED · relative floor ${hud.floorIndex}",
+                fontFamily = IdrMono,
+                color = Amber,
+                fontSize = 11.sp,
+                letterSpacing = 1.0.sp,
+            )
+        }
 
         // Accuracy / uncertainty card is debug-only (broken confidence signal).
         val prefs = Prefs(LocalContext.current)
@@ -720,11 +829,14 @@ private fun PrimaryControls(
 fun SecondaryButton(label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Box(
         modifier
-            .height(44.dp)
+            .defaultMinSize(minHeight = 44.dp)
+            .heightIn(min = 44.dp)
             .clip(RoundedCornerShape(10.dp))
             .background(Bg2.copy(alpha = 0.92f))
             .border(1.dp, Line, RoundedCornerShape(10.dp))
-            .clickable(onClick = onClick),
+            .semantics { contentDescription = label }
+            .clickable(onClick = onClick)
+            .padding(horizontal = 8.dp, vertical = 10.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
@@ -734,7 +846,6 @@ fun SecondaryButton(label: String, modifier: Modifier = Modifier, onClick: () ->
             fontSize = 11.sp,
             letterSpacing = 0.8.sp,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 8.dp),
         )
     }
 }

@@ -9,9 +9,11 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,6 +34,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -71,6 +75,7 @@ fun SettingsScreen(
     var mapDark by remember { mutableStateOf(prefs.mapDarkTheme) }
     var useKmh by remember { mutableStateOf(prefs.useKmh) }
     var showGhost by remember { mutableStateOf(prefs.showGhostCar) }
+    var zuptTabletop by remember { mutableStateOf(prefs.zuptTabletop) }
     var trackerOptIn by remember { mutableStateOf(prefs.trackerOptIn) }
     var trackerIp by remember { mutableStateOf(prefs.trackerLanIp) }
     var showRecord by remember { mutableStateOf(false) }
@@ -81,8 +86,10 @@ fun SettingsScreen(
             Text(
                 "← SETTINGS",
                 modifier = Modifier
+                    .defaultMinSize(minHeight = 44.dp)
+                    .semantics { contentDescription = "Back to settings" }
                     .clickable { showRecord = false }
-                    .padding(16.dp),
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
                 fontFamily = IdrMono,
                 color = Accent,
                 fontSize = 11.sp,
@@ -178,11 +185,22 @@ fun SettingsScreen(
         )
         SettingsToggle(
             title = "Show ghost car",
-            subtitle = "Naive track overlay when available (Prefs only until file 05 wires the bus).",
+            subtitle = "Red naive-DR puck + trail beside COAST (same IMU, no ZUPT / map lock).",
             checked = showGhost,
             onCheckedChange = {
                 showGhost = it
                 prefs.showGhostCar = it
+                bus.setShowGhost(it)
+            },
+        )
+        SettingsToggle(
+            title = "ZUPT tabletop",
+            subtitle = "Still phone: side-by-side naive vs COAST speed (naive drifts, COAST ~0).",
+            checked = zuptTabletop,
+            onCheckedChange = {
+                zuptTabletop = it
+                prefs.zuptTabletop = it
+                bus.setZuptTabletop(it)
             },
         )
         Button(
@@ -205,7 +223,7 @@ fun SettingsScreen(
         Section("PRIVACY")
         Text(
             // Honest F8: INTERNET exists for public OSM tiles; user data never leaves.
-            "No data leaves the device · basemap-off = zero network",
+            "No user data leaves the device · basemap-off = zero network",
             color = Telem,
             fontFamily = IdrSans,
             fontSize = 14.sp,
@@ -273,10 +291,15 @@ private fun SettingsToggle(
     Row(
         Modifier
             .fillMaxWidth()
+            .heightIn(min = 48.dp)
             .clip(RoundedCornerShape(12.dp))
             .background(Bg2)
             .border(1.dp, Line, RoundedCornerShape(12.dp))
-            .padding(horizontal = 14.dp, vertical = 10.dp),
+            .semantics {
+                contentDescription = "$title. $subtitle. ${if (checked) "On" else "Off"}"
+            }
+            .clickable { onCheckedChange(!checked) }
+            .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -286,7 +309,7 @@ private fun SettingsToggle(
         }
         Switch(
             checked = checked,
-            onCheckedChange = onCheckedChange,
+            onCheckedChange = null,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Bg,
                 checkedTrackColor = Accent,
@@ -304,11 +327,19 @@ private fun SettingsChip(label: String, selected: Boolean, onClick: () -> Unit) 
     Text(
         text = label.uppercase(),
         modifier = Modifier
+            .defaultMinSize(minHeight = 44.dp)
             .clip(RoundedCornerShape(99.dp))
             .background(bg)
             .border(1.dp, if (selected) Accent.copy(alpha = 0.5f) else Line, RoundedCornerShape(99.dp))
+            .semantics {
+                contentDescription = if (selected) {
+                    "Vehicle $label, selected"
+                } else {
+                    "Vehicle $label"
+                }
+            }
             .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 6.dp),
+            .padding(horizontal = 14.dp, vertical = 12.dp),
         color = fg,
         fontFamily = IdrMono,
         fontSize = 11.sp,

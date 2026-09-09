@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
@@ -29,6 +30,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import `in`.sih26168.idr.IdrBus
 import `in`.sih26168.idr.data.Prefs
@@ -68,6 +70,8 @@ fun IdrApp(bus: IdrBus) {
     LaunchedEffect(Unit) {
         bus.setVehicle(prefs.vehicleKind)
         bus.setReplayEnabled(prefs.replayMode)
+        bus.setShowGhost(prefs.showGhostCar)
+        bus.setZuptTabletop(prefs.zuptTabletop)
         val quick = withContext(Dispatchers.Default) { DeviceProbe.inventory(ctx) }
         bus.publishDevice(quick)
         bus.publishLocation(LocationGate.status(ctx))
@@ -107,6 +111,12 @@ fun IdrApp(bus: IdrBus) {
                 modifier = Modifier.navigationBarsPadding(),
             ) {
                 Tabs.forEachIndexed { i, label ->
+                    val iconDesc = when (i) {
+                        0 -> "Drive — navigation map"
+                        1 -> "Sessions — recorded rides"
+                        2 -> "Settings"
+                        else -> "About and help"
+                    }
                     NavigationBarItem(
                         selected = tab == i,
                         onClick = { tab = i },
@@ -118,7 +128,8 @@ fun IdrApp(bus: IdrBus) {
                                     2 -> Icons.Outlined.Settings
                                     else -> Icons.AutoMirrored.Outlined.HelpOutline
                                 },
-                                contentDescription = label,
+                                contentDescription = iconDesc,
+                                modifier = Modifier.size(24.dp),
                             )
                         },
                         label = {

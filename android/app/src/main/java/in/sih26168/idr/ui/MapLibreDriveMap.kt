@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -38,6 +39,9 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -53,6 +57,7 @@ import `in`.sih26168.idr.nav.metersPerDeg
 import `in`.sih26168.idr.ui.theme.Accent
 import `in`.sih26168.idr.ui.theme.Amber
 import `in`.sih26168.idr.ui.theme.Bg
+import `in`.sih26168.idr.ui.theme.Ghost
 import `in`.sih26168.idr.ui.theme.Gnss
 import `in`.sih26168.idr.ui.theme.IdrMono
 import `in`.sih26168.idr.ui.theme.Mute
@@ -112,6 +117,8 @@ fun DriveMapPanel(
     mapModifier: Modifier = Modifier,
     onLongPress: () -> Unit = {},
     showBasemapToggle: Boolean = true,
+    ghostTrack: TrackSnapshot = TrackSnapshot(),
+    showGhost: Boolean = false,
 ) {
     val ctx = LocalContext.current
     val prefs = remember { Prefs(ctx) }
@@ -150,6 +157,8 @@ fun DriveMapPanel(
                 onMapLoaded = { tilesEverLoaded = true },
                 showUncertaintyRadius = showUncertainty,
                 bundledMbtilesAbsolutePath = bundledMbtilesPath,
+                ghostTrack = ghostTrack,
+                showGhost = showGhost,
             )
         } else {
             DriveMap(
@@ -162,27 +171,39 @@ fun DriveMapPanel(
                 // Canvas already says "Press START to begin tracking".
                 caption = if (navMode == NavMode.IDLE && track.ins.isEmpty()) null else choice.reason,
                 showUncertaintyRadius = showUncertainty,
+                ghostTrack = ghostTrack,
+                showGhost = showGhost,
             )
         }
 
         // Privacy control: basemap off → Canvas grid, no tile traffic.
         if (showBasemapToggle) {
+            val toggleLabel = if (basemapWanted) "SHOW GRID" else "SHOW MAP"
             Text(
-                if (basemapWanted) "SHOW GRID" else "SHOW MAP",
+                toggleLabel,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(12.dp)
+                    .defaultMinSize(minWidth = 44.dp, minHeight = 44.dp)
                     .clip(RoundedCornerShape(8.dp))
                     .background(Bg.copy(alpha = 0.72f))
+                    .semantics {
+                        contentDescription = if (basemapWanted) {
+                            "Show metre grid instead of basemap; disables tile network"
+                        } else {
+                            "Show map basemap"
+                        }
+                    }
                     .clickable {
                         basemapWanted = !basemapWanted
                         prefs.basemapEnabled = basemapWanted
                     }
-                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                    .padding(horizontal = 12.dp, vertical = 12.dp),
                 color = Mute,
                 fontFamily = IdrMono,
                 fontSize = 10.sp,
                 letterSpacing = 1.2.sp,
+                textAlign = TextAlign.Center,
             )
         }
     }
@@ -192,12 +213,17 @@ fun DriveMapPanel(
 private const val FOLLOW_ZOOM = 17.0
 
 private const val VEHICLE_IMG = "coast-vehicle"
+private const val GHOST_IMG = "coast-ghost"
 private const val SRC_GNSS = "coast-gnss"
 private const val SRC_DR = "coast-dr"
+private const val SRC_GHOST = "coast-ghost-trail"
+private const val SRC_GHOST_VEHICLE = "coast-ghost-vehicle-src"
 private const val SRC_VEHICLE = "coast-vehicle-src"
 private const val SRC_UNC = "coast-uncertainty"
 private const val LYR_GNSS = "coast-gnss-line"
 private const val LYR_DR = "coast-dr-line"
+private const val LYR_GHOST = "coast-ghost-line"
+private const val LYR_GHOST_VEHICLE = "coast-ghost-vehicle-layer"
 private const val LYR_VEHICLE = "coast-vehicle-layer"
 private const val LYR_UNC_FILL = "coast-uncertainty-fill"
 private const val LYR_UNC_LINE = "coast-uncertainty-line"
@@ -285,6 +311,10 @@ private class MapRefs {
     var style: Style? = null
     var gnss: GeoJsonSource? = null
     var dr: GeoJsonSource? = null
+    var ghost: GeoJsonSource? = null
+    var ghostVehicle: GeoJsonSource? = null
+    var ghostLine: LineLayer? = null
+    var ghostVehicleLayer: SymbolLayer? = null
     var vehicle: GeoJsonSource? = null
     var unc: GeoJsonSource? = null
     var vehicleLayer: SymbolLayer? = null
@@ -294,6 +324,7 @@ private class MapRefs {
     var iconDirectional: Boolean? = null
     var uncShown: Boolean? = null
     var uncModelled: Boolean? = null
+    var ghostVisible: Boolean? = null
 }
 
 /**
@@ -346,6 +377,8 @@ fun MapLibreDriveMap(
      * to use live Carto dark tiles. Prefer bundled for airplane-mode demos.
      */
     bundledMbtilesAbsolutePath: String? = null,
+    ghostTrack: TrackSnapshot = TrackSnapshot(),
+    showGhost: Boolean = false,
 ) {
     val ctx = LocalContext.current
     val density = LocalDensity.current
@@ -455,19 +488,22 @@ fun MapLibreDriveMap(
                     VEHICLE_IMG,
                     vehicleBitmap(density.density, directional),
                 )
+                style.addImage(GHOST_IMG, ghostBitmap(density.density))
 
                 val gnssSrc = GeoJsonSource(SRC_GNSS)
                 val drSrc = GeoJsonSource(SRC_DR)
+                val ghostSrc = GeoJsonSource(SRC_GHOST)
+                val ghostVehSrc = GeoJsonSource(SRC_GHOST_VEHICLE)
                 val vehSrc = GeoJsonSource(SRC_VEHICLE)
                 val uncSrc = GeoJsonSource(SRC_UNC)
                 style.addSource(gnssSrc)
                 style.addSource(drSrc)
+                style.addSource(ghostSrc)
+                style.addSource(ghostVehSrc)
                 style.addSource(vehSrc)
                 style.addSource(uncSrc)
 
-                // Bottom-to-top: uncertainty, GNSS line, DR line, vehicle. Same
-                // stacking the Google version used (uncertainty under the
-                // track, vehicle on top).
+                // Bottom-to-top: uncertainty, ghost trail, GNSS, DR, ghost puck, vehicle.
                 val uncFill = FillLayer(LYR_UNC_FILL, SRC_UNC).withProperties(
                     PropertyFactory.fillColor(Amber.toArgb()),
                     PropertyFactory.fillOpacity(0.10f),
@@ -477,6 +513,14 @@ fun MapLibreDriveMap(
                     PropertyFactory.lineColor(Amber.toArgb()),
                     PropertyFactory.lineWidth(2f),
                     PropertyFactory.lineOpacity(0.6f),
+                    PropertyFactory.visibility(Property.NONE),
+                )
+                val ghostLine = LineLayer(LYR_GHOST, SRC_GHOST).withProperties(
+                    PropertyFactory.lineColor(Ghost.copy(alpha = 0.40f).toArgb()),
+                    PropertyFactory.lineWidth(3.5f),
+                    PropertyFactory.lineOpacity(0.55f),
+                    PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
+                    PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
                     PropertyFactory.visibility(Property.NONE),
                 )
                 val gnssLine = LineLayer(LYR_GNSS, SRC_GNSS).withProperties(
@@ -491,6 +535,13 @@ fun MapLibreDriveMap(
                     PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
                     PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
                 )
+                val ghostVehLayer = SymbolLayer(LYR_GHOST_VEHICLE, SRC_GHOST_VEHICLE).withProperties(
+                    PropertyFactory.iconImage(GHOST_IMG),
+                    PropertyFactory.iconAllowOverlap(true),
+                    PropertyFactory.iconIgnorePlacement(true),
+                    PropertyFactory.iconAnchor(Property.ICON_ANCHOR_CENTER),
+                    PropertyFactory.visibility(Property.NONE),
+                )
                 val vehLayer = SymbolLayer(LYR_VEHICLE, SRC_VEHICLE).withProperties(
                     PropertyFactory.iconImage(VEHICLE_IMG),
                     PropertyFactory.iconAllowOverlap(true),
@@ -501,12 +552,18 @@ fun MapLibreDriveMap(
                 )
                 style.addLayer(uncFill)
                 style.addLayer(uncLine)
+                style.addLayer(ghostLine)
                 style.addLayer(gnssLine)
                 style.addLayer(drLine)
+                style.addLayer(ghostVehLayer)
                 style.addLayer(vehLayer)
 
                 refs.gnss = gnssSrc
                 refs.dr = drSrc
+                refs.ghost = ghostSrc
+                refs.ghostVehicle = ghostVehSrc
+                refs.ghostLine = ghostLine
+                refs.ghostVehicleLayer = ghostVehLayer
                 refs.vehicle = vehSrc
                 refs.unc = uncSrc
                 refs.vehicleLayer = vehLayer
@@ -520,6 +577,7 @@ fun MapLibreDriveMap(
                 // latches so dropping the radio keeps the map.
                 onMapLoaded()
                 pushTrail(refs, track, oLat, oLon)
+                pushGhost(refs, ghostTrack, oLat, oLon, showGhost)
             }
         }
         onDispose { }
@@ -528,6 +586,10 @@ fun MapLibreDriveMap(
     // Rebuild the two coloured polylines only when a point is appended.
     LaunchedEffect(track.version, oLat, oLon) {
         pushTrail(refs, track, oLat, oLon)
+    }
+
+    LaunchedEffect(ghostTrack.version, showGhost, oLat, oLon) {
+        pushGhost(refs, ghostTrack, oLat, oLon, showGhost)
     }
 
     // Read in composition, consumed in the frame loop. rememberUpdatedState is
@@ -617,6 +679,7 @@ fun MapLibreDriveMap(
         MapLegend(
             navMode = navMode,
             headingReferenced = hud.headingReferenced,
+            showGhost = showGhost,
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .padding(10.dp),
@@ -698,6 +761,46 @@ private fun pushTrail(refs: MapRefs, track: TrackSnapshot, oLat: Double, oLon: D
 }
 
 /**
+ * Faint red naive-DR trail + puck from [ghostTrack]. Visibility follows [show].
+ * Puck uses the last trail point (same EN frame as COAST, projected from origin).
+ */
+private fun pushGhost(
+    refs: MapRefs,
+    ghostTrack: TrackSnapshot,
+    oLat: Double,
+    oLon: Double,
+    show: Boolean,
+) {
+    val trailSrc = refs.ghost ?: return
+    val vehSrc = refs.ghostVehicle ?: return
+    val pts = ghostTrack.ins
+    val visible = show && pts.isNotEmpty()
+    if (visible != refs.ghostVisible) {
+        val vis = if (visible) Property.VISIBLE else Property.NONE
+        refs.ghostLine?.setProperties(PropertyFactory.visibility(vis))
+        refs.ghostVehicleLayer?.setProperties(PropertyFactory.visibility(vis))
+        refs.ghostVisible = visible
+    }
+    if (!visible) {
+        trailSrc.setGeoJson(FeatureCollection.fromFeatures(emptyList()))
+        vehSrc.setGeoJson(FeatureCollection.fromFeatures(emptyList()))
+        return
+    }
+    if (pts.size >= 2) {
+        val line = pts.map { p ->
+            val g = projectFromOrigin(oLat, oLon, p.east, p.north)
+            Point.fromLngLat(g.lon, g.lat)
+        }
+        trailSrc.setGeoJson(Feature.fromGeometry(LineString.fromLngLats(line)))
+    } else {
+        trailSrc.setGeoJson(FeatureCollection.fromFeatures(emptyList()))
+    }
+    val tip = pts.last()
+    val g = projectFromOrigin(oLat, oLon, tip.east, tip.north)
+    vehSrc.setGeoJson(Point.fromLngLat(g.lon, g.lat))
+}
+
+/**
  * A closed polygon approximating a circle of [radiusM] metres around a point,
  * so the uncertainty is drawn in real metres on the ground rather than in
  * screen pixels. Uses the same local flat-Earth scaling the estimator projects
@@ -717,7 +820,12 @@ private fun circlePolygonFeature(centerLat: Double, centerLon: Double, radiusM: 
 }
 
 @Composable
-private fun MapLegend(navMode: NavMode, headingReferenced: Boolean, modifier: Modifier = Modifier) {
+private fun MapLegend(
+    navMode: NavMode,
+    headingReferenced: Boolean,
+    showGhost: Boolean,
+    modifier: Modifier = Modifier,
+) {
     Column(
         modifier
             .clip(RoundedCornerShape(8.dp))
@@ -725,8 +833,13 @@ private fun MapLegend(navMode: NavMode, headingReferenced: Boolean, modifier: Mo
             .padding(horizontal = 10.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        LegendRow(Gnss, "GNSS TRACKED")
-        LegendRow(Accent, "DEAD RECKONED")
+        if (showGhost) {
+            LegendRow(Ghost, "naive DR (no map)")
+            LegendRow(Accent, "COAST")
+        } else {
+            LegendRow(Gnss, "GNSS TRACKED")
+            LegendRow(Accent, "DEAD RECKONED")
+        }
         if (!headingReferenced && navMode != NavMode.IDLE) {
             Text(
                 "heading not tied to north yet",
@@ -865,5 +978,31 @@ private fun vehicleBitmap(density: Float, directional: Boolean): Bitmap {
         canvas.drawCircle(c, c, s * 0.22f, fill)
         canvas.drawCircle(c, c, s * 0.22f, edge)
     }
+    return bmp
+}
+
+/** Red ghost puck (#FF5252) — plain disk so it contrasts with the COAST chevron. */
+private fun ghostBitmap(density: Float): Bitmap {
+    val size = (36f * density).roundToInt().coerceIn(48, 180)
+    val s = size.toFloat()
+    val c = s / 2f
+    val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val canvas = android.graphics.Canvas(bmp)
+    val halo = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Ghost.copy(alpha = 0.28f).toArgb()
+        style = Paint.Style.FILL
+    }
+    canvas.drawCircle(c, c, s * 0.46f, halo)
+    val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Ghost.toArgb()
+        style = Paint.Style.FILL
+    }
+    val edge = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.WHITE
+        style = Paint.Style.STROKE
+        strokeWidth = s * 0.06f
+    }
+    canvas.drawCircle(c, c, s * 0.28f, fill)
+    canvas.drawCircle(c, c, s * 0.28f, edge)
     return bmp
 }

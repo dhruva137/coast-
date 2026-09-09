@@ -7,6 +7,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -38,6 +39,7 @@ import `in`.sih26168.idr.data.TrailPoint
 import `in`.sih26168.idr.ui.theme.Accent
 import `in`.sih26168.idr.ui.theme.Amber
 import `in`.sih26168.idr.ui.theme.Bg
+import `in`.sih26168.idr.ui.theme.Ghost
 import `in`.sih26168.idr.ui.theme.IdrMono
 import `in`.sih26168.idr.ui.theme.Line
 import `in`.sih26168.idr.ui.theme.Mute
@@ -110,22 +112,38 @@ fun DriveMap(
     caption: String? = null,
     /** Off by default — uncertainty correlates −0.23 with true error. */
     showUncertaintyRadius: Boolean = false,
+    /** P1-1 naive double-integration track (same IMU, no ZUPT / map). */
+    ghostTrack: TrackSnapshot = TrackSnapshot(),
+    showGhost: Boolean = false,
 ) {
     val empty = track.ins.isEmpty()
+    val ghostPts = ghostTrack.ins
+    val ghostEmpty = ghostPts.isEmpty()
+    val drawGhost = showGhost && !ghostEmpty
 
     // ---- Camera target: O(1), from the bounds the estimator already keeps ----
     val minE: Float
     val maxE: Float
     val minN: Float
     val maxN: Float
-    if (empty) {
+    if (empty && !drawGhost) {
         minE = -30f; maxE = 30f; minN = -30f; maxN = 30f
     } else {
         // The origin marker is the anchor of the story and stays in frame.
-        minE = min(0.0, track.minEast).toFloat()
-        maxE = max(0.0, track.maxEast).toFloat()
-        minN = min(0.0, track.minNorth).toFloat()
-        maxN = max(0.0, track.maxNorth).toFloat()
+        var loE = if (empty) 0.0 else min(0.0, track.minEast)
+        var hiE = if (empty) 0.0 else max(0.0, track.maxEast)
+        var loN = if (empty) 0.0 else min(0.0, track.minNorth)
+        var hiN = if (empty) 0.0 else max(0.0, track.maxNorth)
+        if (drawGhost) {
+            loE = min(loE, min(0.0, ghostTrack.minEast))
+            hiE = max(hiE, max(0.0, ghostTrack.maxEast))
+            loN = min(loN, min(0.0, ghostTrack.minNorth))
+            hiN = max(hiN, max(0.0, ghostTrack.maxNorth))
+        }
+        minE = loE.toFloat()
+        maxE = hiE.toFloat()
+        minN = loN.toFloat()
+        maxN = hiN.toFloat()
     }
     val targetCx = (minE + maxE) / 2f
     val targetCy = (minN + maxN) / 2f
@@ -149,6 +167,7 @@ fun DriveMap(
     // ---- Cached geometry, in METRES. Rebuilt once per appended point. -------
     val insPath = remember(track.version) { worldPath(track.ins) }
     val gnssPath = remember(track.version) { worldPath(track.gnss) }
+    val ghostPath = remember(ghostTrack.version) { worldPath(ghostPts) }
 
     BoxWithConstraints(
         modifier
@@ -200,11 +219,19 @@ fun DriveMap(
             // zooming costs a matrix, not a rebuild of thousands of segments.
             // Stroke widths are divided by the scale so they stay constant on
             // screen rather than growing with zoom.
-            if (track.ins.size >= 2 || track.gnss.size >= 2) {
+            if (track.ins.size >= 2 || track.gnss.size >= 2 || (drawGhost && ghostPts.size >= 2)) {
                 withTransform({
                     translate(w / 2f - cx * scale, h / 2f + cy * scale)
                     scale(scale, -scale, pivot = Offset.Zero)
                 }) {
+                    // Ghost trail under COAST so the teal line stays readable.
+                    if (drawGhost && ghostPts.size >= 2) {
+                        drawPath(
+                            ghostPath,
+                            Ghost.copy(alpha = 0.35f),
+                            style = Stroke(width = 5f / scale, cap = StrokeCap.Round),
+                        )
+                    }
                     if (track.ins.size >= 2) {
                         drawPath(
                             insPath,
@@ -230,11 +257,20 @@ fun DriveMap(
             }
 
             // ---- Origin marker -------------------------------------------
-            if (!empty) {
+            if (!empty || drawGhost) {
                 val o = px(0f, 0f)
                 drawCircle(Mute, 9f, o, style = Stroke(width = 3f))
                 drawLine(Mute, Offset(o.x - 14f, o.y), Offset(o.x + 14f, o.y), 2f)
                 drawLine(Mute, Offset(o.x, o.y - 14f), Offset(o.x, o.y + 14f), 2f)
+            }
+
+            // ---- Ghost puck (P1-1) ----------------------------------------
+            if (drawGhost) {
+                val tip = ghostPts.last()
+                val ghostHere = px(tip.east.toFloat(), tip.north.toFloat())
+                drawCircle(Ghost.copy(alpha = 0.22f), 22f, ghostHere)
+                drawCircle(Ghost, 9f, ghostHere)
+                drawCircle(Color.White.copy(alpha = 0.85f), 9f, ghostHere, style = Stroke(width = 2f))
             }
 
             // ---- Vehicle + uncertainty -----------------------------------
@@ -273,6 +309,31 @@ fun DriveMap(
         }
 
         // ---- Overlays ----------------------------------------------------
+        if (drawGhost) {
+            Column(
+                Modifier
+                    .align(Alignment.TopStart)
+                    .padding(10.dp)
+                    .background(Bg.copy(alpha = 0.82f), RoundedCornerShape(8.dp))
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
+            ) {
+                Text(
+                    "naive DR (no map)",
+                    color = Ghost,
+                    fontFamily = IdrMono,
+                    fontSize = 9.sp,
+                    letterSpacing = 0.6.sp,
+                )
+                Text(
+                    "COAST",
+                    color = Accent,
+                    fontFamily = IdrMono,
+                    fontSize = 9.sp,
+                    letterSpacing = 0.6.sp,
+                )
+            }
+        }
+
         if (barVisible) {
             Text(
                 if (barMetres >= 1000f) "%.0f km".format(barMetres / 1000f) else "%.0f m".format(barMetres),
@@ -290,7 +351,11 @@ fun DriveMap(
                 "UP = THE WAY YOU WERE FACING AT START (no north reference yet)",
                 modifier = Modifier
                     .align(Alignment.TopStart)
-                    .padding(10.dp)
+                    .padding(
+                        start = 10.dp,
+                        top = if (drawGhost) 56.dp else 10.dp,
+                        end = 10.dp,
+                    )
                     .background(Amber.copy(alpha = 0.16f), RoundedCornerShape(6.dp))
                     .padding(horizontal = 10.dp, vertical = 6.dp),
                 color = Amber,
@@ -300,7 +365,7 @@ fun DriveMap(
             )
         }
 
-        if (empty) {
+        if (empty && !drawGhost) {
             Text(
                 if (navMode == NavMode.IDLE) {
                     "Press START to begin tracking"

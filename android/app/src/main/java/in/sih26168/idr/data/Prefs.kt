@@ -58,12 +58,20 @@ class Prefs(context: Context) {
         set(v) = sp.edit().putBoolean(KEY_REPLAY, v).apply()
 
     /**
-     * Draw the naive/ghost track when the demo pipeline exposes one.
-     * Prefs-only until the bus gains a ghost setter (file 05).
+     * Draw the naive/ghost track (red puck) when the estimator publishes one.
+     * Restored onto [IdrBus.setShowGhost] at launch.
      */
     var showGhostCar: Boolean
         get() = sp.getBoolean(KEY_GHOST, false)
         set(v) = sp.edit().putBoolean(KEY_GHOST, v).apply()
+
+    /**
+     * P1-2 ZUPT tabletop: side-by-side naive vs COAST speed readouts.
+     * Restored onto [IdrBus.setZuptTabletop] at launch.
+     */
+    var zuptTabletop: Boolean
+        get() = sp.getBoolean(KEY_ZUPT_TABLETOP, false)
+        set(v) = sp.edit().putBoolean(KEY_ZUPT_TABLETOP, v).apply()
 
     /**
      * Opt-in LAN phone-tracker (file 07). Off by default.
@@ -153,6 +161,7 @@ class Prefs(context: Context) {
         const val KEY_VEHICLE = "vehicle_kind"
         const val KEY_REPLAY = "replay_mode"
         const val KEY_GHOST = "show_ghost_car"
+        const val KEY_ZUPT_TABLETOP = "zupt_tabletop"
         const val KEY_TRACKER_OPT_IN = "tracker_opt_in"
         const val KEY_TRACKER_LAN_IP = "tracker_lan_ip"
         const val KEY_AUTH_DONE = "auth_done"
