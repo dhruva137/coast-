@@ -1,0 +1,761 @@
+{
+  "graph": "C:\\Users\\Dhruva P Gowda\\Desktop\\New folder\\SIH 2026\\maps\\graphs\\iovnbd_midlands.graph.npz",
+  "graph_meta": {
+    "name": "iovnbd_midlands",
+    "source": "openstreetmap",
+    "built_from_drive_data": false,
+    "guarantee": "Built from OpenStreetMap only. No IO-VNBD trajectory, GNSS fix or CSV column was read while building this graph.",
+    "bbox_lat_min": 52.35,
+    "bbox_lon_min": -1.62,
+    "bbox_lat_max": 52.57,
+    "bbox_lon_max": -1.22,
+    "highway_classes": [
+      "motorway",
+      "trunk",
+      "primary",
+      "secondary",
+      "tertiary",
+      "unclassified",
+      "residential",
+      "living_street",
+      "motorway_link",
+      "trunk_link",
+      "primary_link",
+      "secondary_link",
+      "tertiary_link"
+    ],
+    "n_nodes": 139078,
+    "n_edges": 35631,
+    "n_segments": 143360,
+    "total_edge_length_km": 3271.336340182188,
+    "median_edge_len_m": 51.13852036848023,
+    "oneway_frac": 0.1497291684207572,
+    "grid_deg": 0.002,
+    "grid_n_lat": 140,
+    "grid_n_lon": 244,
+    "tile_deg": 0.05,
+    "built_utc": "2026-09-04T12:01:43Z",
+    "attribution": "(c) OpenStreetMap contributors, ODbL 1.0",
+    "provenance": {
+      "region": "iovnbd_midlands",
+      "region_note": "UK Midlands: Coventry, east Birmingham, Nuneaton, Rugby.",
+      "bbox": [
+        52.35,
+        -1.62,
+        52.57,
+        -1.22
+      ],
+      "n_sources": 41,
+      "sources": [
+        "overpass_json:tile_+01047_-00033.json",
+        "overpass_json:tile_+01047_-00032.json",
+        "overpass_json:tile_+01047_-00030.json",
+        "overpass_json:tile_+01047_-00029.json",
+        "overpass_json:tile_+01047_-00028.json",
+        "overpass_json:tile_+01047_-00027.json",
+        "overpass_json:tile_+01047_-00026.json",
+        "overpass_json:tile_+01047_-00025.json",
+        "overpass_json:tile_+01048_-00033.json",
+        "overpass_json:tile_+01048_-00032.json",
+        "overpass_json:tile_+01048_-00031.json",
+        "overpass_json:tile_+01048_-00030.json",
+        "overpass_json:tile_+01048_-00029.json",
+        "overpass_json:tile_+01048_-00028.json",
+        "overpass_json:tile_+01048_-00027.json",
+        "overpass_json:tile_+01048_-00026.json",
+        "overpass_json:tile_+01048_-00025.json",
+        "overpass_json:tile_+01049_-00033.json",
+        "overpass_json:tile_+01049_-00032.json",
+        "overpass_json:tile_+01049_-00031.json",
+        "overpass_json:tile_+01049_-00030.json",
+        "overpass_json:tile_+01049_-00029.json",
+        "overpass_json:tile_+01049_-00028.json",
+        "overpass_json:tile_+01049_-00027.json",
+        "overpass_json:tile_+01049_-00026.json",
+        "overpass_json:tile_+01049_-00025.json",
+        "overpass_json:tile_+01050_-00033.json",
+        "overpass_json:tile_+01050_-00031.json",
+        "overpass_json:tile_+01050_-00030.json",
+        "overpass_json:tile_+01050_-00029.json",
+        "overpass_json:tile_+01050_-00028.json",
+        "overpass_json:tile_+01050_-00027.json",
+        "overpass_json:tile_+01050_-00026.json",
+        "overpass_json:tile_+01050_-00025.json",
+        "overpass_json:tile_+01051_-00032.json",
+        "overpass_json:tile_+01051_-00031.json",
+        "overpass_json:tile_+01051_-00030.json",
+        "overpass_json:tile_+01051_-00029.json",
+        "overpass_json:tile_+01051_-00027.json",
+        "overpass_json:tile_+01051_-00026.json",
+        "overpass_json:tile_+01051_-00025.json"
+      ],
+      "sources_truncated": false,
+      "offline": false,
+      "overpass_endpoints": [
+        "https://overpass-api.de/api/interpreter",
+        "https://overpass.kumi.systems/api/interpreter"
+      ]
+    }
+  },
+  "particles": 600,
+  "yaw_sigma": 0.3,
+  "deny_s": 60.0,
+  "documented_baseline_edge_pct": 26.0,
+  "documented_oracle_free_dr_x": 1.57,
+  "methods": {
+    "baseline": {
+      "n": 19,
+      "free_median_error_m": 136.91848748778645,
+      "pf_median_error_m": 123.87146404951648,
+      "free_median_drift_pct": 17.852347123917227,
+      "pf_median_drift_pct": 14.277889012630633,
+      "pf_pass": 8,
+      "edge_accuracy": 0.3157894736842105,
+      "edge_accuracy_n": 19,
+      "edge_accuracy_pct": 31.57894736842105
+    },
+    "online": {
+      "n": 19,
+      "free_median_error_m": 160.34713716817873,
+      "pf_median_error_m": 120.40308492281555,
+      "free_median_drift_pct": 20.5299320557231,
+      "pf_median_drift_pct": 14.277889012630633,
+      "pf_pass": 8,
+      "edge_accuracy": 0.3157894736842105,
+      "edge_accuracy_n": 19,
+      "edge_accuracy_pct": 31.57894736842105
+    },
+    "oracle_mount": {
+      "n": 19,
+      "free_median_error_m": 252.13211063204767,
+      "pf_median_error_m": 153.88379879008494,
+      "free_median_drift_pct": 25.796433905818546,
+      "pf_median_drift_pct": 24.24340968532043,
+      "pf_pass": 7,
+      "edge_accuracy": 0.3684210526315789,
+      "edge_accuracy_n": 19,
+      "edge_accuracy_pct": 36.84210526315789
+    }
+  },
+  "online_calibration": {
+    "attempts": 26,
+    "trusted": 13,
+    "abstained": 13,
+    "reasons": {
+      "mapped-yaw scale outside [0.85, 1.15]": 3,
+      "held-out prefix correlation < 0.70; mapped-yaw scale outside [0.85, 1.15]": 3,
+      "fewer than 48 prefix turning updates": 7
+    }
+  },
+  "files": [
+    {
+      "name": "S-M.csv",
+      "segments": [
+        {
+          "start_idx": 8477,
+          "online_cal": {
+            "trusted": false,
+            "reason": "mapped-yaw scale outside [0.85, 1.15]",
+            "validation_correlation": 0.8397582596525669,
+            "axis_norm": 0.07602893620358855,
+            "bias_rps": -0.01828311016564138,
+            "lag_s": 0.9999999999999996,
+            "n_fit": 56
+          },
+          "baseline": {
+            "pf_error_m": 10767.3591995613,
+            "free_error_m": 20251.4253609535,
+            "on_true_edge": false,
+            "true_edge_known": true
+          },
+          "online": {
+            "pf_error_m": 10767.3591995613,
+            "free_error_m": 20251.4253609535,
+            "on_true_edge": false,
+            "true_edge_known": true
+          },
+          "oracle_mount": {
+            "pf_error_m": 10717.20676606798,
+            "free_error_m": 27140.403704393644,
+            "on_true_edge": false,
+            "true_edge_known": true
+          }
+        },
+        {
+          "start_idx": 24797,
+          "online_cal": {
+            "trusted": false,
+            "reason": "mapped-yaw scale outside [0.85, 1.15]",
+            "validation_correlation": 0.9592339511228978,
+            "axis_norm": 0.16228511699111586,
+            "bias_rps": -0.015799751136065437,
+            "lag_s": 0.9999999999999996,
+            "n_fit": 158
+          },
+          "baseline": {
+            "pf_error_m": 6639.231006626993,
+            "free_error_m": 8301.357186719135,
+            "on_true_edge": false,
+            "true_edge_known": true
+          },
+          "online": {
+            "pf_error_m": 6639.231006626993,
+            "free_error_m": 8301.357186719135,
+            "on_true_edge": false,
+            "true_edge_known": true
+          },
+          "oracle_mount": {
+            "pf_error_m": 11273.20692482991,
+            "free_error_m": 11995.36455959318,
+            "on_true_edge": false,
+            "true_edge_known": true
+          }
+        },
+        {
+          "start_idx": 57437,
+          "online_cal": {
+            "trusted": false,
+            "reason": "held-out prefix correlation < 0.70; mapped-yaw scale outside [0.85, 1.15]",
+            "validation_correlation": 0.10565098012199131,
+            "axis_norm": 0.12411525072331889,
+            "bias_rps": -0.015708281221258356,
+            "lag_s": 0.9999999999999996,
+            "n_fit": 359
+          },
+          "baseline": {
+            "pf_error_m": 92.66103182111424,
+            "free_error_m": 665.0876827171046,
+            "on_true_edge": false,
+            "true_edge_known": true
+          },
+          "online": {
+            "pf_error_m": 92.66103182111424,
+            "free_error_m": 665.0876827171046,
+            "on_true_edge": false,
+            "true_edge_known": true
+          },
+          "oracle_mount": {
+            "pf_error_m": 136.16765019454553,
+            "free_error_m": 594.7725605955511,
+            "on_true_edge": false,
+            "true_edge_known": true
+          }
+        },
+        {
+          "start_idx": 90077,
+          "online_cal": {
+            "trusted": false,
+            "reason": "held-out prefix correlation < 0.70; mapped-yaw scale outside [0.85, 1.15]",
+            "validation_correlation": 0.4246281449064386,
+            "axis_norm": 0.001878668877779382,
+            "bias_rps": -0.002801650424366441,
+            "lag_s": -1.0,
+            "n_fit": 530
+          },
+          "baseline": {
+            "pf_error_m": 57.35739281456536,
+            "free_error_m": 73.52579232338626,
+            "on_true_edge": true,
+            "true_edge_known": true
+          },
+          "online": {
+            "pf_error_m": 57.35739281456536,
+            "free_error_m": 73.52579232338626,
+            "on_true_edge": true,
+            "true_edge_known": true
+          },
+          "oracle_mount": {
+            "pf_error_m": 54.31660805073651,
+            "free_error_m": 59.78534137377925,
+            "on_true_edge": true,
+            "true_edge_known": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "S-S1.csv",
+      "segments": [
+        {
+          "start_idx": 12108,
+          "online_cal": {
+            "trusted": true,
+            "reason": "ok",
+            "validation_correlation": 0.9990972309595668,
+            "axis_norm": 0.9761364839797537,
+            "bias_rps": -0.00598926537106805,
+            "lag_s": -0.1000000000000002,
+            "n_fit": 71
+          },
+          "baseline": {
+            "pf_error_m": 148.5845982446775,
+            "free_error_m": 32.50162254991076,
+            "on_true_edge": false,
+            "true_edge_known": true
+          },
+          "online": {
+            "pf_error_m": 116.83269222925753,
+            "free_error_m": 101.8134590263037,
+            "on_true_edge": false,
+            "true_edge_known": true
+          },
+          "oracle_mount": {
+            "pf_error_m": 153.88379879008494,
+            "free_error_m": 23.390227709459065,
+            "on_true_edge": false,
+            "true_edge_known": true
+          }
+        },
+        {
+          "start_idx": 20077,
+          "online_cal": {
+            "trusted": true,
+            "reason": "ok",
+            "validation_correlation": 0.9988546306511694,
+            "axis_norm": 1.0063660975745365,
+            "bias_rps": -0.0067489955585163484,
+            "lag_s": -0.1000000000000002,
+            "n_fit": 118
+          },
+          "baseline": {
+            "pf_error_m": 16.92866424319052,
+            "free_error_m": 67.25639349257003,
+            "on_true_edge": true,
+            "true_edge_known": true
+          },
+          "online": {
+            "pf_error_m": 17.122183614593013,
+            "free_error_m": 31.30431433692527,
+            "on_true_edge": true,
+            "true_edge_known": true
+          },
+          "oracle_mount": {
+            "pf_error_m": 18.159721336129195,
+            "free_error_m": 65.47172911156794,
+            "on_true_edge": true,
+            "true_edge_known": true
+          }
+        },
+        {
+          "start_idx": 28046,
+          "online_cal": {
+            "trusted": true,
+            "reason": "ok",
+            "validation_correlation": 0.9990036026878162,
+            "axis_norm": 1.0061332133297813,
+            "bias_rps": -0.006558748150364325,
+            "lag_s": -0.1000000000000002,
+            "n_fit": 167
+          },
+          "baseline": {
+            "pf_error_m": 2.2656344821950616,
+            "free_error_m": 45.2931539507785,
+            "on_true_edge": true,
+            "true_edge_known": true
+          },
+          "online": {
+            "pf_error_m": 1.9629730263992426,
+            "free_error_m": 113.17674193407184,
+            "on_true_edge": true,
+            "true_edge_known": true
+          },
+          "oracle_mount": {
+            "pf_error_m": 2.189740357838126,
+            "free_error_m": 40.11914550606354,
+            "on_true_edge": true,
+            "true_edge_known": true
+          }
+        },
+        {
+          "start_idx": 36015,
+          "online_cal": {
+            "trusted": true,
+            "reason": "ok",
+            "validation_correlation": 0.9993212089008383,
+            "axis_norm": 1.0054405742112114,
+            "bias_rps": -0.006603243350074406,
+            "lag_s": -0.1000000000000002,
+            "n_fit": 220
+          },
+          "baseline": {
+            "pf_error_m": 272.37715933824774,
+            "free_error_m": 47.78051763568871,
+            "on_true_edge": false,
+            "true_edge_known": true
+          },
+          "online": {
+            "pf_error_m": 216.66586431695856,
+            "free_error_m": 41.69823445514914,
+            "on_true_edge": false,
+            "true_edge_known": true
+          },
+          "oracle_mount": {
+            "pf_error_m": 216.30949084180534,
+            "free_error_m": 50.88581312435444,
+            "on_true_edge": true,
+            "true_edge_known": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "S-S2.csv",
+      "segments": [
+        {
+          "start_idx": 50880,
+          "online_cal": {
+            "trusted": true,
+            "reason": "ok",
+            "validation_correlation": 0.9954536269330969,
+            "axis_norm": 0.9761540121138984,
+            "bias_rps": -0.005607633432612644,
+            "lag_s": 0.19999999999999973,
+            "n_fit": 252
+          },
+          "baseline": {
+            "pf_error_m": 936.7859256351545,
+            "free_error_m": 432.9176492960861,
+            "on_true_edge": false,
+            "true_edge_known": true
+          },
+          "online": {
+            "pf_error_m": 934.9880846145501,
+            "free_error_m": 612.6209369471621,
+            "on_true_edge": false,
+            "true_edge_known": true
+          },
+          "oracle_mount": {
+            "pf_error_m": 931.3679071223418,
+            "free_error_m": 252.13211063204767,
+            "on_true_edge": false,
+            "true_edge_known": true
+          }
+        },
+        {
+          "start_idx": 65337,
+          "online_cal": {
+            "trusted": true,
+            "reason": "ok",
+            "validation_correlation": 0.8976406906344658,
+            "axis_norm": 0.988775093315673,
+            "bias_rps": -0.005781011312188032,
+            "lag_s": 0.09999999999999964,
+            "n_fit": 346
+          },
+          "baseline": {
+            "pf_error_m": 154.170737632282,
+            "free_error_m": 240.8088143506583,
+            "on_true_edge": false,
+            "true_edge_known": true
+          },
+          "online": {
+            "pf_error_m": 162.56669093747038,
+            "free_error_m": 295.77878974473055,
+            "on_true_edge": false,
+            "true_edge_known": true
+          },
+          "oracle_mount": {
+            "pf_error_m": 480.87271414517363,
+            "free_error_m": 854.1584586821771,
+            "on_true_edge": false,
+            "true_edge_known": true
+          }
+        },
+        {
+          "start_idx": 79794,
+          "online_cal": {
+            "trusted": true,
+            "reason": "ok",
+            "validation_correlation": 0.8324437578563568,
+            "axis_norm": 0.9935018023830435,
+            "bias_rps": -0.006746120770787035,
+            "lag_s": 0.09999999999999964,
+            "n_fit": 434
+          },
+          "baseline": {
+            "pf_error_m": 33.848274455581056,
+            "free_error_m": 87.3231497782017,
+            "on_true_edge": false,
+            "true_edge_known": true
+          },
+          "online": {
+            "pf_error_m": 36.072130401803406,
+            "free_error_m": 146.00721588701757,
+            "on_true_edge": false,
+            "true_edge_known": true
+          },
+          "oracle_mount": {
+            "pf_error_m": 365.8889032037287,
+            "free_error_m": 574.3642477418383,
+            "on_true_edge": false,
+            "true_edge_known": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "S-S3a.csv",
+      "segments": [
+        {
+          "start_idx": 1969,
+          "online_cal": {
+            "trusted": false,
+            "reason": "fewer than 48 prefix turning updates",
+            "validation_correlation": 0.0,
+            "axis_norm": 1.0,
+            "bias_rps": 0.0,
+            "lag_s": 0.0,
+            "n_fit": 0
+          },
+          "baseline": {
+            "pf_error_m": 123.87146404951648,
+            "free_error_m": 63.336234715625075,
+            "on_true_edge": false,
+            "true_edge_known": true
+          },
+          "online": {
+            "pf_error_m": 123.87146404951648,
+            "free_error_m": 63.336234715625075,
+            "on_true_edge": false,
+            "true_edge_known": true
+          },
+          "oracle_mount": {
+            "pf_error_m": 134.30885603700918,
+            "free_error_m": 247.00459194220218,
+            "on_true_edge": false,
+            "true_edge_known": true
+          }
+        },
+        {
+          "start_idx": 9552,
+          "online_cal": {
+            "trusted": true,
+            "reason": "ok",
+            "validation_correlation": 0.9983041079689718,
+            "axis_norm": 0.9345678834138588,
+            "bias_rps": 9.457604003745824e-05,
+            "lag_s": -0.1000000000000002,
+            "n_fit": 53
+          },
+          "baseline": {
+            "pf_error_m": 121.26501634821298,
+            "free_error_m": 408.5685887061096,
+            "on_true_edge": true,
+            "true_edge_known": true
+          },
+          "online": {
+            "pf_error_m": 120.40308492281555,
+            "free_error_m": 370.32879329413765,
+            "on_true_edge": true,
+            "true_edge_known": true
+          },
+          "oracle_mount": {
+            "pf_error_m": 109.34820501906822,
+            "free_error_m": 141.3037110476492,
+            "on_true_edge": true,
+            "true_edge_known": true
+          }
+        },
+        {
+          "start_idx": 17135,
+          "online_cal": {
+            "trusted": true,
+            "reason": "ok",
+            "validation_correlation": 0.9968016762834352,
+            "axis_norm": 0.9599341093969099,
+            "bias_rps": 0.00020312166977375952,
+            "lag_s": -0.1000000000000002,
+            "n_fit": 92
+          },
+          "baseline": {
+            "pf_error_m": 436.3549380922461,
+            "free_error_m": 136.91848748778645,
+            "on_true_edge": false,
+            "true_edge_known": true
+          },
+          "online": {
+            "pf_error_m": 414.661950633707,
+            "free_error_m": 160.34713716817873,
+            "on_true_edge": false,
+            "true_edge_known": true
+          },
+          "oracle_mount": {
+            "pf_error_m": 468.81566091644964,
+            "free_error_m": 523.7380598600121,
+            "on_true_edge": false,
+            "true_edge_known": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "S-S3c.csv",
+      "segments": [
+        {
+          "start_idx": 2974,
+          "online_cal": {
+            "trusted": false,
+            "reason": "fewer than 48 prefix turning updates",
+            "validation_correlation": 0.0,
+            "axis_norm": 1.0,
+            "bias_rps": 0.0,
+            "lag_s": 0.0,
+            "n_fit": 0
+          },
+          "baseline": {
+            "pf_error_m": 10.713011621946535,
+            "free_error_m": 284.0394764390532,
+            "on_true_edge": true,
+            "true_edge_known": true
+          },
+          "online": {
+            "pf_error_m": 10.713011621946535,
+            "free_error_m": 284.0394764390532,
+            "on_true_edge": true,
+            "true_edge_known": true
+          },
+          "oracle_mount": {
+            "pf_error_m": 10.849895495839077,
+            "free_error_m": 280.30587831003476,
+            "on_true_edge": true,
+            "true_edge_known": true
+          }
+        },
+        {
+          "start_idx": 14426,
+          "online_cal": {
+            "trusted": true,
+            "reason": "ok",
+            "validation_correlation": 0.9999026093585097,
+            "axis_norm": 0.9839758836820692,
+            "bias_rps": 0.0017863982544328535,
+            "lag_s": -0.1000000000000002,
+            "n_fit": 93
+          },
+          "baseline": {
+            "pf_error_m": 8.134226753382597,
+            "free_error_m": 20.272651802887335,
+            "on_true_edge": true,
+            "true_edge_known": true
+          },
+          "online": {
+            "pf_error_m": 10.209655448584,
+            "free_error_m": 70.48638761275448,
+            "on_true_edge": true,
+            "true_edge_known": true
+          },
+          "oracle_mount": {
+            "pf_error_m": 9.123063388705056,
+            "free_error_m": 21.511269559703965,
+            "on_true_edge": true,
+            "true_edge_known": true
+          }
+        },
+        {
+          "start_idx": 31605,
+          "online_cal": {
+            "trusted": true,
+            "reason": "ok",
+            "validation_correlation": 0.9997673432618314,
+            "axis_norm": 0.9936961455524909,
+            "bias_rps": 0.00090523353086655,
+            "lag_s": -0.1000000000000002,
+            "n_fit": 205
+          },
+          "baseline": {
+            "pf_error_m": 13.028544792581206,
+            "free_error_m": 127.71729310761772,
+            "on_true_edge": false,
+            "true_edge_known": true
+          },
+          "online": {
+            "pf_error_m": 11.868341327589038,
+            "free_error_m": 151.42758520515645,
+            "on_true_edge": false,
+            "true_edge_known": true
+          },
+          "oracle_mount": {
+            "pf_error_m": 5.191099205771149,
+            "free_error_m": 128.99690845831427,
+            "on_true_edge": false,
+            "true_edge_known": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "S-S4.csv",
+      "segments": [
+        {
+          "start_idx": 65841,
+          "online_cal": {
+            "trusted": false,
+            "reason": "held-out prefix correlation < 0.70; mapped-yaw scale outside [0.85, 1.15]",
+            "validation_correlation": 0.09304686794125289,
+            "axis_norm": 0.2144687904925556,
+            "bias_rps": -0.012513840394775284,
+            "lag_s": 0.8999999999999995,
+            "n_fit": 349
+          },
+          "baseline": {
+            "pf_error_m": 711.6990124635421,
+            "free_error_m": 1107.0006497128666,
+            "on_true_edge": false,
+            "true_edge_known": true
+          },
+          "online": {
+            "pf_error_m": 711.6990124635421,
+            "free_error_m": 1107.0006497128666,
+            "on_true_edge": false,
+            "true_edge_known": true
+          },
+          "oracle_mount": {
+            "pf_error_m": 651.8395255065757,
+            "free_error_m": 1039.720054490632,
+            "on_true_edge": false,
+            "true_edge_known": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "S-Y1.csv",
+      "segments": [
+        {
+          "start_idx": 38094,
+          "online_cal": {
+            "trusted": true,
+            "reason": "ok",
+            "validation_correlation": 0.9970714672813029,
+            "axis_norm": 1.0041930185739416,
+            "bias_rps": -0.0012601408950596966,
+            "lag_s": -0.40000000000000013,
+            "n_fit": 220
+          },
+          "baseline": {
+            "pf_error_m": 255.20816078309912,
+            "free_error_m": 259.1818315222409,
+            "on_true_edge": false,
+            "true_edge_known": true
+          },
+          "online": {
+            "pf_error_m": 249.98437631839732,
+            "free_error_m": 266.30740070818507,
+            "on_true_edge": false,
+            "true_edge_known": true
+          },
+          "oracle_mount": {
+            "pf_error_m": 244.44520391264334,
+            "free_error_m": 434.74159825935453,
+            "on_true_edge": false,
+            "true_edge_known": true
+          }
+        }
+      ]
+    }
+  ],
+  "android_port": {
+    "ported": false,
+    "reason": "Online GNSS-prefix scale+bias is a different protocol from MountCalibration.kt straight-line accel start; no measured on-device win to justify breaking the existing unit suite."
+  }
+}
