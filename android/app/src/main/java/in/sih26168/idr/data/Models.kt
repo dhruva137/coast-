@@ -242,7 +242,23 @@ data class HudState(
     val modelSpeedMps: Double = Double.NaN,
     val modelPsiDot: Double = Double.NaN,
     val modelSpeedVar: Double = Double.NaN,
+    /**
+     * Last ONNX `OrtSession.run` wall time in ms (same source as [measuredInferMs]).
+     * Kept for older call sites; prefer [measuredInferMs] in new UI.
+     */
     val inferMs: Double = 0.0,
+    /**
+     * Measured ONNX inference wall time (ms) from [nav.OnnxSpeedModel] —
+     * `System.nanoTime` around `OrtSession.run`, never a constant.
+     * [Double.NaN] until the first successful inference.
+     */
+    val measuredInferMs: Double = Double.NaN,
+    /**
+     * Measured fusion / INS step wall time (ms) for the last [nav.SimpleIns.onImu]
+     * call — `System.nanoTime` around that step, never a constant.
+     * [Double.NaN] until the first IMU tick is processed.
+     */
+    val measuredFusionMs: Double = Double.NaN,
     val modelHz: Double = 0.0,
     /**
      * Inference windows skipped because the previous one had not finished.
@@ -323,6 +339,16 @@ data class HudState(
     val yawClampCount: Long = 0L,
     /** Ticks where speed or longitudinal accel was clipped. */
     val speedClampCount: Long = 0L,
+
+    // ---- Barometer floor change (B7) ---------------------------------------
+    /** Relative floor index; 0 at first valid pressure lock. */
+    val floorIndex: Int = 0,
+    /** True while a recent floor step is being highlighted. */
+    val floorChanged: Boolean = false,
+    /** Plain-English baro / floor status for Diagnostics. */
+    val floorChangeNote: String = "",
+    /** Smoothed pressure last seen by the floor detector, hPa. */
+    val pressureHpa: Double = Double.NaN,
 )
 
 /**

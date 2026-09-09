@@ -204,11 +204,17 @@ class SimpleIns(
     private var modelPsiDot: Double = Double.NaN
     private var modelSpeedVar: Double = Double.NaN
     private var modelTNs: Long = 0L
-    private var modelLatencyMs: Double = 0.0
+    /** Last measured ONNX run wall time (ms); NaN until first success. */
+    private var modelLatencyMs: Double = Double.NaN
+    /** Last measured onImu fusion-step wall time (ms); NaN until first tick. */
+    private var fusionLatencyMs: Double = Double.NaN
     private var modelHz: Double = 0.0
     private var modelReady: Boolean = false
     private var modelDropped: Long = 0L
     private var modelError: String? = null
+
+    // ---- Barometer floor change --------------------------------------------
+    private val baroFloor = BaroFloorDetector()
 
     // ---- GNSS bookkeeping --------------------------------------------------
     private var lastTns: Long = 0L
@@ -270,7 +276,8 @@ class SimpleIns(
         modelPsiDot = Double.NaN
         modelSpeedVar = Double.NaN
         modelTNs = 0L
-        modelLatencyMs = 0.0
+        modelLatencyMs = Double.NaN
+        fusionLatencyMs = Double.NaN
         modelHz = 0.0
         modelDropped = 0L
         lastTns = 0L
@@ -318,6 +325,7 @@ class SimpleIns(
         lateralFiltered = Double.NaN
         lateralViolation = null
         turnViolation = null
+        baroFloor.reset()
     }
 
     /**
@@ -364,7 +372,18 @@ class SimpleIns(
     private val sanitizeUncertainty = SanitizeGate(Double.NaN)
 
     fun onImu(frame: SensorFrame) {
+        // B4: wall-clock fusion step (this method), never a hardcoded latency.
+        val t0 = System.nanoTime()
+        try {
+            onImuBody(frame)
+        } finally {
+            fusionLatencyMs = (System.nanoTime() - t0) / 1e6
+        }
+    }
+
+    private fun onImuBody(frame: SensorFrame) {
         noteHz(frame.tNs)
+        baroFloor.onPressure(frame.tNs, frame.pressureHpa)
         // Garbage / frozen samples must not divide-by-zero or poison the state.
         if (!sensorFrameChannelsFinite(
                 frame.ax, frame.ay, frame.az, frame.gx, frame.gy, frame.gz,
@@ -747,7 +766,9 @@ class SimpleIns(
             modelSpeedMps = modelSpeed,
             modelPsiDot = modelPsiDot,
             modelSpeedVar = modelSpeedVar,
-            inferMs = modelLatencyMs,
+            inferMs = if (modelLatencyMs.isFinite()) modelLatencyMs else 0.0,
+            measuredInferMs = modelLatencyMs,
+            measuredFusionMs = fusionLatencyMs,
             modelHz = modelHz,
             modelDropped = modelDropped,
             modelError = modelError,
@@ -764,6 +785,10 @@ class SimpleIns(
             headingReferenced = headingReferenced,
             mountApplied = mount != null,
             mountNote = mountNote,
+            floorIndex = baroFloor.floorIndex,
+            floorChanged = baroFloor.recentlyChanged(nowNs),
+            floorChangeNote = baroFloor.note(nowNs),
+            pressureHpa = baroFloor.pressureHpa,
         )
     }
 

@@ -100,7 +100,16 @@ fun DiagnosticsPanel(bus: IdrBus, hud: HudState) {
         }
         Kv("speed source", hud.speedSource.name, srcColor)
         Kv("session loaded", if (hud.modelReady) "yes" else "NO", if (hud.modelReady) Telem else Danger)
-        Kv("inference latency", "%.2f ms".format(hud.inferMs))
+        Kv(
+            "measured inference (ONNX)",
+            if (hud.measuredInferMs.isFinite()) "%.2f ms".format(hud.measuredInferMs) else "not measured yet",
+            if (hud.measuredInferMs.isFinite()) Telem else Amber,
+        )
+        Kv(
+            "measured fusion step",
+            if (hud.measuredFusionMs.isFinite()) "%.2f ms".format(hud.measuredFusionMs) else "not measured yet",
+            if (hud.measuredFusionMs.isFinite()) Telem else Amber,
+        )
         Kv(
             "sustained rate",
             "%.2f Hz (target 10.0)".format(hud.modelHz),
@@ -150,6 +159,19 @@ fun DiagnosticsPanel(bus: IdrBus, hud: HudState) {
         Kv("gyro calibrated fallback", yn(sensors.gyroFallback))
         Kv("magnetometer", yn(sensors.mag))
         Kv("barometer", yn(sensors.pressure))
+        Kv(
+            "pressure",
+            if (hud.pressureHpa.isFinite()) "%.2f hPa".format(hud.pressureHpa) else "--",
+        )
+        Kv(
+            "floor change",
+            when {
+                hud.floorChanged -> "YES · relative floor ${hud.floorIndex}"
+                hud.floorChangeNote.isNotBlank() -> hud.floorChangeNote
+                else -> "no baro lock yet"
+            },
+            if (hud.floorChanged) Amber else Mute,
+        )
         if (device.probed) {
             Kv("gyro measured rate", hzOrUnknown(device.gyroUncal.measuredHz, device.gyro.measuredHz))
             Kv("accel measured rate", hzOrUnknown(device.accelUncal.measuredHz, device.accel.measuredHz))
