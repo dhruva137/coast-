@@ -9,10 +9,10 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FiberManualRecord
-import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
+import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Navigation
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -42,13 +42,14 @@ import `in`.sih26168.idr.ui.theme.Mute
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-private val Tabs = listOf("DRIVE", "RECORD", "SESSIONS", "HELP")
+private val Tabs = listOf("DRIVE", "SESSIONS", "SETTINGS", "ABOUT")
 
 /**
- * Shell. DRIVE is the default tab and the screen a stranger lands on; RECORD
- * and SESSIONS are the research field-logging tools, kept intact.
+ * Shell. DRIVE is the default tab. SESSIONS lists field logs; SETTINGS holds
+ * vehicle/demo/privacy; ABOUT reuses Help (onboarding replay + claims).
+ * Field RECORD is reached from Settings so the bottom bar stays four items.
  *
- * Onboarding takes the whole window on first run and can be reopened from Help.
+ * Onboarding takes the whole window on first run and can be reopened from About.
  */
 @Composable
 fun IdrApp(bus: IdrBus) {
@@ -60,9 +61,10 @@ fun IdrApp(bus: IdrBus) {
     // user presses something that explains it. See Permissions.kt.
     val (permsOk, request) = rememberPermissionGate()
 
-    // Run the hardware self-check once per process, whether or not the user
-    // opens a screen that shows it, so Diagnostics has real numbers to quote.
+    // Restore persisted demo/vehicle prefs onto the process bus once.
     LaunchedEffect(Unit) {
+        bus.setVehicle(prefs.vehicleKind)
+        bus.setReplayEnabled(prefs.replayMode)
         val quick = withContext(Dispatchers.Default) { DeviceProbe.inventory(ctx) }
         bus.publishDevice(quick)
         bus.publishLocation(LocationGate.status(ctx))
@@ -97,8 +99,8 @@ fun IdrApp(bus: IdrBus) {
                             Icon(
                                 when (i) {
                                     0 -> Icons.Outlined.Navigation
-                                    1 -> Icons.Filled.FiberManualRecord
-                                    2 -> Icons.Outlined.Folder
+                                    1 -> Icons.Outlined.Folder
+                                    2 -> Icons.Outlined.Settings
                                     else -> Icons.AutoMirrored.Outlined.HelpOutline
                                 },
                                 contentDescription = label,
@@ -133,10 +135,14 @@ fun IdrApp(bus: IdrBus) {
                     onOpenHelp = { tab = 3 },
                 )
                 1 -> Column(Modifier.statusBarsPadding().fillMaxSize()) {
-                    RecordScreen(bus, permsOk, request)
+                    SessionsScreen()
                 }
                 2 -> Column(Modifier.statusBarsPadding().fillMaxSize()) {
-                    SessionsScreen()
+                    SettingsScreen(
+                        bus = bus,
+                        permsOk = permsOk,
+                        requestPerms = request,
+                    )
                 }
                 else -> Column(Modifier.statusBarsPadding().fillMaxSize()) {
                     HelpScreen(bus = bus, onReplayOnboarding = { onboarding = true })

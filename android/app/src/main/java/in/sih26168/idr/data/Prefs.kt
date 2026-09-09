@@ -37,6 +37,49 @@ class Prefs(context: Context) {
         set(v) = sp.edit().putBoolean(KEY_KMH, v).apply()
 
     /**
+     * Prefer the dark map chrome. Light theme is not wired yet — the toggle
+     * still persists so a later Theme pass can honour it without a migration.
+     */
+    var mapDarkTheme: Boolean
+        get() = sp.getBoolean(KEY_MAP_DARK, true)
+        set(v) = sp.edit().putBoolean(KEY_MAP_DARK, v).apply()
+
+    /** Last vehicle profile chosen in Settings; restored onto [IdrBus] at start. */
+    var vehicleKind: VehicleKind
+        get() {
+            val raw = sp.getString(KEY_VEHICLE, null) ?: return VehicleKind.scooter
+            return runCatching { VehicleKind.valueOf(raw) }.getOrDefault(VehicleKind.scooter)
+        }
+        set(v) = sp.edit().putString(KEY_VEHICLE, v.name).apply()
+
+    /** Next NAVIGATE arm uses the bundled replay source instead of live sensors. */
+    var replayMode: Boolean
+        get() = sp.getBoolean(KEY_REPLAY, false)
+        set(v) = sp.edit().putBoolean(KEY_REPLAY, v).apply()
+
+    /**
+     * Draw the naive/ghost track when the demo pipeline exposes one.
+     * Prefs-only until the bus gains a ghost setter (file 05).
+     */
+    var showGhostCar: Boolean
+        get() = sp.getBoolean(KEY_GHOST, false)
+        set(v) = sp.edit().putBoolean(KEY_GHOST, v).apply()
+
+    /**
+     * Opt-in LAN phone-tracker (file 07). Off by default.
+     * Only the `tracker` product flavor posts; `standard` never uploads
+     * even when this is true (TrackerHooks is a no-op there).
+     */
+    var trackerOptIn: Boolean
+        get() = sp.getBoolean(KEY_TRACKER_OPT_IN, false)
+        set(v) = sp.edit().putBoolean(KEY_TRACKER_OPT_IN, v).apply()
+
+    /** Laptop LAN IPv4 for `python -m web.tracker_server` (port 8787). */
+    var trackerLanIp: String
+        get() = sp.getString(KEY_TRACKER_LAN_IP, "") ?: ""
+        set(v) = sp.edit().putString(KEY_TRACKER_LAN_IP, v.trim()).apply()
+
+    /**
      * Debug-only: draw the modelled uncertainty radius on the map.
      * Off by default — that signal correlates negatively with true error (−0.23).
      */
@@ -93,6 +136,12 @@ class Prefs(context: Context) {
         const val KEY_DIAGNOSTICS = "diagnostics_open"
         const val KEY_KMH = "speed_kmh"
         const val KEY_BASEMAP = "basemap_enabled"
+        const val KEY_MAP_DARK = "map_dark_theme"
+        const val KEY_VEHICLE = "vehicle_kind"
+        const val KEY_REPLAY = "replay_mode"
+        const val KEY_GHOST = "show_ghost_car"
+        const val KEY_TRACKER_OPT_IN = "tracker_opt_in"
+        const val KEY_TRACKER_LAN_IP = "tracker_lan_ip"
         const val KEY_UNCERTAINTY = "show_uncertainty_radius"
         const val KEY_MOUNT_SET = "mount_set"
         const val KEY_MOUNT_NOTE = "mount_note"
