@@ -1,0 +1,182 @@
+package `in`.sih26168.idr.ui
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import `in`.sih26168.idr.data.Prefs
+import `in`.sih26168.idr.ui.theme.Accent
+import `in`.sih26168.idr.ui.theme.Bg
+import `in`.sih26168.idr.ui.theme.IdrMono
+import `in`.sih26168.idr.ui.theme.IdrSans
+import `in`.sih26168.idr.ui.theme.Line
+import `in`.sih26168.idr.ui.theme.Mute
+import `in`.sih26168.idr.ui.theme.Text as Fg
+
+/**
+ * Placeholder account gate — **no network, no real auth**.
+ *
+ * "Sign in" only stores a local display name in [Prefs]. Never add an HTTP
+ * client, token exchange, or analytics hook here; that would break the F8
+ * privacy claim (user data must not leave the device).
+ */
+@Composable
+fun AuthScreen(
+    onFinished: () -> Unit,
+    allowDismiss: Boolean = false,
+    onDismiss: () -> Unit = {},
+) {
+    val ctx = LocalContext.current
+    val prefs = remember { Prefs(ctx) }
+    var email by remember { mutableStateOf(prefs.displayName) }
+    var localName by remember { mutableStateOf(prefs.displayName) }
+
+    val fieldColors = OutlinedTextFieldDefaults.colors(
+        focusedBorderColor = Accent,
+        unfocusedBorderColor = Line,
+        focusedLabelColor = Accent,
+        unfocusedLabelColor = Mute,
+        cursorColor = Accent,
+        focusedTextColor = Fg,
+        unfocusedTextColor = Fg,
+    )
+
+    Column(
+        Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Spacer(Modifier.height(48.dp))
+        Text(
+            "COAST",
+            fontFamily = IdrSans,
+            color = Fg,
+            fontSize = 32.sp,
+            fontWeight = FontWeight.Bold,
+        )
+        Text(
+            "INTELLIGENT DEAD RECKONING",
+            fontFamily = IdrMono,
+            color = Accent,
+            fontSize = 11.sp,
+            letterSpacing = 2.sp,
+        )
+        Text(
+            "No account required. Everything stays on this phone.",
+            color = Mute,
+            fontFamily = IdrSans,
+            fontSize = 14.sp,
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        Button(
+            onClick = {
+                // Guest: clear any prior local name and mark the gate done.
+                prefs.displayName = ""
+                prefs.authDone = true
+                localName = ""
+                onFinished()
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Bg),
+            shape = RoundedCornerShape(10.dp),
+        ) {
+            Text("CONTINUE AS GUEST", fontFamily = IdrMono, letterSpacing = 1.2.sp)
+        }
+
+        Text(
+            "OPTIONAL LOCAL SIGN-IN",
+            fontFamily = IdrMono,
+            color = Mute,
+            fontSize = 10.sp,
+            letterSpacing = 1.5.sp,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+        )
+        OutlinedTextField(
+            value = email,
+            onValueChange = { email = it },
+            label = { Text("Email (display name only)") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            colors = fieldColors,
+        )
+        Button(
+            onClick = {
+                val trimmed = email.trim()
+                if (trimmed.isEmpty()) return@Button
+                // Local label only — never sent anywhere.
+                prefs.displayName = trimmed
+                prefs.authDone = true
+                localName = trimmed
+                onFinished()
+            },
+            enabled = email.trim().isNotEmpty(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Accent.copy(alpha = 0.2f),
+                contentColor = Accent,
+            ),
+            shape = RoundedCornerShape(10.dp),
+        ) {
+            Text("SIGN IN", fontFamily = IdrMono, letterSpacing = 1.2.sp)
+        }
+
+        if (localName.isNotBlank()) {
+            TextButton(
+                onClick = {
+                    prefs.displayName = ""
+                    localName = ""
+                    email = ""
+                },
+            ) {
+                Text("SIGN OUT", fontFamily = IdrMono, color = Mute, fontSize = 12.sp)
+            }
+        }
+
+        if (allowDismiss) {
+            TextButton(onClick = onDismiss) {
+                Text("BACK", fontFamily = IdrMono, color = Mute, fontSize = 12.sp)
+            }
+        }
+
+        Spacer(Modifier.weight(1f))
+        Text(
+            "Auth stub · zero network calls · Prefs only",
+            fontFamily = IdrMono,
+            color = Mute,
+            fontSize = 10.sp,
+        )
+    }
+}

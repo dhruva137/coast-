@@ -80,6 +80,19 @@ class Prefs(context: Context) {
         set(v) = sp.edit().putString(KEY_TRACKER_LAN_IP, v.trim()).apply()
 
     /**
+     * Auth stub: true after "Continue as guest" or a local Sign in.
+     * Never implies a network account — display name is device-local only.
+     */
+    var authDone: Boolean
+        get() = sp.getBoolean(KEY_AUTH_DONE, false)
+        set(v) = sp.edit().putBoolean(KEY_AUTH_DONE, v).apply()
+
+    /** Local display name from the auth stub; empty means guest. */
+    var displayName: String
+        get() = sp.getString(KEY_DISPLAY_NAME, "") ?: ""
+        set(v) = sp.edit().putString(KEY_DISPLAY_NAME, v).apply()
+
+    /**
      * Debug-only: draw the modelled uncertainty radius on the map.
      * Off by default — that signal correlates negatively with true error (−0.23).
      */
@@ -142,6 +155,8 @@ class Prefs(context: Context) {
         const val KEY_GHOST = "show_ghost_car"
         const val KEY_TRACKER_OPT_IN = "tracker_opt_in"
         const val KEY_TRACKER_LAN_IP = "tracker_lan_ip"
+        const val KEY_AUTH_DONE = "auth_done"
+        const val KEY_DISPLAY_NAME = "display_name"
         const val KEY_UNCERTAINTY = "show_uncertainty_radius"
         const val KEY_MOUNT_SET = "mount_set"
         const val KEY_MOUNT_NOTE = "mount_note"

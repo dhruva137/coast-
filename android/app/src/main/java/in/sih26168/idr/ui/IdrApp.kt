@@ -49,6 +49,7 @@ private val Tabs = listOf("DRIVE", "SESSIONS", "SETTINGS", "ABOUT")
  * vehicle/demo/privacy; ABOUT reuses Help (onboarding replay + claims).
  * Field RECORD is reached from Settings so the bottom bar stays four items.
  *
+ * Auth stub runs once until guest/sign-in; reopenable from Settings.
  * Onboarding takes the whole window on first run and can be reopened from About.
  */
 @Composable
@@ -56,6 +57,8 @@ fun IdrApp(bus: IdrBus) {
     val ctx = LocalContext.current
     val prefs = remember { Prefs(ctx) }
     var tab by rememberSaveable { mutableIntStateOf(0) }
+    var authDone by remember { mutableStateOf(prefs.authDone) }
+    var showAuthOverlay by remember { mutableStateOf(false) }
     var onboarding by remember { mutableStateOf(!prefs.onboardingDone) }
     // No autoRequest argument any more: nothing asks for a permission until the
     // user presses something that explains it. See Permissions.kt.
@@ -68,6 +71,18 @@ fun IdrApp(bus: IdrBus) {
         val quick = withContext(Dispatchers.Default) { DeviceProbe.inventory(ctx) }
         bus.publishDevice(quick)
         bus.publishLocation(LocationGate.status(ctx))
+    }
+
+    if (!authDone || showAuthOverlay) {
+        AuthScreen(
+            allowDismiss = showAuthOverlay && authDone,
+            onDismiss = { showAuthOverlay = false },
+            onFinished = {
+                authDone = true
+                showAuthOverlay = false
+            },
+        )
+        return
     }
 
     if (onboarding) {
@@ -142,6 +157,7 @@ fun IdrApp(bus: IdrBus) {
                         bus = bus,
                         permsOk = permsOk,
                         requestPerms = request,
+                        onOpenAccount = { showAuthOverlay = true },
                     )
                 }
                 else -> Column(Modifier.statusBarsPadding().fillMaxSize()) {

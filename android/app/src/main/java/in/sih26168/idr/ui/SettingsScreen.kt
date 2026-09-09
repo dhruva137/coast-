@@ -59,6 +59,7 @@ fun SettingsScreen(
     bus: IdrBus,
     permsOk: Boolean,
     requestPerms: () -> Unit,
+    onOpenAccount: () -> Unit = {},
 ) {
     val ctx = LocalContext.current
     val prefs = remember { Prefs(ctx) }
@@ -73,6 +74,7 @@ fun SettingsScreen(
     var trackerOptIn by remember { mutableStateOf(prefs.trackerOptIn) }
     var trackerIp by remember { mutableStateOf(prefs.trackerLanIp) }
     var showRecord by remember { mutableStateOf(false) }
+    val displayName = prefs.displayName
 
     if (showRecord) {
         Column(Modifier.fillMaxSize()) {
@@ -109,6 +111,14 @@ fun SettingsScreen(
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Text("SETTINGS", fontFamily = IdrMono, color = Accent, letterSpacing = 3.sp, fontSize = 12.sp)
+        Text(
+            if (displayName.isBlank()) "Signed in as guest"
+            else "Signed in as $displayName",
+            color = Mute,
+            fontFamily = IdrSans,
+            fontSize = 13.sp,
+        )
+        SecondaryButton("ACCOUNT", Modifier.fillMaxWidth(), onOpenAccount)
 
         Section("VEHICLE")
         FlowRow(
