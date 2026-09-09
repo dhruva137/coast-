@@ -1,0 +1,17 @@
+{
+  "phone_model": "Synthetic Fixture Phone",
+  "mount_type": "handlebar",
+  "vehicle": "scooter",
+  "rider": "fixture",
+  "route_id": "dataset_stress_synthetic",
+  "loop_closure": {
+    "lat": 12.9716,
+    "lon": 77.5946
+  },
+  "notes": "SYNTHETIC dataset-stress fixture \u2014 NOT a real field log. Manager drops real data under data/field/. Avoid Kaggle notebooks.",
+  "imu_hz": 10.0,
+  "leans": true,
+  "fixture": true,
+  "truth_yaw_rate_rad_s": 0.08,
+  "injected_gyro_bias_rad_s": 0.015
+}
