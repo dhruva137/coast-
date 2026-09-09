@@ -34,6 +34,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -60,6 +61,8 @@ import `in`.sih26168.idr.data.NavMode
 import `in`.sih26168.idr.data.OriginSource
 import `in`.sih26168.idr.data.Prefs
 import `in`.sih26168.idr.record.RecordService
+import `in`.sih26168.idr.record.SessionLastFix
+import `in`.sih26168.idr.record.SessionStore
 import `in`.sih26168.idr.sensor.LocationGate
 import `in`.sih26168.idr.ui.theme.Accent
 import `in`.sih26168.idr.ui.theme.Amber
@@ -73,6 +76,11 @@ import `in`.sih26168.idr.ui.theme.Line
 import `in`.sih26168.idr.ui.theme.Mute
 import `in`.sih26168.idr.ui.theme.Telem
 import `in`.sih26168.idr.ui.theme.Text as Fg
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * Full-screen Uber-black drive map. The basemap is the bottom layer; HUD,
@@ -102,6 +110,13 @@ fun DriveScreen(
     val (notifsOk, requestNotifs) = rememberNotificationGate()
     var sheetExpanded by remember { mutableStateOf(prefs.diagnosticsOpen) }
     var showOriginDialog by remember { mutableStateOf(false) }
+    var lastFix by remember { mutableStateOf<SessionLastFix?>(null) }
+
+    LaunchedEffect(live) {
+        if (!live) {
+            lastFix = withContext(Dispatchers.IO) { SessionStore.lastKnownFix(ctx) }
+        }
+    }
 
     val speedText by remember {
         derivedStateOf { if (hud.speedMps.isFinite()) "%.0f".format(hud.speedMps * 3.6) else "--" }
@@ -193,6 +208,13 @@ fun DriveScreen(
                 },
                 onSetStart = { showOriginDialog = true },
             )
+
+            if (!live) {
+                LastLocationCard(
+                    lastFix = lastFix,
+                    liveHud = hud,
+                )
+            }
         }
 
         // Bottom sheet + primary controls.
@@ -325,6 +347,45 @@ private fun ModePill(navMode: NavMode, nSats: Int, live: Boolean) {
             textAlign = TextAlign.Center,
             maxLines = 2,
         )
+    }
+}
+
+/**
+ * Small overlay on Drive home: last session end-fix (or live HUD coords if idle
+ * but still holding a recent absolute estimate). Does not turn Drive into a lab tool.
+ */
+@Composable
+private fun LastLocationCard(lastFix: SessionLastFix?, liveHud: HudState) {
+    val fromHud = liveHud.lat.isFinite() && liveHud.lon.isFinite() && liveHud.hasAbsolutePosition
+    if (!fromHud && lastFix == null) return
+
+    val title: String
+    val coords: String
+    val subtitle: String
+    if (fromHud) {
+        title = "LAST LOCATION"
+        coords = "%.5f, %.5f".format(Locale.US, liveHud.lat, liveHud.lon)
+        subtitle = "Current absolute estimate"
+    } else {
+        val f = lastFix!!
+        title = "LAST LOCATION"
+        coords = "%.5f, %.5f".format(Locale.US, f.lat, f.lon)
+        val whenStr = SimpleDateFormat("MMM d · HH:mm", Locale.US).format(Date(f.modifiedMs))
+        subtitle = "${f.sessionName} · ${f.vehicle} · $whenStr"
+    }
+
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(Bg2.copy(alpha = 0.92f))
+            .border(1.dp, Line, RoundedCornerShape(12.dp))
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Text(title, fontFamily = IdrMono, color = Mute, fontSize = 9.sp, letterSpacing = 1.2.sp)
+        Text(coords, fontFamily = IdrMono, color = Fg, fontSize = 13.sp)
+        Text(subtitle, fontFamily = IdrSans, color = Mute, fontSize = 11.sp, maxLines = 1)
     }
 }
 

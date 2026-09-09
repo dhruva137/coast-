@@ -3,6 +3,7 @@ package `in`.sih26168.idr.record
 import android.content.Context
 import android.content.Intent
 import androidx.core.content.FileProvider
+import `in`.sih26168.idr.nav.haversineM
 import org.json.JSONObject
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
@@ -12,6 +13,7 @@ import java.io.FileOutputStream
 import java.util.Locale
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
+import kotlin.math.cos
 
 data class SessionSummary(
     val dir: File,
@@ -25,6 +27,34 @@ data class SessionSummary(
     val imuHz: Double,
     val quality: QualityReport?,
     val modifiedMs: Long,
+    /** Session length in seconds; null when it cannot be derived. */
+    val durationSec: Double?,
+    /** Path length in metres from GNSS (or quality.json); null if unknown. */
+    val distanceM: Double?,
+    /**
+     * Peak dead-reckon drift since last fix, metres. Field logs do not store
+     * this today — callers must show an honest "—" when null.
+     */
+    val maxDriftSinceFixM: Double?,
+)
+
+/** One point on a session's recorded track (lat/lon absolute when available). */
+data class SessionTrackPoint(
+    val lat: Double,
+    val lon: Double,
+    val tNs: Long,
+    /** True = GNSS fix; false = dead-reckoned (IDR) sample if ever logged. */
+    val fromGnss: Boolean,
+)
+
+/** Last known absolute fix from the most recent session (or null). */
+data class SessionLastFix(
+    val sessionName: String,
+    val lat: Double,
+    val lon: Double,
+    val tNs: Long,
+    val modifiedMs: Long,
+    val vehicle: String,
 )
 
 /**
@@ -55,8 +85,16 @@ object SessionStore {
             qualityFile.isFile -> readQuality(qualityFile)
             else -> null
         }
-        val imuRows = countDataRows(File(dir, "imu.csv"))
-        val gnssRows = countDataRows(File(dir, "gnss.csv"))
+        val imuFile = File(dir, "imu.csv")
+        val gnssFile = File(dir, "gnss.csv")
+        val imuRows = countDataRows(imuFile)
+        val gnssRows = countDataRows(gnssFile)
+
+        val durationSec = quality?.durationSec?.takeIf { it > 0.0 }
+            ?: durationFromImu(imuFile)
+        val distanceM = quality?.distanceM?.takeIf { it >= 0.0 && gnssRows > 0 }
+            ?: distanceFromGnss(gnssFile)
+
         return SessionSummary(
             dir = dir,
             name = dir.name,
@@ -69,7 +107,46 @@ object SessionStore {
             imuHz = meta.optDouble("imu_hz", Double.NaN),
             quality = quality,
             modifiedMs = dir.lastModified(),
+            durationSec = durationSec,
+            distanceM = distanceM,
+            // Not persisted in field logs / quality.json — keep null so UI shows "—".
+            maxDriftSinceFixM = null,
         )
+    }
+
+    /**
+     * Load a session track for the static history map.
+     *
+     * Field sessions only persist `gnss.csv` (absolute fixes). There is no IDR
+     * trail file today, so returned points are GNSS-flagged. If a future
+     * `trail.csv` (`t_ns,lat,lon,from_gnss`) appears, it is preferred so the
+     * map can paint GNSS blue / IDR teal segments.
+     */
+    fun loadSessionTrack(dir: File): List<SessionTrackPoint> {
+        val trail = File(dir, "trail.csv")
+        if (trail.isFile) {
+            val fromTrail = parseTrailCsv(trail)
+            if (fromTrail.isNotEmpty()) return fromTrail
+        }
+        return parseGnssAsTrack(File(dir, "gnss.csv"))
+    }
+
+    /** Most recent session's last absolute GNSS fix, or null. */
+    fun lastKnownFix(context: Context): SessionLastFix? {
+        val sessions = listSessions(context)
+        for (s in sessions) {
+            val pts = loadSessionTrack(s.dir)
+            val last = pts.lastOrNull { it.lat.isFinite() && it.lon.isFinite() } ?: continue
+            return SessionLastFix(
+                sessionName = s.name,
+                lat = last.lat,
+                lon = last.lon,
+                tNs = last.tNs,
+                modifiedMs = s.modifiedMs,
+                vehicle = s.vehicle,
+            )
+        }
+        return null
     }
 
     fun evaluateAndPersist(dir: File): QualityReport = QualityGate.writeReport(dir)
@@ -178,5 +255,90 @@ object SessionStore {
             lines.drop(1).forEach { if (it.isNotBlank()) n++ }
         }
         return n
+    }
+
+    /** First/last IMU timestamp → duration; avoids a full quality pass. */
+    private fun durationFromImu(file: File): Double? {
+        if (!file.isFile) return null
+        var first = 0L
+        var last = 0L
+        file.bufferedReader().useLines { lines ->
+            lines.drop(1).forEach { line ->
+                if (line.isBlank()) return@forEach
+                val t = line.substringBefore(',').toLongOrNull() ?: return@forEach
+                if (first == 0L) first = t
+                last = t
+            }
+        }
+        if (first == 0L || last <= first) return null
+        return (last - first) / 1e9
+    }
+
+    private fun distanceFromGnss(file: File): Double? {
+        val pts = parseGnssAsTrack(file)
+        if (pts.size < 2) return if (pts.isEmpty()) null else 0.0
+        var d = 0.0
+        for (i in 1 until pts.size) {
+            val step = haversineM(pts[i - 1].lat, pts[i - 1].lon, pts[i].lat, pts[i].lon)
+            if (step.isFinite() && step < 200.0) d += step
+        }
+        return d
+    }
+
+    private fun parseGnssAsTrack(file: File): List<SessionTrackPoint> {
+        if (!file.isFile) return emptyList()
+        val out = ArrayList<SessionTrackPoint>(512)
+        file.bufferedReader().useLines { lines ->
+            lines.drop(1).forEach { line ->
+                if (line.isBlank()) return@forEach
+                val p = line.split(',')
+                if (p.size < 3) return@forEach
+                val t = p[0].toLongOrNull() ?: return@forEach
+                val lat = p[1].toDoubleOrNull() ?: return@forEach
+                val lon = p[2].toDoubleOrNull() ?: return@forEach
+                if (!lat.isFinite() || !lon.isFinite()) return@forEach
+                out += SessionTrackPoint(lat, lon, t, fromGnss = true)
+            }
+        }
+        return out
+    }
+
+    /** Optional future schema: t_ns,lat,lon,from_gnss */
+    private fun parseTrailCsv(file: File): List<SessionTrackPoint> {
+        val out = ArrayList<SessionTrackPoint>(1024)
+        file.bufferedReader().useLines { lines ->
+            lines.drop(1).forEach { line ->
+                if (line.isBlank()) return@forEach
+                val p = line.split(',')
+                if (p.size < 3) return@forEach
+                val t = p[0].toLongOrNull() ?: return@forEach
+                val lat = p[1].toDoubleOrNull() ?: return@forEach
+                val lon = p[2].toDoubleOrNull() ?: return@forEach
+                if (!lat.isFinite() || !lon.isFinite()) return@forEach
+                val fromGnss = when {
+                    p.size < 4 -> true
+                    p[3].equals("1", true) || p[3].equals("true", true) -> true
+                    else -> false
+                }
+                out += SessionTrackPoint(lat, lon, t, fromGnss = fromGnss)
+            }
+        }
+        return out
+    }
+
+    /**
+     * Project lat/lon points into local east/north metres from the first point.
+     * Used by the static session map (no MapLibre dependency).
+     */
+    fun toLocalEn(points: List<SessionTrackPoint>): List<Pair<Float, Float>> {
+        if (points.isEmpty()) return emptyList()
+        val oLat = points.first().lat
+        val oLon = points.first().lon
+        val cosLat = cos(Math.toRadians(oLat))
+        return points.map { p ->
+            val east = ((p.lon - oLon) * 111_320.0 * cosLat).toFloat()
+            val north = ((p.lat - oLat) * 110_540.0).toFloat()
+            east to north
+        }
     }
 }
