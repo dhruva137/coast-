@@ -92,6 +92,30 @@ def _load_headline_numbers() -> dict:
     }
 
 
+def _integrate_path(
+    speed: np.ndarray, gz_win: np.ndarray, t_end: np.ndarray, *, max_pts: int = 320
+) -> list[list[float]]:
+    """Dead-reckon a 2-D path in a local metric frame.
+
+    Heading comes from integrating the drive's own gyro yaw rate, and is
+    identical for every series we plot. The *only* thing that differs between
+    the model path and the truth path is the speed, so the divergence a viewer
+    sees is exactly the quantity being trained -- not a heading artefact.
+
+    Returns [[x_m, y_m], ...] downsampled for transport.
+    """
+    n = int(min(len(speed), len(gz_win), len(t_end)))
+    if n < 3:
+        return []
+    dt = np.diff(t_end[:n], prepend=t_end[0])
+    dt = np.clip(dt, 0.0, 5.0)
+    yaw = np.cumsum(gz_win[:n] * dt)
+    x = np.cumsum(speed[:n] * np.cos(yaw) * dt)
+    y = np.cumsum(speed[:n] * np.sin(yaw) * dt)
+    step = max(1, n // max_pts)
+    return [[round(float(a), 1), round(float(b), 1)] for a, b in zip(x[::step], y[::step])]
+
+
 def _quick_train() -> dict:
     """Short leave-file-out fold with live epoch/loss lines.
 
@@ -144,6 +168,29 @@ def _quick_train() -> dict:
     n = x.shape[0]
     bs = 1024
     warmup = max(1, int(0.6 * QUICK_EPOCHS))
+
+    # Per-epoch trajectory: re-integrate the held-out drive with the current
+    # weights so the console can show the path converging onto the truth as the
+    # model learns. Heading is shared across all series (see _integrate_path),
+    # so what a viewer watches is purely the speed model improving.
+    gz_win = held.imu[:, :, 5].astype(np.float64).mean(axis=1)
+    t_end_h = held.t_end.astype(np.float64)
+    truth_path = _integrate_path(y_h, gz_win, t_end_h)
+    hold_path = _integrate_path(_hold_label(held).astype(np.float64), gz_win, t_end_h)
+    print(
+        "COAST_EVENT "
+        + json.dumps(
+            {
+                "type": "traj_ref",
+                "held": held.name,
+                "truth": truth_path,
+                "hold_baseline": hold_path,
+                "source": "held-out drive, CAN speed truth",
+            }
+        ),
+        flush=True,
+    )
+
     model.train()
     t0 = time.time()
     last_loss = float("nan")
@@ -176,7 +223,9 @@ def _quick_train() -> dict:
         model.eval()
         with torch.no_grad():
             mu_ep = model.split_heads(model(x_held))["speed"]
-            rmse_ep = _rmse(mu_ep.cpu().numpy().astype(np.float64), y_h)
+            mu_ep_np = mu_ep.cpu().numpy().astype(np.float64)
+            rmse_ep = _rmse(mu_ep_np, y_h)
+        epoch_path = _integrate_path(mu_ep_np, gz_win, t_end_h)
         model.train()
         elapsed = time.time() - t0
         print(
@@ -195,6 +244,7 @@ def _quick_train() -> dict:
                     "rmse": rmse_ep,
                     "mode": mode,
                     "elapsed_s": elapsed,
+                    "path": epoch_path,
                     "source": "lab.demo stdout",
                 }
             ),

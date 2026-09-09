@@ -46,6 +46,21 @@ MAX_TRAIL = 400
 REPO = Path(__file__).resolve().parents[1]
 FIGURES = REPO / "figures"
 
+# Console UI and the pairing/fleet layer. Imported both ways so the module runs
+# as `python -m web.coast_console` and as a plain script.
+try:  # pragma: no cover - import shim
+    from web.console_ui import PAGE as CONSOLE_PAGE
+    from web.console_ui import PAIR_PAGE
+    from web.pairing import Fleet, pair_payload, qr_svg
+except ImportError:  # pragma: no cover
+    from console_ui import PAGE as CONSOLE_PAGE  # type: ignore
+    from console_ui import PAIR_PAGE  # type: ignore
+    from pairing import Fleet, pair_payload, qr_svg  # type: ignore
+
+FLEET = Fleet()
+CLAIMS_JSON = REPO / "win_tuning" / "CLAIMS.json"
+EDGE_README = REPO / "core" / "cpp" / "apps" / "README.md"
+
 _MAPFILTER_REPORT = REPO / "lab" / "stress" / "results" / "mapfilter" / "report.json"
 _MAPFILTER_SUMMARY = "lab/stress/results/mapfilter/summary.md"
 _ISRO_REPORT = REPO / "lab" / "stress" / "results" / "isro_benchmark" / "report.json"
@@ -1028,6 +1043,107 @@ def _load_metrics() -> dict[str, Any]:
     }
 
 
+def _lan_base() -> str:
+    """The address a phone on the same network should POST to.
+
+    Override with COAST_LAN_BASE when running the laptop as a hotspot -- Windows
+    Mobile Hotspot always puts the host at 192.168.137.1, which is a fixed,
+    printable address and is immune to the AP isolation that guest wifi applies.
+    """
+    override = os.environ.get("COAST_LAN_BASE")
+    if override:
+        return override.rstrip("/")
+    import socket
+
+    ip = "127.0.0.1"
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            # No packets are sent; this just asks the OS which interface would
+            # be used for an outbound route.
+            s.connect(("8.8.8.8", 80))
+            ip = s.getsockname()[0]
+        finally:
+            s.close()
+    except OSError:
+        pass
+    return f"http://{ip}:{PORT}"
+
+
+_ENG_HEAD = re.compile(r"^###\s+([A-Z])\s+[-—]+\s+(.+?)\s*$", re.MULTILINE)
+_ENG_ROW = re.compile(r"\|\s*Sustained throughput\s*\|([^\n]+)")
+_ENG_HZ = re.compile(r"([\d,]+)\s*Hz")
+
+
+def _engine_report() -> dict[str, Any]:
+    """Measured C++ edge-engine throughput, read from the engine's own README.
+
+    The README reports a range per configuration rather than one number, which
+    is the honest way to report it -- so the console shows the spread and leads
+    with the worst case.
+    """
+    try:
+        text = EDGE_README.read_text(encoding="utf-8")
+    except OSError as exc:
+        return {"error": f"Could not read {EDGE_README.name}: {exc}"}
+
+    heads = list(_ENG_HEAD.finditer(text))
+    scenarios: list[dict[str, Any]] = []
+    for i, h in enumerate(heads):
+        end = heads[i + 1].start() if i + 1 < len(heads) else len(text)
+        block = text[h.start() : end]
+        row = _ENG_ROW.search(block)
+        if not row:
+            continue
+        rates = [float(m.group(1).replace(",", "")) for m in _ENG_HZ.finditer(row.group(1))]
+        if not rates:
+            continue
+        title = h.group(2).strip()
+        note = ""
+        for line in block.splitlines():
+            s = line.strip()
+            if s.startswith("**") and "requirement" in s:
+                note = s.strip("*").strip()
+                break
+        scenarios.append(
+            {
+                "id": h.group(1),
+                "name": title,
+                "min_hz": min(rates),
+                "max_hz": max(rates),
+                "note": note,
+                "worst": False,
+            }
+        )
+    if not scenarios:
+        return {"error": "No 'Sustained throughput' rows found in the edge README."}
+
+    worst = min(scenarios, key=lambda s: s["min_hz"])
+    worst["worst"] = True
+    machine = ""
+    for line in text.splitlines():
+        if line.startswith("**Machine:**"):
+            machine = line.replace("**Machine:**", "").strip()
+            break
+    return {
+        "machine": machine,
+        "scenarios": scenarios,
+        "worst_hz": worst["min_hz"],
+        "worst_multiple": int(worst["min_hz"] / 200.0),
+        "source": "core/cpp/apps/README.md",
+    }
+
+
+def _claims_payload() -> dict[str, Any]:
+    try:
+        return json.loads(CLAIMS_JSON.read_text(encoding="utf-8"))
+    except OSError:
+        return {
+            "claims": [],
+            "error": "CLAIMS.json not found - run `python tools/verify_claims.py --json`.",
+        }
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "COASTConsole/1.0"
 
@@ -1065,8 +1181,48 @@ class Handler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         path = parsed.path
 
+        if path == "/api/fleet":
+            self._json(200, FLEET.snapshot())
+            return
+
+        if path.startswith("/api/privacy/"):
+            did = unquote(path[len("/api/privacy/") :])
+            rep = FLEET.privacy_report(did)
+            if rep is None:
+                self._json(404, {"error": "unknown device"})
+            else:
+                self._json(200, rep)
+            return
+
+        if path == "/api/engine":
+            self._json(200, _engine_report())
+            return
+
+        if path == "/api/claims":
+            self._json(200, _claims_payload())
+            return
+
+        if path == "/download/apk":
+            self._serve_apk(head_only)
+            return
+
+        if path == "/pair":
+            # Scanning the QR with ANY camera app lands here. The page shares the
+            # phone's own GPS straight from the browser, so a judge sees their
+            # device on the console with nothing installed -- and it says plainly
+            # that this is GPS, not dead reckoning, which is the app's job.
+            body = PAIR_PAGE.encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self._cors()
+            self.end_headers()
+            if not head_only:
+                self.wfile.write(body)
+            return
+
         if path in ("/", "/index.html"):
-            body = PAGE.encode("utf-8")
+            body = CONSOLE_PAGE.encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))
@@ -1185,12 +1341,86 @@ class Handler(BaseHTTPRequestHandler):
                 except ValueError:
                     pass
 
+    def _serve_apk(self, head_only: bool) -> None:
+        """Hand the judge the installable build.
+
+        Prefers a release standard-flavour APK, then anything else found, so the
+        link works whether or not a signed release has been produced yet.
+        """
+        roots = [REPO / "android" / "dist", REPO / "android" / "app" / "build" / "outputs" / "apk"]
+        found: list[Path] = []
+        for root in roots:
+            if root.is_dir():
+                found.extend(sorted(root.rglob("*.apk")))
+        if not found:
+            self._json(
+                404,
+                {
+                    "error": "No APK built yet.",
+                    "hint": "cd android && gradlew assembleStandardRelease",
+                },
+            )
+            return
+
+        def rank(p: Path) -> tuple[int, float]:
+            n = p.name.lower()
+            score = 0
+            if "release" in n:
+                score -= 2
+            if "standard" in n:
+                score -= 1
+            return (score, -p.stat().st_mtime)
+
+        apk = sorted(found, key=rank)[0]
+        size = apk.stat().st_size
+        self.send_response(200)
+        self.send_header("Content-Type", "application/vnd.android.package-archive")
+        self.send_header("Content-Disposition", f'attachment; filename="{apk.name}"')
+        self.send_header("Content-Length", str(size))
+        self._cors()
+        self.end_headers()
+        if head_only:
+            return
+        with apk.open("rb") as f:
+            while chunk := f.read(262_144):
+                try:
+                    self.wfile.write(chunk)
+                except (BrokenPipeError, ConnectionResetError):
+                    return
+
     def do_POST(self) -> None:  # noqa: N802
         path = urlparse(self.path).path
 
-        if path == "/train":
+        if path in ("/train", "/train/start"):
             result = _start_train()
             self._json(200 if result.get("ok") else 409, result)
+            return
+
+        if path == "/api/pair/new":
+            s = FLEET.new_session()
+            lan = _lan_base()
+            relay = os.environ.get("COAST_RELAY_BASE") or None
+            payload = pair_payload(s.token, lan, relay)
+            self._json(
+                200,
+                {
+                    "token": s.token,
+                    "payload": payload,
+                    "lan": lan,
+                    "relay": relay,
+                    "qr_svg": qr_svg(payload),
+                    "expires_in_s": 15 * 60,
+                },
+            )
+            return
+
+        if path.startswith("/api/forget/"):
+            did = unquote(path[len("/api/forget/") :])
+            self._json(200, {"ok": FLEET.forget(did)})
+            return
+
+        if path == "/api/forget_all":
+            self._json(200, {"ok": True, "removed": FLEET.forget_all()})
             return
 
         if path == "/train/clear":
@@ -1213,6 +1443,14 @@ class Handler(BaseHTTPRequestHandler):
         except Exception:
             self.send_error(400, "invalid json")
             return
+        # A frame carrying a pairing token belongs to the fleet view. Frames
+        # without one keep the original single-device tracker behaviour, so an
+        # older build still works against this server.
+        if frame.get("token"):
+            result = FLEET.ingest(frame)
+            self._json(200 if result.get("ok") else 400, result)
+            return
+
         with _lock:
             global _latest
             _latest = frame

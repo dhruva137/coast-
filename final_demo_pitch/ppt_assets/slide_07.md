@@ -14,7 +14,7 @@
 
 - **JNI / Android @ 10 Hz** — consumer phone app
 - **Headless C++ daemon @ 200 Hz** — FOG-grade IMUs (edge engine the PS demands)
-- Measured edge engine: **120,305 Hz** · **8.3 µs/sample** · **7.5 MB** *(200 Hz requirement met **600×**)*
+- Measured edge engine, worst case: **19,682 Hz** · **33 µs** p50 · **9.8–11 MB** *(180-particle PF, 100% GNSS-denied — 200 Hz requirement met **98×**)*
 - GNSS→DR handover **100 ms**
 - Stack: Kotlin/Compose · MapLibre + OSM · ONNX Runtime Mobile · C++ core · **all offline**
 

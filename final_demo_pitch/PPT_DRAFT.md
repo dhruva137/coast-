@@ -209,8 +209,8 @@
 - Block diagram: **one shared C++ math core** →
   - (a) **JNI / Android @ 10 Hz** — consumer phone app
   - (b) **headless C++ daemon @ 200 Hz** — external FOG-grade IMUs (edge engine the PS demands)
-- Measured edge engine: **120,305 Hz** · **8.3 µs/sample** · **7.5 MB**  
-  *(200 Hz requirement met **600×**)*
+- Measured edge engine, worst case: **19,682 Hz** · **33 µs** p50 · **9.8–11 MB**  
+  *(180-particle PF, 100% GNSS-denied — 200 Hz requirement met **98×**)*
 - Also measured: GNSS→DR handover **100 ms**
 - Stack line: Kotlin/Compose · MapLibre + OSM (no key, no billing) · ONNX Runtime Mobile · C++ core · **all offline**
 
@@ -223,7 +223,7 @@
 | Zone | Content |
 |---|---|
 | Center | Dual-deliverable block diagram (**[ASSET: architecture diagram]**) |
-| Callouts | **120,305 Hz** · **100 ms** handover |
+| Callouts | **19,682 Hz** worst case · **100 ms** handover |
 | Bottom | Stack one-liner |
 | Frame | **[OFFICIAL SIH TEMPLATE]** |
 
@@ -378,7 +378,7 @@ Use only these measured claims on slides / aloud:
 | **2.02×** | Map-in-loop vs free DR, 43 outages, CAN GT — cite full `lab/stress/results/mapfilter/summary.md`; `lab.demo` = fast method re-run only |
 | **55%** fail (84/186 pass) | Perfect-yaw free DR still fails |
 | **17%** / **10%** | Free-DR short / tunnel arm pass rates |
-| **120,305 Hz** | Edge engine throughput (200 Hz req. met 600×) |
+| **19,682 Hz** | Edge engine, worst measured config (200 Hz req. met 98×) |
 | **100 ms** | GNSS→DR handover |
 | **3.6×** | Unit bug inflation factor we found & fixed |
 | **3,271 km / 35,631 edges** | Offline OSM graph |

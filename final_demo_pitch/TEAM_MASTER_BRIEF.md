@@ -35,7 +35,7 @@ list.**
 | Our headline: map-in-loop vs naive DR | **2.02× lower median position error** (252.66 m → 125.20 m; 43 real GNSS outages, car CAN truth). Median drift 27.6% → 16.8% | `lab/stress/results/mapfilter/summary.md` |
 | The negative result we volunteer | **A perfect gyro still fails 55%** of 60-s segments | `lab/stress/results/heading_ablation/summary.md` |
 | Naive DR baseline (what we beat) | **17%** short-arm / **10%** tunnel-arm pass; **28%** median drift vs our **17%** | `lab/stress/results/isro_benchmark/summary.md` |
-| Edge engine throughput | **120,305 Hz** (200 Hz required → 600×) | `core/cpp/apps/README.md` |
+| Edge engine throughput | **19,682 Hz** worst measured case (180-particle PF, 100% GNSS-denied) → **98×** the 200 Hz requirement | `core/cpp/apps/README.md` |
 | GNSS→DR handover | **100 ms** | `lab/stress/results/` |
 | The bug we caught in our OWN pipeline | a unit error inflating every drift **3.6×** | `docs/AUDIT_AND_PLAN.md` |
 | Offline OSM road graph | **3,271 km / 35,631 edges**, no key, no billing | `maps/` |
@@ -68,7 +68,7 @@ Official SIH IDEA format, **6 slides**, diagram-led. File:
    core) + methods (AI speed · gyro evidence · ZUPT · map-in-loop particle filter ·
    HMM map-matching). Diagram: `architecture.png` (sensors → filter → position;
    shared C++ core → 10 Hz phone + 200 Hz edge).
-4. **Feasibility & Viability** — feasible today (any phone, offline, edge 600× the
+4. **Feasibility & Viability** — feasible today (any phone, offline, edge 98× the
    need); risk (heading drift; hardest bar not cleared) → strategy (map-in-loop
    done → alignment → calibrated uncertainty → field logs). Diagram: `results.png`
    (2.02× · 55% · 17/10% · 120k Hz + the 3.6× bug story).
