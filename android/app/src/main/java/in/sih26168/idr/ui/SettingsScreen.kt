@@ -243,54 +243,14 @@ fun SettingsScreen(
         Section("ADVANCED")
         SettingsCard {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                if (onStartDemo != null && !prefs.demoMode) {
-                    Button(
-                        onClick = onStartDemo,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(44.dp)
-                            .semantics { contentDescription = "Play Demo Mode" },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Accent.copy(alpha = 0.2f),
-                            contentColor = Accent,
-                        ),
-                        shape = RoundedCornerShape(12.dp),
-                    ) {
-                        Text("PLAY DEMO", fontFamily = IdrMono, fontSize = 12.sp, letterSpacing = 1.sp)
-                    }
-                }
+                // Demo mode is a laptop-only path now. Cleared here defensively
+                // so an older Prefs value can't leave the app in blackout.
                 if (prefs.demoMode || blackout) {
-                    Button(
-                        onClick = {
-                            DemoMode.clear(prefs, bus)
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(44.dp)
-                            .semantics { contentDescription = "Clear Demo Mode" },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Amber.copy(alpha = 0.2f),
-                            contentColor = Amber,
-                        ),
-                        shape = RoundedCornerShape(12.dp),
-                    ) {
-                        Text("CLEAR DEMO", fontFamily = IdrMono, fontSize = 12.sp, letterSpacing = 1.sp)
-                    }
+                    DemoMode.clear(prefs, bus)
                 }
-                SettingsToggle(
-                    title = "Replay bundled IO-VNBD (console-style dataset — not a live ride)",
-                    subtitle = "Next Start plays the bundled stream instead of this phone's sensors.",
-                    checked = replayEnabled,
-                    onCheckedChange = {
-                        bus.setReplayEnabled(it)
-                        prefs.replayMode = it
-                        if (!it) DemoMode.clear(prefs, bus)
-                    },
-                    bordered = false,
-                )
                 SettingsToggle(
                     title = "Show ghost car",
-                    subtitle = "Red naive-DR puck — only drawn during blackout/replay or ZUPT tabletop (not on a normal live Start).",
+                    subtitle = "Red naive-DR puck — visible only when the ZUPT tabletop demo is on.",
                     checked = showGhost,
                     onCheckedChange = {
                         showGhost = it
@@ -321,22 +281,6 @@ fun SettingsScreen(
                     },
                     bordered = false,
                 )
-                Button(
-                    onClick = { bus.setBlackout(!blackout) },
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (blackout) Amber else Accent.copy(alpha = 0.16f),
-                        contentColor = if (blackout) Bg else Accent,
-                    ),
-                    shape = RoundedCornerShape(12.dp),
-                ) {
-                    Text(
-                        if (blackout) "RESTORE GNSS" else "SIMULATE GNSS BLACKOUT",
-                        fontFamily = IdrMono,
-                        fontSize = 12.sp,
-                        letterSpacing = 1.sp,
-                    )
-                }
             }
         }
 

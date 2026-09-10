@@ -43,3 +43,9 @@ web/_preview/
 web/operator.txt
 android/build-tmp/
 android/dist/*.apk
+
+# Assistant scratch — never committed
+cursor_v4/
+scratch_*.txt
+scratch_*.md
+.cursor/

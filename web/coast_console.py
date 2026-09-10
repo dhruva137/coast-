@@ -1809,6 +1809,49 @@ class Handler(BaseHTTPRequestHandler):
         if not head_only:
             self.wfile.write(data)
 
+    def _serve_docs(self, head_only: bool) -> None:
+        """Serve site/index.html at /docs with a rewritten stylesheet path."""
+        docs_root = Path(__file__).resolve().parents[1] / "site"
+        fp = docs_root / "index.html"
+        if not fp.is_file():
+            self.send_error(404, "docs page not found")
+            return
+        html = fp.read_text(encoding="utf-8")
+        # The site's index.html links styles.css as a sibling — rewrite it so
+        # the /docs URL scope resolves to /docs/styles.css.
+        html = html.replace(
+            'href="styles.css"',
+            'href="/docs/styles.css"',
+        )
+        data = html.encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Length", str(len(data)))
+        self._cors()
+        self._security_headers()
+        self.end_headers()
+        if not head_only:
+            self.wfile.write(data)
+
+    def _serve_docs_asset(self, name: str, head_only: bool) -> None:
+        """Serve an asset from site/ (styles.css, images, etc.)."""
+        docs_root = Path(__file__).resolve().parents[1] / "site"
+        fp = safe_join(docs_root, name)
+        if fp is None or not fp.is_file():
+            self.send_error(404, "not found")
+            return
+        data = fp.read_bytes()
+        self.send_response(200)
+        self.send_header("Content-Type", _static_content_type(fp))
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Length", str(len(data)))
+        self._cors()
+        self._security_headers()
+        self.end_headers()
+        if not head_only:
+            self.wfile.write(data)
+
     def _handle_login(self) -> None:
         key = self._client_key()
         if not _LOGIN_LIMITER.allow(key):
@@ -1877,6 +1920,17 @@ class Handler(BaseHTTPRequestHandler):
 
         if path.startswith("/static/"):
             self._serve_static(path, head_only)
+            return
+
+        if path == "/docs" or path == "/docs/":
+            # The public model release page (site/index.html). Served here so
+            # the console front-door's "See docs" button works even when the
+            # site is not proxied separately.
+            self._serve_docs(head_only)
+            return
+
+        if path == "/docs/styles.css":
+            self._serve_docs_asset("styles.css", head_only)
             return
 
         if path == "/api/health":

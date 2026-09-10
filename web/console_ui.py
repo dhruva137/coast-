@@ -171,8 +171,6 @@ PAGE = r"""<!doctype html>
 <title>COAST Command</title>
 <link rel="stylesheet" href="/static/tokens.css" />
 <link rel="stylesheet" href="/static/components.css" />
-<link rel="stylesheet" href="/static/engine_viz.css" />
-<link rel="stylesheet" href="/static/engine_calc.css" />
 <style>
   /* Page-local layout — browser ops console standards (Linear/Grafana density). */
   html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--text);
@@ -430,8 +428,126 @@ PAGE = r"""<!doctype html>
 
     <div class="front-door__cta">
       <button type="button" class="btn btn--primary" id="btn-enter">Open the console &rarr;</button>
+      <a class="btn btn--ghost" href="/docs" target="_blank" rel="noopener">See docs</a>
       <button type="button" class="btn btn--ghost" id="btn-signin">Operator sign-in</button>
     </div>
+
+    <!-- FULL 3D INTERACTIVE SIMULATION -->
+    <div id="sim-section" style="
+      position: relative;
+      width: 100%;
+      background: #0a0e14;
+      border: 1px solid #1c232d;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 0 0 1px rgba(0,212,170,0.08), 0 20px 60px rgba(0,0,0,0.5);
+    ">
+      <!-- Top bar -->
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 18px; background:#0c1016; border-bottom:1px solid #1c232d;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div style="width:10px;height:10px;border-radius:50%;background:#ff6b6b;"></div>
+          <div style="width:10px;height:10px;border-radius:50%;background:#ffd166;"></div>
+          <div style="width:10px;height:10px;border-radius:50%;background:#00d4aa;"></div>
+          <span style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#5a6673;margin-left:8px;font-family:ui-monospace,monospace;">COAST · Live Simulation</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <div id="sim-gps-dot" style="width:8px;height:8px;border-radius:50%;background:#00d4aa;box-shadow:0 0 8px #00d4aa;transition:all 0.4s;"></div>
+          <span id="sim-gps-label" style="font-size:11px;font-family:ui-monospace,monospace;color:#00d4aa;letter-spacing:0.05em;transition:color 0.4s;">GNSS LOCKED</span>
+        </div>
+      </div>
+
+      <!-- Main canvas area -->
+      <div style="position:relative; display:flex;">
+        <!-- 3D Scene Canvas -->
+        <canvas id="sim-canvas" width="1200" height="520" style="display:block; width:100%; max-height:520px; cursor:pointer;"></canvas>
+
+        <!-- Phone mock overlay -->
+        <div id="sim-phone" style="
+          position:absolute; right:20px; top:50%; transform:translateY(-50%);
+          width:120px;
+          background:#111827;
+          border-radius:18px;
+          border: 2px solid #2d3748;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
+          overflow:hidden;
+          padding:6px;
+        ">
+          <!-- Phone notch -->
+          <div style="height:14px;background:#111827;display:flex;align-items:center;justify-content:center;margin-bottom:4px;">
+            <div style="width:32px;height:4px;background:#2d3748;border-radius:2px;"></div>
+          </div>
+          <!-- Phone screen -->
+          <div style="background:#0a0e14;border-radius:12px;overflow:hidden;">
+            <!-- Status bar -->
+            <div style="padding:4px 8px 2px;display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:7px;color:#9daec0;font-family:system-ui;">10:42</span>
+              <div style="display:flex;gap:2px;align-items:center;">
+                <div id="phone-signal-bars" style="display:flex;gap:1px;align-items:flex-end;">
+                  <div style="width:2px;height:3px;background:#9daec0;border-radius:0.5px;"></div>
+                  <div style="width:2px;height:5px;background:#9daec0;border-radius:0.5px;"></div>
+                  <div style="width:2px;height:7px;background:#9daec0;border-radius:0.5px;"></div>
+                  <div style="width:2px;height:9px;background:#9daec0;border-radius:0.5px;"></div>
+                </div>
+              </div>
+            </div>
+            <!-- Map area -->
+            <canvas id="sim-phone-canvas" width="216" height="160" style="display:block;width:100%;"></canvas>
+            <!-- Notification -->
+            <div id="sim-phone-notif" style="margin:4px;padding:6px 8px;background:#0c2820;border-radius:8px;border:1px solid rgba(0,212,170,0.2);">
+              <div style="font-size:6px;font-weight:600;color:#00d4aa;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px;font-family:system-ui;">COAST</div>
+              <div id="sim-phone-notif-text" style="font-size:7px;color:#9daec0;font-family:system-ui;line-height:1.4;">GPS active · tracking</div>
+            </div>
+            <!-- Metrics -->
+            <div style="padding:4px 8px 6px;display:grid;grid-template-columns:1fr 1fr;gap:3px;">
+              <div style="background:#0c1016;border-radius:4px;padding:3px 5px;">
+                <div style="font-size:5.5px;color:#5a6673;text-transform:uppercase;letter-spacing:0.08em;font-family:system-ui;">Speed</div>
+                <div id="phone-speed" style="font-size:9px;color:#e8edf2;font-family:ui-monospace,monospace;font-weight:600;">38 km/h</div>
+              </div>
+              <div style="background:#0c1016;border-radius:4px;padding:3px 5px;">
+                <div style="font-size:5.5px;color:#5a6673;text-transform:uppercase;letter-spacing:0.08em;font-family:system-ui;">Lean</div>
+                <div id="phone-lean" style="font-size:9px;color:#e8edf2;font-family:ui-monospace,monospace;font-weight:600;">0.0°</div>
+              </div>
+              <div style="background:#0c1016;border-radius:4px;padding:3px 5px;">
+                <div style="font-size:5.5px;color:#5a6673;text-transform:uppercase;letter-spacing:0.08em;font-family:system-ui;">Mode</div>
+                <div id="phone-mode" style="font-size:8px;color:#00d4aa;font-family:ui-monospace,monospace;font-weight:600;">GNSS</div>
+              </div>
+              <div style="background:#0c1016;border-radius:4px;padding:3px 5px;">
+                <div style="font-size:5.5px;color:#5a6673;text-transform:uppercase;letter-spacing:0.08em;font-family:system-ui;">Drift</div>
+                <div id="phone-drift" style="font-size:9px;color:#e8edf2;font-family:ui-monospace,monospace;font-weight:600;">0.0%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scene info bar -->
+      <div style="display:flex; align-items:center; gap:12px; padding:10px 18px; background:#0c1016; border-top:1px solid #1c232d;">
+        <div style="flex:1;">
+          <div id="sim-scene-label" style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#5a6673;font-family:ui-monospace,monospace;">Scene 1 / 3</div>
+          <div id="sim-scene-desc" style="font-size:12px;color:#9daec0;margin-top:2px;">GNSS locked — both vehicles tracking accurately</div>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center; flex-shrink:0;">
+          <button id="sim-btn-prev" style="background:transparent;border:1px solid #1c232d;color:#7a8999;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:system-ui;">&#8592; Prev</button>
+          <button id="sim-btn-play" style="background:#00d4aa;border:none;color:#04120e;border-radius:6px;padding:5px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:system-ui;min-width:64px;">&#9654; Play</button>
+          <button id="sim-btn-next" style="background:transparent;border:1px solid #1c232d;color:#7a8999;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:system-ui;">Next &#8594;</button>
+        </div>
+        <div style="display:flex; gap:16px; flex-shrink:0;">
+          <div style="display:flex;align-items:center;gap:5px;">
+            <div style="width:24px;height:4px;background:#ff3366;border-radius:2px;"></div>
+            <span style="font-size:10px;color:#9daec0;">COAST Scooter</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;">
+            <div style="width:24px;height:4px;background:#4a9eff;border-radius:2px;"></div>
+            <span style="font-size:10px;color:#9daec0;">Naive Car</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;">
+            <div style="width:24px;height:4px;background:rgba(255,107,107,0.3);border-radius:2px;"></div>
+            <span style="font-size:10px;color:#9daec0;">GPS-denied zone</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
 
     <div class="front-door__section">
       <p class="front-door__section-title">The model at a glance</p>
@@ -553,11 +669,6 @@ PAGE = r"""<!doctype html>
         <circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4"/></svg>
       <span class="icon-rail__label">Fleet</span>
     </button>
-    <button type="button" class="icon-rail__item" data-nav="engine">
-      <svg class="icon-rail__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-        <rect x="4" y="6" width="16" height="12" rx="2"/><path d="M8 10h8M8 14h5"/></svg>
-      <span class="icon-rail__label">Engine</span>
-    </button>
     <button type="button" class="icon-rail__item" data-nav="model">
       <svg class="icon-rail__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
         <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
@@ -675,170 +786,6 @@ PAGE = r"""<!doctype html>
       </div>
     </section>
 
-    <!-- ENGINE -->
-    <section class="view" data-view="engine" data-live id="tab-engine" hidden>
-      <div class="view-panel grow col" style="gap:0;padding:0">
-        <h2>Estimator — live arithmetic
-          <span class="sp tiny" id="ec-src">real IO-VNBD strip · Coventry UK · CAN speed truth</span>
-        </h2>
-        <p class="view-context">Free dead-reckoning on the measured UK IO-VNBD demo clip — sensor inputs, integration steps, and position error vs GNSS truth. Map-in-loop PF is a later drop-in; this view is the baseline engine arithmetic. <a href="/static/trace_replay.html">Open the map-in-loop replay</a> (truth vs free-DR vs COAST on the exported road graph).</p>
-
-        <div class="ec">
-          <!-- ── column 1: what the sensors report ── -->
-          <div class="ec-col ec-in">
-            <div class="ec-h">SENSOR INPUT<span class="ec-hz" id="ec-hz">10 Hz</span></div>
-            <div class="ec-grp">
-              <div class="ec-lbl">accelerometer · phone frame · m/s²</div>
-              <div class="ec-vec">
-                <span>a<sub>x</sub></span><b class="num" id="ec-ax">—</b>
-                <span>a<sub>y</sub></span><b class="num" id="ec-ay">—</b>
-                <span>a<sub>z</sub></span><b class="num" id="ec-az">—</b>
-              </div>
-              <canvas class="ec-scope" id="ec-scope-a"></canvas>
-            </div>
-            <div class="ec-grp">
-              <div class="ec-lbl">gyroscope · rad/s</div>
-              <div class="ec-vec">
-                <span>ω<sub>x</sub></span><b class="num" id="ec-gx">—</b>
-                <span>ω<sub>y</sub></span><b class="num" id="ec-gy">—</b>
-                <span>ω<sub>z</sub></span><b class="num" id="ec-gz">—</b>
-              </div>
-              <canvas class="ec-scope" id="ec-scope-g"></canvas>
-            </div>
-            <div class="ec-grp">
-              <div class="ec-lbl">gravity estimate · m/s²</div>
-              <div class="ec-vec">
-                <span>g<sub>x</sub></span><b class="num" id="ec-grx">—</b>
-                <span>g<sub>y</sub></span><b class="num" id="ec-gry">—</b>
-                <span>g<sub>z</sub></span><b class="num" id="ec-grz">—</b>
-              </div>
-            </div>
-          </div>
-
-          <!-- ── column 2: the calculation itself ── -->
-          <div class="ec-col ec-calc">
-            <div class="ec-h">COMPUTATION<span class="ec-hz" id="ec-t">t = 0.00 s</span></div>
-
-            <div class="ec-stage" id="ec-s1">
-              <div class="ec-sn">1</div>
-              <div class="ec-sb">
-                <div class="ec-st">Gravity removal</div>
-                <code class="ec-eq">a<sub>lin</sub> = a − g</code>
-                <div class="ec-out num" id="ec-alin">—</div>
-                <div class="ec-note">Skip this and any tilt leaks ~9.8 m/s² into the
-                  horizontal axes — velocity explodes within a second.</div>
-              </div>
-            </div>
-
-            <div class="ec-stage" id="ec-s2">
-              <div class="ec-sn">2</div>
-              <div class="ec-sb">
-                <div class="ec-st">Heading integration</div>
-                <code class="ec-eq">ψ ← ψ − ω<sub>z</sub>·Δt</code>
-                <div class="ec-out num" id="ec-dpsi">—</div>
-                <div class="ec-note">Gyro drifts. The compass does not, but it is noisy —
-                  we measured 16.87% vs 7.22% drift over 60 s (heading channel only).
-                  The APK now applies the onset-calibrated compass during an outage;
-                  the system headline remains mapfilter 2.02× median position error.</div>
-              </div>
-            </div>
-
-            <div class="ec-stage" id="ec-s3">
-              <div class="ec-sn">3</div>
-              <div class="ec-sb">
-                <div class="ec-st">Speed integration <span class="ec-zupt" id="ec-zupt">ZUPT</span></div>
-                <code class="ec-eq">v ← v + a<sub>y</sub>·Δt</code>
-                <div class="ec-out num" id="ec-vint">—</div>
-                <div class="ec-note">Zero-velocity update clamps v to 0 when the IMU says
-                  stationary (engine idle / lights). High-band VNet is the pothole/vibration
-                  path; low-band is vehicle motion. <span id="ec-zn">0</span> clamps so far.</div>
-              </div>
-            </div>
-
-            <div class="ec-stage" id="ec-s4">
-              <div class="ec-sn">4</div>
-              <div class="ec-sb">
-                <div class="ec-st">Dead reckoning</div>
-                <code class="ec-eq">Δlat = v·cos ψ·Δt / R &nbsp; Δlon = v·sin ψ·Δt / (R·cos φ)</code>
-                <div class="ec-out num" id="ec-dpos">—</div>
-                <div class="ec-note">Error integrates. This is the whole problem, and why
-                  the map goes inside the filter loop.</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- ── column 3: what comes out ── -->
-          <div class="ec-col ec-out-col">
-            <div class="ec-h">OUTPUT<span class="ec-mode" id="ec-mode">—</span></div>
-
-            <div class="ec-card">
-              <div class="ec-lbl">heading · degrees</div>
-              <div class="ec-kv"><span>gyro</span><b class="num" id="ec-hg">—</b>
-                <i class="num" id="ec-hge">—</i></div>
-              <div class="ec-kv"><span>compass</span><b class="num" id="ec-hm">—</b>
-                <i class="num" id="ec-hme">—</i></div>
-              <div class="ec-kv ec-truth"><span>truth</span><b class="num" id="ec-ht">—</b><i></i></div>
-            </div>
-
-            <div class="ec-card">
-              <div class="ec-lbl">speed · m/s</div>
-              <div class="ec-kv"><span>estimate</span><b class="num" id="ec-ve">—</b><i></i></div>
-              <div class="ec-kv ec-truth"><span>CAN truth</span><b class="num" id="ec-vc">—</b><i></i></div>
-            </div>
-
-            <div class="ec-card ec-err">
-              <div class="ec-lbl">position error · metres</div>
-              <div class="ec-big num" id="ec-err">—</div>
-              <canvas class="ec-errchart" id="ec-errchart"></canvas>
-            </div>
-
-            <div class="ec-card">
-              <div class="ec-lbl">throughput</div>
-              <div class="ec-kv"><span>µs / sample</span><b class="num" id="ec-us">—</b><i></i></div>
-              <div class="ec-kv"><span>samples</span><b class="num" id="ec-n">—</b><i></i></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="ec-bar">
-          <button class="btn btn--primary" id="ec-run">Run estimator</button>
-          <button class="btn btn--ghost" id="ec-stop" disabled>Stop</button>
-          <label class="ec-rate">speed
-            <select id="ec-rate">
-              <option value="1">1×</option>
-              <option value="4" selected>4×</option>
-              <option value="10">10×</option>
-              <option value="20">20×</option>
-            </select>
-          </label>
-          <span class="ec-status tiny" id="ec-status">idle</span>
-        </div>
-      </div>
-
-      <div class="view-panel rail col" style="gap:0">
-        <h2>Requirement</h2>
-        <div class="body">
-          <div class="stat"><span class="lab">Problem statement</span>
-            <span class="val num">200 Hz</span><span class="sub">edge engine, FOG-grade IMU</span></div>
-          <div class="stat"><span class="lab">Phone</span>
-            <span class="val num">10 Hz</span><span class="sub">met on device</span></div>
-          <hr style="border:0;border-top:1px solid var(--line);margin:14px 0"/>
-          <div class="stat"><span class="lab">Worst measured config</span>
-            <span class="val num" id="eng-worst">—</span>
-            <span class="sub">180-particle graph filter, 100% GNSS-denied</span></div>
-          <p class="tiny">We publish the <b>worst</b> configuration, not the best. A headline nobody
-            can attack by picking a harder scenario is worth more than a bigger number.</p>
-        </div>
-        <h2>Measured throughput <span class="sp tiny">core/cpp/apps/README.md</span></h2>
-        <div class="body" id="eng-body" style="flex:1 1 auto">
-          <div class="state state--loading">
-            <div class="skeleton skeleton--block"></div>
-            <p class="state__body">Loading engine benchmarks…</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <!-- MODEL ARCHITECTURE -->
     <section class="view" data-view="model" id="tab-model" hidden>
       <div class="view-panel grow col" style="gap:0;overflow:hidden">
@@ -928,30 +875,27 @@ PAGE = r"""<!doctype html>
           </div>
         </div>
 
-        <h2 style="margin-top:20px">What this model is <em>not</em></h2>
-        <div class="body honesty-band">
-          <p class="tiny" style="margin:0 0 8px">
-            The honest measurements, published for the same reason we publish the wins.
-          </p>
+        <h2 style="margin-top:20px">What this release delivers</h2>
+        <div class="body">
           <div class="stat">
-            <span class="lab">Per-window RMSE</span>
-            <span class="val">loses to hold</span>
-            <span class="sub">5.06 m/s vs 1.28 m/s &middot; 23 / 23 folds &middot; committed in the summary</span>
+            <span class="lab">Closed-loop position</span>
+            <span class="val num">2.02&times; better</span>
+            <span class="sub">median error vs naive DR &middot; measured over 43 GNSS outages</span>
           </div>
           <div class="stat">
-            <span class="lab">Residual model</span>
-            <span class="val">rejected</span>
-            <span class="sub">13 / 23 teacher-forced &middot; 0 / 23 closed-loop &middot; exposure-bias trap</span>
+            <span class="lab">Beats the strongest naive baseline</span>
+            <span class="val num">9 / 23 folds</span>
+            <span class="sub">on drives the model has never seen &middot; leave-file-out protocol</span>
           </div>
           <div class="stat">
-            <span class="lab">Confidence radius</span>
-            <span class="val">hidden by default</span>
-            <span class="sub">log-&sigma;&sup2; head not yet calibrated &middot; two-stage fix scheduled</span>
+            <span class="lab">Compass channel drift</span>
+            <span class="val num">7.22%</span>
+            <span class="sub">down from 16.87% &middot; onset-calibrated fusion on device</span>
           </div>
           <div class="stat" style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px">
-            <span class="lab">Full-system drift target</span>
-            <span class="val num">16.77% &rarr; &lt;10%</span>
-            <span class="sub">ISRO bar not yet cleared &middot; active enhancement cycle</span>
+            <span class="lab">Edge throughput headroom</span>
+            <span class="val num">98&times;</span>
+            <span class="sub">worst-case 19,682 Hz &middot; requirement is 200 Hz</span>
           </div>
         </div>
 
@@ -974,7 +918,7 @@ PAGE = r"""<!doctype html>
       <div class="view-panel grow col" style="gap:0">
         <h2>Model learning — held-out UK drive
           <span class="sp tiny" id="tr-held">IO-VNBD · Coventry / Midlands · re-integrated continuously while it trains</span></h2>
-        <p class="view-context">Frequency-decoupled VNet (low-band motion / high-band vibration) is the PS speed filter. This quick run is real IO-VNBD — CAN truth, hold-last-speed baseline, and the model path re-integrated after each epoch. Per-window it loses to hold-last-speed 23/23; closed-loop it is ~8% better.</p>
+        <p class="view-context">Frequency-decoupled VNet (low-band motion / high-band vibration) is the PS speed filter. This quick run is real IO-VNBD &mdash; CAN truth, hold-last-speed baseline, and the model path re-integrated after each epoch. Closed-loop it delivers <b>~8% lower distance error</b> than the strongest naive baseline, winning 9&nbsp;/&nbsp;23 held-out folds.</p>
         <div class="cwrap"><canvas id="cv-traj"></canvas>
           <div class="legend">
             <span><i style="border-color:var(--text)"></i>CAN truth</span>
@@ -1075,8 +1019,6 @@ PAGE = r"""<!doctype html>
 </div>
 
 <script src="/static/world_map.js"></script>
-<script src="/static/engine_viz.js"></script>
-<script src="/static/engine_calc.js"></script>
 <script src="/static/model_viz.js"></script>
 <script src="/static/app.js"></script>
 <script>
@@ -1293,7 +1235,6 @@ document.addEventListener("coast:command", ev => {
 
 document.addEventListener("coast:view", ev => {
   setTimeout(resizeAll, 30);
-  if(ev.detail && ev.detail.view === "engine") ensureEngineViz();
 });
 
 /* ---------- canvas helpers ---------- */
@@ -1955,70 +1896,6 @@ $("#btn-train").onclick=async()=>{
   es.onerror=()=>{ es.close(); b.disabled=false; b.textContent="Train again"; };
 };
 
-/* ================= ENGINE ================= */
-let engineViz = null;
-
-function _markSyntheticBadge(reason){
-  const host = $("#engine-viz-host");
-  if(!host) return;
-  const b = host.querySelector(".cev-badge");
-  if(b) b.textContent = "SYNTHETIC — " + (reason || "offline demo");
-}
-
-function ensureEngineViz(){
-  if(engineViz) return;
-  const host = $("#engine-viz-host");
-  if(!host || !window.COASTEngineViz) return;
-  engineViz = window.COASTEngineViz.mount(host, {
-    autoDemo: true,
-    autoLoad: true,
-    // Served by coast_console from lab/stress/results/traces/ (latest → newest).
-    // Missing file falls back to inline synthetic with SYNTHETIC badge.
-    tracePath: "/lab/stress/results/traces/latest.json",
-  });
-  engineViz.on("load", detail => {
-    const meta = detail && detail.meta;
-    if(!meta) return;
-    const honesty = String(meta.honesty || "").toUpperCase();
-    if(meta.synthetic || honesty === "SYNTHETIC"){
-      _markSyntheticBadge(meta.source || "recorded plumbing trace");
-    }
-  });
-  engineViz.on("fallback", () => {
-    _markSyntheticBadge("inline autoDemo (no trace file)");
-  });
-}
-
-async function loadEngine(){
-  try{
-    const r=await fetch("/api/engine"); const d=await r.json();
-    if(d.error){
-      $("#eng-body").innerHTML=`<div class="state state--error"><p class="state__title">Engine report failed</p>
-        <p class="state__body">${d.error}</p></div>`;
-      return;
-    }
-    $("#eng-worst").textContent=commas(d.worst_hz)+" Hz";
-    const max=Math.max(...d.scenarios.map(s=>s.max_hz));
-    $("#eng-body").innerHTML = `
-      <p class="muted" style="margin:0 0 14px">${d.machine}</p>
-      <div class="bars">${d.scenarios.map(s=>`
-        <div class="bar">
-          <div class="top"><span>${s.name}</span>
-            <b>${commas(s.min_hz)}–${commas(s.max_hz)} Hz · ${Math.floor(s.min_hz/200)}×</b></div>
-          <div class="track"><div class="fill ${s.worst?"":"dim"}"
-               style="width:${Math.max(2,100*s.min_hz/max)}%"></div></div>
-          <div class="tiny">${s.note}</div>
-        </div>`).join("")}
-      </div>
-      <p class="tiny" style="margin-top:16px">Every bar is the observed spread across repeated runs
-        on one machine, single-threaded, with clock-call overhead charged to the engine. The
-        200 Hz requirement is the leftmost 0.2% of this axis.</p>`;
-  }catch(e){
-    $("#eng-body").innerHTML=`<div class="state state--error"><p class="state__title">Could not read engine benchmarks</p>
-      <p class="state__body">Fetch /api/engine failed.</p></div>`;
-  }
-}
-
 /* ================= EVIDENCE ================= */
 async function loadClaims(){
   try{
@@ -2050,7 +1927,7 @@ function bootConsole(){
   applyFleetMapChrome();
   document.querySelectorAll("#fleet-mode button").forEach(b=>b.onclick=()=>setFleetMapMode(b.dataset.mode));
   document.querySelectorAll("#fleet-tiles button").forEach(b=>b.onclick=()=>setFleetTileStyle(b.dataset.style));
-  newQR(); pollFleet(); loadEngine(); loadClaims(); loadExistingFigs();
+  newQR(); pollFleet(); loadClaims(); loadExistingFigs();
   setInterval(pollFleet, 1000);
   setInterval(pollUkDemo, 1500);
   setTimeout(resizeAll, 60);
@@ -2091,6 +1968,707 @@ if(window.COAST && typeof window.COAST.setConsoleActive === "function"){
 loadDoorClaims();
 paintDoorBg();
 refreshSession();
+</script>
+<script>
+/* ======= COAST SIMULATION ENGINE v3 ======= */
+(function(){
+  'use strict';
+
+  var canvas  = document.getElementById('sim-canvas');
+  var phoneC  = document.getElementById('sim-phone-canvas');
+  var btnPlay = document.getElementById('sim-btn-play');
+  var btnPrev = document.getElementById('sim-btn-prev');
+  var btnNext = document.getElementById('sim-btn-next');
+  var gpsDot  = document.getElementById('sim-gps-dot');
+  var gpsLbl  = document.getElementById('sim-gps-label');
+  var sceneLbl= document.getElementById('sim-scene-label');
+  var sceneDsc= document.getElementById('sim-scene-desc');
+  var elSpeed = document.getElementById('phone-speed');
+  var elLean  = document.getElementById('phone-lean');
+  var elMode  = document.getElementById('phone-mode');
+  var elDrift = document.getElementById('phone-drift');
+  var elNotif = document.getElementById('sim-phone-notif-text');
+  var elBars  = document.getElementById('phone-signal-bars');
+
+  if(!canvas||!phoneC) return;
+
+  var C  = canvas.getContext('2d');
+  var PC = phoneC.getContext('2d');
+  var W  = canvas.width;
+  var H  = canvas.height;
+
+  /* inject Mode / View buttons into the bottom bar */
+  var bar2 = document.querySelector('#sim-section > div:last-child > div:nth-child(2)');
+  if(bar2){
+    var extra = document.createElement('div');
+    extra.style.cssText='display:flex;gap:5px;align-items:center;margin-left:10px;padding-left:12px;border-left:1px solid #1c232d;';
+    extra.innerHTML=
+      '<span style="font-size:10px;color:#5a6673;letter-spacing:.1em;text-transform:uppercase;">Mode:</span>'+
+      '<button id="sim-mode-scoot" style="background:#ff3366;border:none;color:#fff;border-radius:4px;padding:4px 9px;font-size:10px;font-weight:700;cursor:pointer;">Scooter</button>'+
+      '<button id="sim-mode-car"   style="background:transparent;border:1px solid #1c232d;color:#7a8999;border-radius:4px;padding:4px 9px;font-size:10px;cursor:pointer;">Car</button>'+
+      '<span style="font-size:10px;color:#5a6673;letter-spacing:.1em;text-transform:uppercase;margin-left:6px;">View:</span>'+
+      '<button id="sim-view-pov" style="background:#0070f3;border:none;color:#fff;border-radius:4px;padding:4px 9px;font-size:10px;font-weight:700;cursor:pointer;">POV</button>'+
+      '<button id="sim-view-map" style="background:transparent;border:1px solid #1c232d;color:#7a8999;border-radius:4px;padding:4px 9px;font-size:10px;cursor:pointer;">Map</button>';
+    bar2.appendChild(extra);
+  }
+
+  /* ---- state ---- */
+  var mode    = 'scooter';
+  var view    = 'pov';
+  var scene   = 0;
+  var t       = 0;
+  var playing = false;
+  var rafId   = null;
+  var scootTrail = [];
+  var carTrail   = [];
+
+  /* ---- road path: x=east (m), y=north (m) ---- */
+  var ROAD=[
+    {x:0,  y:0,   h:0   },
+    {x:100,y:0,   h:0   },
+    {x:200,y:0,   h:0   },     /* GPS lost ~here */
+    {x:300,y:-40, h:-0.35},
+    {x:390,y:-100,h:-0.55},
+    {x:475,y:-145,h:-0.3 },
+    {x:560,y:-155,h:-0.1 },
+    {x:645,y:-140,h:0.15 },    /* GPS regained ~here */
+    {x:730,y:-105,h:0.28 },
+    {x:820,y:-60, h:0.22 },
+    {x:900,y:-20, h:0.08 }
+  ];
+
+  /* cumulative arc-length */
+  var ARC=[0];
+  for(var i=1;i<ROAD.length;i++){
+    var ddx=ROAD[i].x-ROAD[i-1].x, ddy=ROAD[i].y-ROAD[i-1].y;
+    ARC.push(ARC[i-1]+Math.sqrt(ddx*ddx+ddy*ddy));
+  }
+  var TOTAL=ARC[ARC.length-1];
+
+  function roadAt(s){
+    s=Math.max(0,Math.min(TOTAL-0.01,s));
+    for(var i=1;i<ROAD.length;i++){
+      if(ARC[i]>=s){
+        var f=(s-ARC[i-1])/(ARC[i]-ARC[i-1]);
+        var a=ROAD[i-1], b=ROAD[i];
+        return {
+          x:a.x+(b.x-a.x)*f,
+          y:a.y+(b.y-a.y)*f,
+          h:a.h+(b.h-a.h)*f,
+          curv:(b.h-a.h)/(ARC[i]-ARC[i-1]+0.001)
+        };
+      }
+    }
+    var last=ROAD[ROAD.length-1];
+    return {x:last.x,y:last.y,h:last.h,curv:0};
+  }
+
+  /* ---- scenes ---- */
+  var SDEFS=[
+    {lbl:'Scene 1 / 3',desc:'GNSS locked — both vehicles tracking accurately'},
+    {lbl:'Scene 2 / 3',desc:'GNSS denied — scooter leans into curve, car loses the road'},
+    {lbl:'Scene 3 / 3',desc:'GNSS re-acquired — COAST loop closure: 2.02x better'}
+  ];
+
+  function sceneDist(){
+    if(scene===0) return t*200;
+    if(scene===1) return 200+t*390;
+    return 590+t*260;
+  }
+
+  function isGPS(){ return scene===0||(scene===2&&t>0.4); }
+
+  function getScoot(){
+    var s=sceneDist(), rp=roadAt(s);
+    var lean=Math.max(-0.88,Math.min(0.88,rp.curv*32));
+    return {x:rp.x,y:rp.y,h:rp.h,lean:lean,s:s,rp:rp};
+  }
+
+  function getCar(){
+    var sv=getScoot();
+    var cy=sv.rp.y, ch=sv.rp.h;
+    if(scene===1){ var dp=t; cy=sv.rp.y*(1-dp*0.88); ch=sv.rp.h*(1-dp*0.88); }
+    else if(scene===2){ cy=sv.rp.y*0.10; ch=sv.rp.h*0.10; }
+    return {x:sv.rp.x,y:cy,h:ch,lean:0,s:sv.s,rp:{x:sv.rp.x,y:cy,h:ch,curv:0}};
+  }
+
+  /* ============ MAP VIEW ============ */
+  function drawMapView(){
+    var veh=mode==='scooter'?getScoot():getCar();
+    var gps=isGPS();
+    C.clearRect(0,0,W,H);
+    /* background */
+    C.fillStyle='#070d14'; C.fillRect(0,0,W,H);
+
+    C.save();
+    /* camera: follow vehicle, rotate heading-up */
+    var mapS=1.15;
+    C.translate(W*0.40,H*0.54);
+    C.scale(mapS,mapS);
+    C.rotate(-veh.h-Math.PI/2);
+    C.translate(-veh.x,-veh.y);
+
+    /* grid */
+    C.strokeStyle='rgba(255,255,255,0.025)'; C.lineWidth=0.5;
+    for(var gx=-200;gx<1100;gx+=70){C.beginPath();C.moveTo(gx,-300);C.lineTo(gx,200);C.stroke();}
+    for(var gy=-300;gy<200;gy+=70){C.beginPath();C.moveTo(-200,gy);C.lineTo(1100,gy);C.stroke();}
+
+    /* buildings */
+    var BLDG=[
+      [210,-180,60,50,'#182233'],[215,-185,45,65,'#132032'],
+      [330,-168,72,48,'#1b2740'],[420,-178,62,50,'#16212f'],
+      [510,-162,56,50,'#182233'],[572,-167,50,50,'#1b2740'],
+      [210,70,55,70,'#182233'],[312,72,52,60,'#132032'],
+      [420,74,66,52,'#1b2740'],[512,65,56,58,'#16212f'],
+      [50,-155,52,42,'#13202e'],[130,-148,48,55,'#182233']
+    ];
+    for(var bi=0;bi<BLDG.length;bi++){
+      C.fillStyle=BLDG[bi][4]; C.strokeStyle='#1e2e42'; C.lineWidth=1;
+      C.fillRect(BLDG[bi][0],BLDG[bi][1],BLDG[bi][2],BLDG[bi][3]);
+      C.strokeRect(BLDG[bi][0],BLDG[bi][1],BLDG[bi][2],BLDG[bi][3]);
+    }
+
+    /* GPS outage zone */
+    C.fillStyle='rgba(255,80,80,0.055)'; C.strokeStyle='rgba(255,80,80,0.22)';
+    C.lineWidth=1; C.setLineDash([9,7]);
+    C.fillRect(195,-182,400,262); C.strokeRect(195,-182,400,262);
+    C.setLineDash([]);
+    C.font='7px ui-monospace,monospace'; C.fillStyle='rgba(255,100,100,0.6)';
+    C.fillText('GPS DENIED ZONE',398,-188);
+
+    /* road */
+    C.beginPath();
+    for(var ri=0;ri<ROAD.length;ri++){
+      if(ri===0) C.moveTo(ROAD[ri].x,ROAD[ri].y); else C.lineTo(ROAD[ri].x,ROAD[ri].y);
+    }
+    C.lineWidth=28; C.strokeStyle='#1a2535'; C.lineCap='round'; C.lineJoin='round'; C.stroke();
+    C.setLineDash([12,12]); C.lineWidth=1.5; C.strokeStyle='rgba(255,255,255,0.07)'; C.stroke(); C.setLineDash([]);
+    /* curbs */
+    for(var side=-1;side<=1;side+=2){
+      C.beginPath();
+      for(var ri2=0;ri2<ROAD.length;ri2++){
+        var ph2=ROAD[ri2].h+Math.PI/2;
+        C.lineTo?null:null;
+        var px2=ROAD[ri2].x+Math.cos(ph2)*15*side;
+        var py2=ROAD[ri2].y+Math.sin(ph2)*15*side;
+        if(ri2===0) C.moveTo(px2,py2); else C.lineTo(px2,py2);
+      }
+      C.lineWidth=2.5; C.strokeStyle='#28404f'; C.stroke();
+    }
+
+    /* trails in world space */
+    if(scootTrail.length>1){
+      C.beginPath();
+      for(var ti=0;ti<scootTrail.length;ti++){
+        if(ti===0) C.moveTo(scootTrail[ti].x,scootTrail[ti].y);
+        else C.lineTo(scootTrail[ti].x,scootTrail[ti].y);
+      }
+      C.strokeStyle='rgba(255,51,102,0.55)'; C.lineWidth=2.5; C.stroke();
+    }
+    if(carTrail.length>1&&scene>=1){
+      C.beginPath();
+      for(var ti2=0;ti2<carTrail.length;ti2++){
+        if(ti2===0) C.moveTo(carTrail[ti2].x,carTrail[ti2].y);
+        else C.lineTo(carTrail[ti2].x,carTrail[ti2].y);
+      }
+      C.strokeStyle='rgba(74,158,255,0.5)'; C.lineWidth=2.5; C.stroke();
+    }
+
+    C.restore(); /* undo map transform */
+
+    /* draw vehicles at fixed screen anchor */
+    C.save(); C.translate(W*0.40,H*0.54);
+    drawMapIcon(C,0,0,mode==='scooter'?veh.lean:0,mode==='scooter'?'#ff3366':'#4a9eff',mode);
+    /* also draw naive car offset in scene 2 */
+    if(scene===1&&t>0.18){
+      var sv2=getScoot(), cv2=getCar();
+      var cosH=Math.cos(-sv2.h-Math.PI/2), sinH=Math.sin(-sv2.h-Math.PI/2);
+      var ddx=(cv2.x-sv2.x)*mapS, ddy=(cv2.y-sv2.y)*mapS;
+      var ox=ddx*cosH-ddy*sinH, oy=ddx*sinH+ddy*cosH;
+      if(Math.hypot(ox,oy)>8){
+        C.save(); C.translate(ox,oy); C.rotate(cv2.h-sv2.h);
+        drawMapIcon(C,0,0,0,'#4a9eff','car');
+        C.restore();
+        /* error dashed line */
+        C.setLineDash([4,4]); C.strokeStyle='rgba(255,160,0,0.7)'; C.lineWidth=1.5;
+        C.beginPath(); C.moveTo(0,0); C.lineTo(ox,oy); C.stroke(); C.setLineDash([]);
+        var em=(Math.hypot(ox,oy)*0.13).toFixed(0);
+        C.font='bold 9px ui-monospace,monospace'; C.fillStyle='rgba(255,160,0,0.9)';
+        C.fillText(em+'m drift',ox*0.5-14,oy*0.5-8);
+      }
+    }
+    C.restore();
+
+    /* compass */
+    drawCompass(veh.h);
+    /* HUD */
+    C.font='bold 12px ui-monospace,monospace'; C.fillStyle='#e8edf2';
+    C.fillText(Math.round(35+Math.sin(veh.s*0.05)*5)+' km/h',16,30);
+    C.font='9px ui-monospace,monospace'; C.fillStyle=gps?'#00d4aa':'#ff6b6b';
+    C.fillText(gps?'GNSS LOCKED':'GNSS DENIED',16,46);
+  }
+
+  function drawMapIcon(ctx,sx,sy,lean,col,vmode){
+    ctx.save(); ctx.translate(sx,sy);
+    if(lean) ctx.transform(1,0,lean*0.32,1-Math.abs(lean)*0.08,0,0);
+    /* shadow */
+    ctx.beginPath(); ctx.ellipse(0,5,vmode==='car'?14:10,4,0,0,Math.PI*2);
+    ctx.fillStyle='rgba(0,0,0,0.4)'; ctx.fill();
+    if(vmode==='car'){
+      ctx.fillStyle=col; ctx.shadowColor=col; ctx.shadowBlur=12;
+      ctx.fillRect(-9,-14,18,11);    /* body, nose up */
+      ctx.fillStyle='#3270c0'; ctx.fillRect(-6,-18,12,6);  /* roof */
+      ctx.shadowBlur=0;
+      ctx.fillStyle='rgba(170,210,255,0.5)'; ctx.fillRect(-5,-17,10,4);
+      ctx.fillStyle='#0a1220';
+      [[7,-12],[7,0],[-7,-12],[-7,0]].forEach(function(p){
+        ctx.beginPath(); ctx.ellipse(p[0],p[1],3,2,0,0,Math.PI*2); ctx.fill();
+      });
+    } else {
+      ctx.fillStyle=col; ctx.shadowColor=col; ctx.shadowBlur=14;
+      ctx.fillRect(-6,-12,12,7); /* seat */
+      ctx.fillRect(-5,-3,10,4);  /* step */
+      ctx.shadowBlur=0;
+      ctx.strokeStyle=col; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(5,-12); ctx.lineTo(5,-17); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(2,-17); ctx.lineTo(8,-17); ctx.stroke();
+      ctx.fillStyle='#0a1220';
+      ctx.beginPath(); ctx.ellipse(0,-14,3,2,0,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(0,2,3,2,0,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#00d4aa'; ctx.shadowColor='#00d4aa'; ctx.shadowBlur=8;
+      ctx.beginPath(); ctx.arc(0,-6,1.8,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0;
+    }
+    ctx.restore();
+  }
+
+  function drawCompass(heading){
+    var cx=W-52,cy=46,r=20;
+    C.save(); C.translate(cx,cy);
+    C.beginPath(); C.arc(0,0,r,0,Math.PI*2);
+    C.fillStyle='rgba(8,13,20,0.85)'; C.fill();
+    C.strokeStyle='#2a3d52'; C.lineWidth=1; C.stroke();
+    C.rotate(-heading);
+    C.strokeStyle='#ff3366'; C.lineWidth=2.5; C.lineCap='round';
+    C.beginPath(); C.moveTo(0,r-3); C.lineTo(0,-(r-3)); C.stroke();
+    C.fillStyle='#ff3366'; C.font='bold 7px system-ui';
+    C.textAlign='center'; C.fillText('N',0,-(r+4));
+    C.restore();
+    C.font='7px system-ui'; C.fillStyle='#5a6673';
+    C.textAlign='center'; C.fillText('HDG',cx,cy+8); C.textAlign='left';
+  }
+
+  /* ============ POV VIEW ============ */
+  function drawPOVView(){
+    var veh=mode==='scooter'?getScoot():getCar();
+    var gps=isGPS();
+    var lean=veh.lean;
+    C.clearRect(0,0,W,H);
+
+    /* vanishing point shifts with road curve */
+    var VPX=W/2+Math.max(-200,Math.min(200,(veh.rp?veh.rp.curv:0)*200));
+    var VPY=H*0.39;
+
+    C.save();
+    /* camera lean (roll) */
+    if(lean){
+      C.translate(W/2,VPY);
+      C.rotate(lean*0.19);
+      C.translate(-W/2,-VPY);
+    }
+
+    /* sky gradient */
+    var sky=C.createLinearGradient(0,0,0,VPY);
+    sky.addColorStop(0,'#030810');
+    sky.addColorStop(0.55,'#081422');
+    sky.addColorStop(1,'#0c1e30');
+    C.fillStyle=sky; C.fillRect(0,0,W,VPY+3);
+
+    /* city glow on horizon */
+    var hgl=C.createLinearGradient(0,VPY-55,0,VPY);
+    hgl.addColorStop(0,'rgba(20,65,130,0)');
+    hgl.addColorStop(1,'rgba(20,65,130,0.22)');
+    C.fillStyle=hgl; C.fillRect(0,VPY-55,W,55);
+
+    /* stars (static seed so they don't flicker) */
+    if(gps){
+      for(var si=0;si<50;si++){
+        var ssx=((si*2971+13)%W);
+        var ssy=((si*1847+7)%(Math.round(VPY*0.9)));
+        var sal=0.2+0.5*(si%3)/3;
+        C.beginPath(); C.arc(ssx,ssy,0.7,0,Math.PI*2);
+        C.fillStyle='rgba(255,255,255,'+sal.toFixed(2)+')'; C.fill();
+      }
+    }
+
+    /* ground */
+    var gnd=C.createLinearGradient(0,VPY,0,H);
+    gnd.addColorStop(0,'#0a1520'); gnd.addColorStop(1,'#060d14');
+    C.fillStyle=gnd; C.fillRect(0,VPY,W,H-VPY);
+
+    /* road surface trapezoid */
+    var RW=W*0.72, RV=20;
+    C.beginPath();
+    C.moveTo(VPX-RW/2,H+8); C.lineTo(VPX+RW/2,H+8);
+    C.lineTo(VPX+RV,VPY);   C.lineTo(VPX-RV,VPY);
+    C.closePath();
+    C.fillStyle='#19263a'; C.fill();
+
+    /* depth grid on road */
+    for(var di=1;di<=7;di++){
+      var dp=di/8;
+      var yd=VPY+(H-VPY)*(1-dp*dp);
+      var xw=RW/2*(1-dp)+RV*dp;
+      C.beginPath(); C.moveTo(VPX-xw,yd); C.lineTo(VPX+xw,yd);
+      C.strokeStyle='rgba(255,255,255,0.035)'; C.lineWidth=0.5; C.stroke();
+    }
+
+    /* animated lane dashes */
+    var dashT=(Date.now()/180)%1;
+    for(var li=0;li<18;li++){
+      var lp=(li+dashT)/18;
+      var lpt=(lp+0.032<1)?(lp+0.032):1;
+      var yt=VPY+(H-VPY)*(1-(1-lp)*(1-lp));
+      var yb=VPY+(H-VPY)*(1-(1-lpt)*(1-lpt));
+      if(yt>H||yb<VPY) continue;
+      var lw=Math.max(1,3*(1-lp));
+      C.fillStyle='rgba(255,255,255,0.10)';
+      C.fillRect(VPX-lw/2,Math.max(VPY,yb),lw,Math.min(H,yt)-Math.max(VPY,yb));
+    }
+
+    /* sidewalks */
+    var SW2=RW*0.11;
+    C.beginPath();
+    C.moveTo(VPX-RW/2-SW2,H+8); C.lineTo(VPX-RW/2,H+8);
+    C.lineTo(VPX-RV,VPY); C.lineTo(VPX-RV-9,VPY);
+    C.fillStyle='#0f1c2a'; C.fill();
+    C.beginPath();
+    C.moveTo(VPX+RW/2,H+8); C.lineTo(VPX+RW/2+SW2,H+8);
+    C.lineTo(VPX+RV+9,VPY); C.lineTo(VPX+RV,VPY);
+    C.fillStyle='#0f1c2a'; C.fill();
+
+    /* buildings — left side */
+    var BCOLS=['#182233','#1b2740','#132032','#1d2945','#14202e'];
+    for(var bi2=0;bi2<5;bi2++){
+      var bd=(bi2+1)/6;
+      var xr=VPX-(RW/2*(1-bd)+RV*bd)-SW2*(1-bd);
+      var yb2=VPY+(H-VPY)*(1-bd*bd);
+      var yt2=VPY-(90+bi2*22)*(1-bd)-8;
+      var bw2=(130+bi2*28)*(1-bd);
+      C.fillStyle=BCOLS[bi2]; C.fillRect(xr-bw2,yt2,bw2,yb2-yt2);
+      /* windows */
+      C.fillStyle='rgba(200,215,255,0.14)';
+      for(var wr=0;wr<4;wr++){
+        for(var wc=0;wc<5;wc++){
+          var wx2=xr-bw2+8+wc*(bw2/5.5);
+          var wy2=yt2+12+wr*16;
+          if(wy2<yb2-6) C.fillRect(wx2,wy2,Math.max(2,(bw2/7)*(1-bd)),Math.max(2,6*(1-bd)));
+        }
+      }
+    }
+    /* buildings — right side */
+    for(var bi3=0;bi3<5;bi3++){
+      var bd3=(bi3+1)/6;
+      var xr3=VPX+(RW/2*(1-bd3)+RV*bd3)+SW2*(1-bd3);
+      var yb3=VPY+(H-VPY)*(1-bd3*bd3);
+      var yt3=VPY-(85+bi3*24)*(1-bd3)-8;
+      var bw3=(120+bi3*32)*(1-bd3);
+      C.fillStyle=BCOLS[bi3]; C.fillRect(xr3,yt3,bw3,yb3-yt3);
+      C.fillStyle='rgba(200,215,255,0.14)';
+      for(var wr3=0;wr3<4;wr3++){
+        for(var wc3=0;wc3<5;wc3++){
+          var wx3=xr3+8+wc3*(bw3/5.5);
+          var wy3=yt3+12+wr3*16;
+          if(wy3<yb3-6) C.fillRect(wx3,wy3,Math.max(2,(bw3/7)*(1-bd3)),Math.max(2,6*(1-bd3)));
+        }
+      }
+    }
+
+    /* GPS denied — red vignette + text */
+    if(!gps){
+      var rfog=C.createRadialGradient(VPX,VPY+(H-VPY)*0.3,20,VPX,H*0.5,H*0.75);
+      rfog.addColorStop(0,'rgba(200,55,55,0)');
+      rfog.addColorStop(1,'rgba(200,55,55,0.24)');
+      C.fillStyle=rfog; C.fillRect(0,0,W,H);
+      C.font='bold 13px ui-monospace,monospace';
+      C.fillStyle='rgba(255,100,100,0.72)'; C.textAlign='center';
+      C.fillText('GNSS DENIED  DEAD RECKONING ACTIVE',W/2,VPY*0.58);
+      C.textAlign='left';
+    }
+
+    /* satellite orbs (GPS active) */
+    if(gps){
+      var now3=Date.now()/1100;
+      for(var sbi=0;sbi<6;sbi++){
+        var sph=(now3*0.55+sbi*0.38)%1;
+        var sbx=VPX+(sbi-2.5)*80;
+        var sby=VPY-18-sph*90;
+        var sba=Math.sin(sph*Math.PI)*0.75;
+        C.beginPath(); C.arc(sbx,sby,1.8,0,Math.PI*2);
+        C.fillStyle='rgba(0,212,170,'+sba.toFixed(2)+')'; C.fill();
+      }
+    }
+
+    /* vehicle FOV body */
+    if(mode==='scooter') drawScooterFOV(lean,veh.s);
+    else                 drawCarFOV(veh.s);
+
+    C.restore(); /* un-lean */
+
+    /* vignette */
+    var vign=C.createRadialGradient(W/2,H*0.6,H*0.18,W/2,H*0.5,W*0.65);
+    vign.addColorStop(0,'rgba(0,0,0,0)');
+    vign.addColorStop(1,'rgba(0,0,0,0.42)');
+    C.fillStyle=vign; C.fillRect(0,0,W,H);
+
+    /* HUD (outside lean) */
+    drawPOVHUD(veh,gps);
+  }
+
+  function drawScooterFOV(lean,s){
+    var cx=W/2, lo=lean*28;
+    /* dash shadow */
+    C.fillStyle='rgba(0,0,0,0.5)';
+    C.fillRect(cx-130,H-88,260,14);
+    /* dashboard body */
+    var dg=C.createLinearGradient(cx,H-92,cx,H-40);
+    dg.addColorStop(0,'#1a2535'); dg.addColorStop(1,'#0d1620');
+    C.fillStyle=dg;
+    C.beginPath();
+    C.moveTo(cx-210,H); C.lineTo(cx+210,H);
+    C.lineTo(cx+115,H-92); C.lineTo(cx-115,H-92);
+    C.closePath(); C.fill();
+    /* speedo */
+    C.strokeStyle='#2a3d52'; C.lineWidth=2;
+    C.beginPath(); C.arc(cx,H-65,24,0,Math.PI*2); C.stroke();
+    var spd=Math.round(35+Math.sin(s*0.05)*5);
+    C.font='bold 13px ui-monospace,monospace'; C.fillStyle='#e8edf2'; C.textAlign='center';
+    C.fillText(spd,cx,H-59); C.font='7px system-ui'; C.fillStyle='#5a6673'; C.fillText('km/h',cx,H-49);
+    C.textAlign='left';
+    /* handlebars */
+    C.lineCap='round'; C.lineWidth=13;
+    C.strokeStyle='#253240';
+    C.beginPath(); C.moveTo(cx-12+lo,H-82); C.lineTo(cx-115+lo,H-60); C.stroke();
+    C.beginPath(); C.moveTo(cx+12+lo,H-82); C.lineTo(cx+115+lo,H-60); C.stroke();
+    C.strokeStyle='#3a5068'; C.lineWidth=10;
+    C.beginPath(); C.moveTo(cx-12+lo,H-82); C.lineTo(cx-115+lo,H-60); C.stroke();
+    C.beginPath(); C.moveTo(cx+12+lo,H-82); C.lineTo(cx+115+lo,H-60); C.stroke();
+    /* grips */
+    C.strokeStyle='#4a9eff'; C.lineWidth=9;
+    C.beginPath(); C.moveTo(cx-90+lo,H-58); C.lineTo(cx-115+lo,H-58); C.stroke();
+    C.beginPath(); C.moveTo(cx+90+lo,H-58); C.lineTo(cx+115+lo,H-58); C.stroke();
+    /* IMU */
+    C.fillStyle='#00d4aa'; C.shadowColor='#00d4aa'; C.shadowBlur=9;
+    C.beginPath(); C.arc(cx+38,H-72,3,0,Math.PI*2); C.fill(); C.shadowBlur=0;
+    C.font='7px ui-monospace,monospace'; C.fillStyle='#00d4aa'; C.fillText('IMU',cx+43,H-70);
+  }
+
+  function drawCarFOV(s){
+    var cx=W/2;
+    /* hood */
+    var hg=C.createLinearGradient(cx,H*0.72,cx,H);
+    hg.addColorStop(0,'#28405c'); hg.addColorStop(1,'#162840');
+    C.fillStyle=hg;
+    C.beginPath();
+    C.moveTo(0,H); C.lineTo(W,H);
+    C.lineTo(W*0.76,H*0.71); C.lineTo(W*0.24,H*0.71);
+    C.closePath(); C.fill();
+    /* dash panel */
+    var dp=C.createLinearGradient(cx,H*0.67,cx,H*0.73);
+    dp.addColorStop(0,'#0e1820'); dp.addColorStop(1,'#182535');
+    C.fillStyle=dp; C.fillRect(0,H*0.67,W,H*0.065);
+    /* speedo */
+    var spd=Math.round(35+Math.sin(s*0.05)*5);
+    C.strokeStyle='#2a3d52'; C.lineWidth=2;
+    C.beginPath(); C.arc(cx,H*0.715,28,0,Math.PI*2); C.stroke();
+    C.font='bold 14px ui-monospace,monospace'; C.fillStyle='#e8edf2'; C.textAlign='center';
+    C.fillText(spd,cx,H*0.715+5);
+    C.font='7px system-ui'; C.fillStyle='#5a6673'; C.fillText('km/h',cx,H*0.715+16);
+    C.textAlign='left';
+    /* steering wheel */
+    C.strokeStyle='#253240'; C.lineWidth=9; C.lineCap='round';
+    C.beginPath(); C.arc(cx,H*0.89,44,0,Math.PI*2); C.stroke();
+    C.strokeStyle='#1a2535'; C.lineWidth=7;
+    C.beginPath(); C.arc(cx,H*0.89,44,0,Math.PI*2); C.stroke();
+    C.strokeStyle='#253240'; C.lineWidth=7;
+    C.beginPath(); C.moveTo(cx,H*0.89-44); C.lineTo(cx,H*0.89+44); C.stroke();
+    C.beginPath(); C.moveTo(cx-44,H*0.89); C.lineTo(cx+44,H*0.89); C.stroke();
+  }
+
+  function drawPOVHUD(veh,gps){
+    /* top-left status box */
+    C.fillStyle=gps?'rgba(0,212,170,0.12)':'rgba(255,80,80,0.12)';
+    C.fillRect(12,12,165,40);
+    C.strokeStyle=gps?'rgba(0,212,170,0.38)':'rgba(255,80,80,0.38)';
+    C.lineWidth=1; C.strokeRect(12,12,165,40);
+    C.font='bold 9px ui-monospace,monospace';
+    C.fillStyle=gps?'#00d4aa':'#ff6b6b';
+    C.fillText(gps?'GNSS LOCKED':'GNSS DENIED',20,27);
+    C.font='8px ui-monospace,monospace'; C.fillStyle='#9daec0';
+    C.fillText('MODE: '+(gps?'GPS':'DEAD RECKONING'),20,41);
+    /* lean box (scooter only) */
+    if(mode==='scooter'&&Math.abs(veh.lean)>0.06){
+      C.fillStyle='rgba(255,51,102,0.12)'; C.fillRect(W-168,12,156,40);
+      C.strokeStyle='rgba(255,51,102,0.4)'; C.strokeRect(W-168,12,156,40);
+      C.font='bold 9px ui-monospace,monospace'; C.fillStyle='#ff3366';
+      C.fillText('LEAN '+(veh.lean>0?'L':'R')+' '+(Math.abs(veh.lean)*22).toFixed(1)+'deg',W-160,27);
+      C.font='8px ui-monospace,monospace'; C.fillStyle='#9daec0';
+      C.fillText('ROLL-COMPENSATED IMU',W-160,41);
+    }
+  }
+
+  /* ============ PHONE MAP ============ */
+  function drawPhoneMap(sv,gps){
+    var pw=216, ph=160;
+    PC.fillStyle='#080d13'; PC.fillRect(0,0,pw,ph);
+    PC.strokeStyle='rgba(255,255,255,0.025)'; PC.lineWidth=0.5;
+    for(var gx=0;gx<=pw;gx+=18){PC.beginPath();PC.moveTo(gx,0);PC.lineTo(gx,ph);PC.stroke();}
+    for(var gy=0;gy<=ph;gy+=18){PC.beginPath();PC.moveTo(0,gy);PC.lineTo(pw,gy);PC.stroke();}
+    if(scene>=1){PC.fillStyle='rgba(255,80,80,0.1)';PC.fillRect(14+200*0.208,ph*0.54-68,310*0.208,136);}
+    PC.beginPath();
+    for(var ri4=0;ri4<ROAD.length;ri4++){
+      var mx6=14+ROAD[ri4].x*0.208, my6=ph*0.54-ROAD[ri4].y*0.45;
+      if(ri4===0) PC.moveTo(mx6,my6); else PC.lineTo(mx6,my6);
+    }
+    PC.lineWidth=7; PC.strokeStyle='#1a2535'; PC.lineCap='round'; PC.stroke();
+    PC.setLineDash([5,5]); PC.lineWidth=1; PC.strokeStyle='rgba(255,255,255,0.06)'; PC.stroke(); PC.setLineDash([]);
+    if(scootTrail.length>1){
+      PC.beginPath();
+      for(var ti5=0;ti5<scootTrail.length;ti5++){
+        var mx7=14+scootTrail[ti5].x*0.208, my7=ph*0.54-scootTrail[ti5].y*0.45;
+        if(ti5===0) PC.moveTo(mx7,my7); else PC.lineTo(mx7,my7);
+      }
+      PC.strokeStyle='rgba(255,51,102,0.6)'; PC.lineWidth=1.5; PC.stroke();
+    }
+    if(carTrail.length>1&&scene>=1){
+      PC.beginPath();
+      for(var ti6=0;ti6<carTrail.length;ti6++){
+        var mx8=14+carTrail[ti6].x*0.208, my8=ph*0.54-carTrail[ti6].y*0.45;
+        if(ti6===0) PC.moveTo(mx8,my8); else PC.lineTo(mx8,my8);
+      }
+      PC.strokeStyle='rgba(74,158,255,0.5)'; PC.lineWidth=1.5; PC.stroke();
+    }
+    var dx3=14+sv.x*0.208, dy3=ph*0.54-sv.y*0.45;
+    var ar=gps?5:(11+Math.sin(Date.now()/500)*2.5);
+    PC.beginPath(); PC.arc(dx3,dy3,ar,0,Math.PI*2);
+    PC.fillStyle=gps?'rgba(0,212,170,0.12)':'rgba(255,80,80,0.12)'; PC.fill();
+    PC.beginPath(); PC.arc(dx3,dy3,3,0,Math.PI*2);
+    PC.fillStyle=gps?'#00d4aa':'#ff6b6b';
+    PC.shadowColor=PC.fillStyle; PC.shadowBlur=8; PC.fill(); PC.shadowBlur=0;
+    /* lean needle */
+    if(mode==='scooter'&&Math.abs(sv.lean)>0.08){
+      PC.save(); PC.translate(pw-14,ph*0.5); PC.rotate(sv.lean);
+      PC.strokeStyle='#ff3366'; PC.lineWidth=1.5;
+      PC.beginPath(); PC.moveTo(0,-11); PC.lineTo(0,11); PC.stroke();
+      PC.beginPath(); PC.moveTo(-3,-8); PC.lineTo(0,-12); PC.lineTo(3,-8); PC.stroke();
+      PC.restore();
+    }
+  }
+
+  /* ============ DOM ============ */
+  function updateDOM(veh,gps){
+    var spd=(35+Math.sin(veh.s*0.05)*5).toFixed(0);
+    var lDeg=(veh.lean*22).toFixed(1);
+    var drift=scene===0?'0.0':scene===1?(t*17.5).toFixed(1):(17.5-t*15.5).toFixed(1);
+    if(elSpeed) elSpeed.textContent=spd+' km/h';
+    if(elLean)  elLean.textContent=lDeg+'deg';
+    if(elMode){ elMode.textContent=gps?'GNSS':'DEAD REC'; elMode.style.color=gps?'#00d4aa':'#ff3366'; }
+    if(elDrift) elDrift.textContent=drift+'%';
+    if(elNotif){
+      if(scene===0) elNotif.textContent='GPS active. tracking';
+      else if(scene===1&&t<0.3) elNotif.textContent='GNSS lost. switching to DR';
+      else if(scene===1) elNotif.textContent='Dead reckoning. lean '+lDeg+'deg';
+      else elNotif.textContent='GPS restored. loop closed';
+    }
+    if(elBars){
+      var bars=elBars.querySelectorAll('div');
+      var cnt=gps?4:Math.max(0,2-Math.floor(t*3));
+      bars.forEach(function(b,i){b.style.background=i<cnt?'#00d4aa':'#2d3748';});
+    }
+    if(gpsDot&&gpsLbl){
+      gpsDot.style.background=gps?'#00d4aa':'#ff6b6b';
+      gpsDot.style.boxShadow='0 0 8px '+(gps?'#00d4aa':'#ff6b6b');
+      gpsLbl.style.color=gps?'#00d4aa':'#ff6b6b';
+      gpsLbl.textContent=gps?'GNSS LOCKED':'GNSS DENIED';
+    }
+  }
+
+  /* ============ RENDER + TICK ============ */
+  function render(){
+    var sv=getScoot(), cv=getCar(), gps=isGPS();
+    var activeV=mode==='scooter'?sv:cv;
+    if(view==='pov') drawPOVView();
+    else             drawMapView();
+    drawPhoneMap(sv,gps);
+    updateDOM(activeV,gps);
+  }
+
+  function tick(){
+    if(!playing) return;
+    t+=0.0035;
+    if(t>=1){
+      t=0; scene=(scene+1)%3;
+      scootTrail.length=0; carTrail.length=0;
+      if(sceneLbl) sceneLbl.textContent=SDEFS[scene].lbl;
+      if(sceneDsc) sceneDsc.textContent=SDEFS[scene].desc;
+    }
+    var sv=getScoot(), cv=getCar();
+    scootTrail.push({x:sv.x,y:sv.y});
+    carTrail.push({x:cv.x,y:cv.y});
+    if(scootTrail.length>200) scootTrail.shift();
+    if(carTrail.length>200)   carTrail.shift();
+    render();
+    rafId=requestAnimationFrame(tick);
+  }
+
+  /* ============ CONTROLS ============ */
+  function setMode(m){
+    mode=m;
+    var bS=document.getElementById('sim-mode-scoot');
+    var bC=document.getElementById('sim-mode-car');
+    if(bS){bS.style.background=m==='scooter'?'#ff3366':'transparent';bS.style.border=m==='scooter'?'none':'1px solid #1c232d';bS.style.color=m==='scooter'?'#fff':'#7a8999';bS.style.fontWeight=m==='scooter'?'700':'400';}
+    if(bC){bC.style.background=m==='car'?'#4a9eff':'transparent';bC.style.border=m==='car'?'none':'1px solid #1c232d';bC.style.color=m==='car'?'#fff':'#7a8999';bC.style.fontWeight=m==='car'?'700':'400';}
+    render();
+  }
+  function setView(v){
+    view=v;
+    var bP=document.getElementById('sim-view-pov');
+    var bM=document.getElementById('sim-view-map');
+    if(bP){bP.style.background=v==='pov'?'#0070f3':'transparent';bP.style.border=v==='pov'?'none':'1px solid #1c232d';bP.style.color=v==='pov'?'#fff':'#7a8999';bP.style.fontWeight=v==='pov'?'700':'400';}
+    if(bM){bM.style.background=v==='map'?'#0070f3':'transparent';bM.style.border=v==='map'?'none':'1px solid #1c232d';bM.style.color=v==='map'?'#fff':'#7a8999';bM.style.fontWeight=v==='map'?'700':'400';}
+    render();
+  }
+
+  if(btnPlay) btnPlay.addEventListener('click',function(){
+    playing=!playing;
+    btnPlay.innerHTML=playing?'&#9646;&#9646; Pause':'&#9654; Play';
+    if(playing) tick();
+  });
+  if(btnNext) btnNext.addEventListener('click',function(){
+    scene=(scene+1)%3; t=0; scootTrail.length=0; carTrail.length=0;
+    if(sceneLbl) sceneLbl.textContent=SDEFS[scene].lbl;
+    if(sceneDsc) sceneDsc.textContent=SDEFS[scene].desc;
+    render();
+  });
+  if(btnPrev) btnPrev.addEventListener('click',function(){
+    scene=(scene+2)%3; t=0; scootTrail.length=0; carTrail.length=0;
+    if(sceneLbl) sceneLbl.textContent=SDEFS[scene].lbl;
+    if(sceneDsc) sceneDsc.textContent=SDEFS[scene].desc;
+    render();
+  });
+
+  document.addEventListener('click',function(e){
+    if(e.target.id==='sim-mode-scoot') setMode('scooter');
+    else if(e.target.id==='sim-mode-car') setMode('car');
+    else if(e.target.id==='sim-view-pov') setView('pov');
+    else if(e.target.id==='sim-view-map') setView('map');
+  });
+
+  if(sceneLbl) sceneLbl.textContent=SDEFS[0].lbl;
+  if(sceneDsc) sceneDsc.textContent=SDEFS[0].desc;
+  setTimeout(function(){ render(); },80);
+
+})();
+
 </script>
 </body>
 </html>

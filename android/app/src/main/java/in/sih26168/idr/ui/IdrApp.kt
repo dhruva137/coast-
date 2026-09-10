@@ -133,16 +133,22 @@ private fun IdrAppContent(
         pendingDemoStart = true
     }
 
-    // Restore persisted demo/vehicle prefs onto the process bus once.
+    // Restore persisted vehicle prefs onto the process bus once. Demo mode is
+    // a laptop-only path — the APK boots without it, and a stale prefs bit is
+    // cleared here so a previous demo session cannot leave the app in blackout.
     LaunchedEffect(Unit) {
         bus.setVehicle(prefs.vehicleKind)
-        bus.setReplayEnabled(prefs.replayMode)
         bus.setShowGhost(prefs.showGhostCar)
         bus.setZuptTabletop(prefs.zuptTabletop)
         bus.setForceStationary(prefs.forceStationary)
         bus.setFuseCompass(prefs.fuseCompass)
-        if (prefs.demoMode) {
-            bus.setBlackout(true)
+        if (prefs.demoMode || prefs.replayMode) {
+            prefs.demoMode = false
+            prefs.replayMode = false
+            bus.setReplayEnabled(false)
+            bus.setBlackout(false)
+        } else {
+            bus.setReplayEnabled(false)
         }
         val quick = withContext(Dispatchers.Default) { DeviceProbe.inventory(ctx) }
         bus.publishDevice(quick)
@@ -164,7 +170,7 @@ private fun IdrAppContent(
                 authDone = true
                 showAuthOverlay = false
             },
-            onDemoMode = { enterDemoMode() },
+            onDemoMode = null,
         )
         return
     }
@@ -178,7 +184,7 @@ private fun IdrAppContent(
                 prefs.onboardingDone = true
                 onboarding = false
             },
-            onDemoMode = { enterDemoMode() },
+            onDemoMode = null,
         )
         return
     }
@@ -275,7 +281,7 @@ private fun IdrAppContent(
                     coarseOnly = coarseOnly,
                     requestPerms = request,
                     onOpenPairing = { tab = TAB_CONNECT },
-                    onStartDemo = { enterDemoMode() },
+                    onStartDemo = null,
                 )
                 tab == TAB_SENSE -> LiveSensorScreen()
                 tab == TAB_CONNECT -> Column(Modifier.statusBarsPadding().fillMaxSize()) {
@@ -287,7 +293,7 @@ private fun IdrAppContent(
                         permsOk = permsOk,
                         requestPerms = request,
                         onOpenAccount = { showAuthOverlay = true },
-                        onStartDemo = { enterDemoMode() },
+                        onStartDemo = null,
                         onOpenVehicleCheck = { showVehicleCheckOverlay = true },
                         onOpenHelp = { helpOverlay = true },
                         onOpenHistory = { historyOverlay = true },

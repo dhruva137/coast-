@@ -17,14 +17,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text as M3Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -36,8 +39,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
@@ -50,27 +56,29 @@ import `in`.sih26168.idr.ui.theme.Amber
 import `in`.sih26168.idr.ui.theme.Bg
 import `in`.sih26168.idr.ui.theme.Bg2
 import `in`.sih26168.idr.ui.theme.Danger
+import `in`.sih26168.idr.ui.theme.Gnss
 import `in`.sih26168.idr.ui.theme.IdrMono
 import `in`.sih26168.idr.ui.theme.IdrSans
 import `in`.sih26168.idr.ui.theme.Line
 import `in`.sih26168.idr.ui.theme.Mute
 import `in`.sih26168.idr.ui.theme.Telem
+import `in`.sih26168.idr.nav.SensorMath
 import `in`.sih26168.idr.ui.theme.Text as Fg
-import kotlin.math.abs
-import kotlin.math.atan2
 import kotlin.math.hypot
-import kotlin.math.roundToInt
+import kotlin.math.max
 import kotlin.math.sqrt
 import kotlinx.coroutines.delay
 
 /**
  * Live sensor screen — the "hold the phone and see the estimator respond" demo.
  *
- * This is the causal-response screen a judge performs themselves: tilt → the
- * spirit-level ball rolls; shake → the shake meter jumps and the event chip
- * fires; hold still → ZUPT engages. Nothing here is drawn on a map; the label
- * "RELATIVE MOTION — no GNSS" sits in the same visual layer as the numbers so
- * no glance can mistake this for an absolute fix.
+ * Tilt → the spirit-level ball rolls. Rotate → the compass needle points north.
+ * Shake → the shake meter jumps and events fire. Tap RECORD → the shake trace
+ * is written to signal history as a saved session so a judge can watch the
+ * graph draw itself and then find it in Settings ▸ Signal history afterwards.
+ * Nothing here is drawn on a map; the label "RELATIVE MOTION — no GNSS" sits in
+ * the same visual layer as the numbers so no glance can mistake this for an
+ * absolute fix.
  */
 @Composable
 fun LiveSensorScreen(onBack: (() -> Unit)? = null) {
@@ -80,6 +88,7 @@ fun LiveSensorScreen(onBack: (() -> Unit)? = null) {
     // Live sensor state (updated at sensor rate, ~50–200 Hz on most devices).
     var pitchDeg by remember { mutableStateOf(0f) }   // + = nose up
     var rollDeg by remember { mutableStateOf(0f) }    // + = right-side up
+    var headingDeg by remember { mutableStateOf(0f) } // 0 = north, cw
     var shakeMag by remember { mutableStateOf(0f) }   // m/s^2, linear |a|
     var gyroMag by remember { mutableStateOf(0f) }    // rad/s |ω|
     var lastEvent by remember { mutableStateOf<LiveEvent?>(null) }
@@ -94,18 +103,28 @@ fun LiveSensorScreen(onBack: (() -> Unit)? = null) {
     var lastVibMs by remember { mutableStateOf(0L) }
     var lastZuptMs by remember { mutableStateOf(0L) }
 
+    // Shake-recording session — a live scrolling graph the judge can watch draw.
+    var recording by remember { mutableStateOf(false) }
+    var recordStartMs by remember { mutableStateOf(0L) }
+    val recordTrace = remember { mutableStateOf<List<Float>>(emptyList()) }
+
+    // Rotation matrices for rotation-vector → azimuth.
+    val rMat = remember { FloatArray(9) }
+    val orient = remember { FloatArray(3) }
+
     DisposableEffect(Unit) {
-        val accel = sm.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
+        val accelLinear = sm.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
             ?: sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
         val gravity = sm.getDefaultSensor(Sensor.TYPE_GRAVITY)
             ?: sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
         val gyro = sm.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
+        val rotVec = sm.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
 
         val listener = object : SensorEventListener {
             override fun onSensorChanged(e: SensorEvent) {
                 when (e.sensor?.type) {
                     Sensor.TYPE_LINEAR_ACCELERATION -> {
-                        val (ax, ay, az) = Triple(e.values[0], e.values[1], e.values[2])
+                        val ax = e.values[0]; val ay = e.values[1]; val az = e.values[2]
                         val mag = sqrt(ax * ax + ay * ay + az * az)
                         shakeMag = 0.7f * shakeMag + 0.3f * mag
                         shakeRing[ringIdx] = mag
@@ -113,7 +132,16 @@ fun LiveSensorScreen(onBack: (() -> Unit)? = null) {
                         if (ringIdx == 0) ringFilled = true
 
                         val now = System.currentTimeMillis()
-                        // Bump: sharp single spike above 8 m/s^2 and 300ms since last.
+
+                        if (recording) {
+                            val cur = recordTrace.value
+                            // Cap ~600 samples (≈10 s at UI rate) — enough to
+                            // show a clear shape, cheap to redraw at 60 fps.
+                            val next = if (cur.size >= 600) cur.drop(1) + mag
+                                else cur + mag
+                            recordTrace.value = next
+                        }
+
                         if (mag > 8f && now - lastBumpMs > 300) {
                             lastBumpMs = now
                             lastEvent = LiveEvent(
@@ -122,7 +150,6 @@ fun LiveSensorScreen(onBack: (() -> Unit)? = null) {
                                 atMs = now,
                             )
                         }
-                        // Sustained vibration: ring average above 3 m/s^2.
                         if (ringFilled) {
                             var sum = 0f
                             for (v in shakeRing) sum += v
@@ -136,7 +163,6 @@ fun LiveSensorScreen(onBack: (() -> Unit)? = null) {
                                 )
                             }
                         }
-                        // Stationary: |a_linear| < 0.15 for >800ms → ZUPT.
                         if (mag < 0.15f) {
                             if (stationarySinceMs == 0L) stationarySinceMs = now
                             else if (now - stationarySinceMs > 800 &&
@@ -154,20 +180,27 @@ fun LiveSensorScreen(onBack: (() -> Unit)? = null) {
                         }
                     }
                     Sensor.TYPE_GRAVITY, Sensor.TYPE_ACCELEROMETER -> {
-                        val (gx, gy, gz) = Triple(e.values[0], e.values[1], e.values[2])
-                        val pitch = Math.toDegrees(
-                            atan2((-gx).toDouble(), hypot(gy.toDouble(), gz.toDouble()))
-                        ).toFloat()
-                        val roll = Math.toDegrees(
-                            atan2(gy.toDouble(), gz.toDouble())
-                        ).toFloat()
+                        val gx = e.values[0]; val gy = e.values[1]; val gz = e.values[2]
+                        val pitch = SensorMath.pitchFromGravity(gx, gy, gz)
+                        val roll = SensorMath.rollFromGravity(gx, gy, gz)
                         pitchDeg = 0.85f * pitchDeg + 0.15f * pitch
                         rollDeg = 0.85f * rollDeg + 0.15f * roll
                     }
                     Sensor.TYPE_GYROSCOPE -> {
-                        val (wx, wy, wz) = Triple(e.values[0], e.values[1], e.values[2])
+                        val wx = e.values[0]; val wy = e.values[1]; val wz = e.values[2]
                         val m = sqrt(wx * wx + wy * wy + wz * wz)
                         gyroMag = 0.7f * gyroMag + 0.3f * m
+                    }
+                    Sensor.TYPE_ROTATION_VECTOR -> {
+                        SensorManager.getRotationMatrixFromVector(rMat, e.values)
+                        SensorManager.getOrientation(rMat, orient)
+                        val az = SensorMath.wrap360(
+                            Math.toDegrees(orient[0].toDouble()).toFloat()
+                        )
+                        // Short-way smoothing so the needle never spins the long
+                        // way when heading crosses 0/360.
+                        val diff = SensorMath.shortWayDelta(headingDeg, az)
+                        headingDeg = SensorMath.wrap360(headingDeg + 0.25f * diff)
                     }
                 }
             }
@@ -175,18 +208,16 @@ fun LiveSensorScreen(onBack: (() -> Unit)? = null) {
             override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
         }
 
-        // Register only what exists. UI rate (~60Hz) is enough for the demo and
-        // saves battery vs GAME rate.
-        accel?.let { sm.registerListener(listener, it, SensorManager.SENSOR_DELAY_UI) }
-        if (gravity !== accel) {
+        accelLinear?.let { sm.registerListener(listener, it, SensorManager.SENSOR_DELAY_UI) }
+        if (gravity !== accelLinear) {
             gravity?.let { sm.registerListener(listener, it, SensorManager.SENSOR_DELAY_UI) }
         }
         gyro?.let { sm.registerListener(listener, it, SensorManager.SENSOR_DELAY_UI) }
+        rotVec?.let { sm.registerListener(listener, it, SensorManager.SENSOR_DELAY_UI) }
 
         onDispose { sm.unregisterListener(listener) }
     }
 
-    // Dismiss event chip after 2.5 s.
     LaunchedEffect(lastEvent?.atMs) {
         val ev = lastEvent ?: return@LaunchedEffect
         val at = ev.atMs
@@ -201,11 +232,31 @@ fun LiveSensorScreen(onBack: (() -> Unit)? = null) {
         else -> MotionState.STRONG
     }
 
+    fun stopAndSaveRecording() {
+        if (!recording) return
+        val trace = recordTrace.value
+        recording = false
+        val durationMs = System.currentTimeMillis() - recordStartMs
+        val peak = trace.maxOrNull() ?: 0f
+        val avg = if (trace.isEmpty()) 0f else trace.sum() / trace.size
+        SignalHistory.append(
+            ctx,
+            SignalHistory.Event(
+                kind = SignalHistory.KIND_SHAKE_RECORDING,
+                atMs = System.currentTimeMillis(),
+                note = "%.1f s · %d samples · peak %.1f m/s² · avg %.2f m/s²".format(
+                    durationMs / 1000.0, trace.size, peak, avg,
+                ),
+            ),
+        )
+    }
+
     Column(
         Modifier
             .fillMaxSize()
             .background(Bg)
             .statusBarsPadding()
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
@@ -231,17 +282,24 @@ fun LiveSensorScreen(onBack: (() -> Unit)? = null) {
             fontWeight = FontWeight.SemiBold,
         )
         M3Text(
-            "RELATIVE MOTION — no GNSS, no map. Tilt, walk, tap — the estimator responds in real time.",
+            "RELATIVE MOTION — no GNSS, no map. Tilt, walk, tap — every reading here " +
+                "is the phone's own sensors, at ~60 Hz.",
             fontFamily = IdrSans,
             color = Mute,
             fontSize = 13.sp,
         )
 
-        // Spirit level — the thing a judge actually reacts to.
-        SpiritLevel(pitchDeg = pitchDeg, rollDeg = rollDeg)
+        SpiritLevel(pitchDeg = pitchDeg, rollDeg = rollDeg, headingDeg = headingDeg)
 
-        // Live numeric readouts.
+        // Compass heading + level + motion — a single row of quick facts.
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            ReadoutCard(
+                label = "HEADING",
+                value = "%03.0f°".format(headingDeg),
+                sub = SensorMath.cardinal(headingDeg),
+                tint = Gnss,
+                modifier = Modifier.weight(1f),
+            )
             ReadoutCard(
                 label = "PITCH",
                 value = "%+.0f°".format(pitchDeg),
@@ -251,7 +309,7 @@ fun LiveSensorScreen(onBack: (() -> Unit)? = null) {
             ReadoutCard(
                 label = "ROLL",
                 value = "%+.0f°".format(rollDeg),
-                sub = "left / right tilt",
+                sub = "left / right",
                 modifier = Modifier.weight(1f),
             )
         }
@@ -266,19 +324,44 @@ fun LiveSensorScreen(onBack: (() -> Unit)? = null) {
             ReadoutCard(
                 label = "SPIN",
                 value = "%.2f".format(gyroMag),
-                sub = "rad/s · gyro magnitude",
+                sub = "rad/s · gyro",
                 modifier = Modifier.weight(1f),
             )
         }
 
-        // Motion state chip.
         MotionStateChip(state = motion)
 
-        // Live shake bar.
         ShakeBar(mag = shakeMag)
 
-        // Event chip.
-        Box(Modifier.fillMaxWidth().height(60.dp), contentAlignment = Alignment.Center) {
+        // Recorder + graph — this is what the judge presses.
+        RecorderCard(
+            recording = recording,
+            trace = recordTrace.value,
+            durationMs = if (recordStartMs == 0L) 0L
+                else System.currentTimeMillis() - recordStartMs,
+            onToggle = {
+                if (recording) {
+                    stopAndSaveRecording()
+                } else {
+                    recordTrace.value = emptyList()
+                    recordStartMs = System.currentTimeMillis()
+                    recording = true
+                    SignalHistory.append(
+                        ctx,
+                        SignalHistory.Event(
+                            kind = SignalHistory.KIND_SESSION_START,
+                            atMs = recordStartMs,
+                            note = "shake recording",
+                        ),
+                    )
+                }
+            },
+        )
+
+        Box(
+            Modifier.fillMaxWidth().height(60.dp),
+            contentAlignment = Alignment.Center,
+        ) {
             lastEvent?.let { EventChip(event = it) }
                 ?: M3Text(
                     "Bump the phone, hold it still, or shake it.",
@@ -291,12 +374,11 @@ fun LiveSensorScreen(onBack: (() -> Unit)? = null) {
 }
 
 // ---------------------------------------------------------------------------
-// Spirit level — the causal element
+// Spirit level with an inset compass needle
 // ---------------------------------------------------------------------------
 
 @Composable
-private fun SpiritLevel(pitchDeg: Float, rollDeg: Float) {
-    // Ball position: map ±45° → ±1.0 (clamped).
+private fun SpiritLevel(pitchDeg: Float, rollDeg: Float, headingDeg: Float) {
     val nx = (rollDeg / 45f).coerceIn(-1f, 1f)
     val ny = (pitchDeg / 45f).coerceIn(-1f, 1f)
 
@@ -308,6 +390,7 @@ private fun SpiritLevel(pitchDeg: Float, rollDeg: Float) {
     }
 
     val level = hypot(nx, ny) < 0.05f
+    val needleColor = Gnss
 
     Box(
         Modifier
@@ -325,16 +408,40 @@ private fun SpiritLevel(pitchDeg: Float, rollDeg: Float) {
             val cy = h / 2f
             val r = minOf(w, h) * 0.42f
 
-            // Outer ring.
+            // Outer ring + scale.
             drawCircle(color = Line, radius = r, center = Offset(cx, cy), style = Stroke(width = 2f))
-            // Inner rings for scale (15°, 30°).
             drawCircle(color = Line.copy(alpha = 0.45f), radius = r * (15f / 45f), center = Offset(cx, cy), style = Stroke(width = 1f))
             drawCircle(color = Line.copy(alpha = 0.45f), radius = r * (30f / 45f), center = Offset(cx, cy), style = Stroke(width = 1f))
-            // Crosshair.
             drawLine(Line.copy(alpha = 0.6f), Offset(cx - r, cy), Offset(cx + r, cy), 1f)
             drawLine(Line.copy(alpha = 0.6f), Offset(cx, cy - r), Offset(cx, cy + r), 1f)
 
-            // Ball.
+            // Compass needle — north tip and south tail, driven by SensorMath so
+            // the direction the needle swings is unit-tested (SensorMathTest).
+            val northLen = r * 0.55f
+            val (nx, ny) = SensorMath.needleTip(headingDeg, northLen)
+            val (sx, sy) = SensorMath.needleTip(headingDeg + 180f, northLen * 0.55f)
+            val northTip = Offset(cx + nx, cy + ny)
+            val southTip = Offset(cx + sx, cy + sy)
+            // South tail (muted).
+            drawLine(Mute, Offset(cx, cy), southTip, 3f)
+            // North arrowhead — a small triangle at the tip, base perpendicular
+            // to the needle. Base offset is the needle unit vector rotated 90°.
+            val ux = nx / northLen
+            val uy = ny / northLen
+            val baseLen = r * 0.06f
+            val leftAx = cx + (nx * 0.82f) + (-uy) * baseLen
+            val leftAy = cy + (ny * 0.82f) + (ux) * baseLen
+            val rightAx = cx + (nx * 0.82f) - (-uy) * baseLen
+            val rightAy = cy + (ny * 0.82f) - (ux) * baseLen
+            val nPath = Path().apply {
+                moveTo(northTip.x, northTip.y)
+                lineTo(leftAx, leftAy)
+                lineTo(rightAx, rightAy)
+                close()
+            }
+            drawPath(nPath, needleColor)
+
+            // Ball (tilt).
             val bx = cx + ballX.value * r
             val by = cy + ballY.value * r
             val ballColor: Color = if (level) Accent else Amber
@@ -342,8 +449,10 @@ private fun SpiritLevel(pitchDeg: Float, rollDeg: Float) {
             drawCircle(color = ballColor, radius = 18f, center = Offset(bx, by))
         }
 
-        // Center label.
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(top = 6.dp),
+        ) {
             M3Text(
                 if (level) "LEVEL" else "TILTED",
                 fontFamily = IdrMono,
@@ -353,7 +462,7 @@ private fun SpiritLevel(pitchDeg: Float, rollDeg: Float) {
                 fontWeight = FontWeight.Bold,
             )
             M3Text(
-                "gravity vector → tilt",
+                "gravity + rotation-vector",
                 fontFamily = IdrSans,
                 color = Mute,
                 fontSize = 10.sp,
@@ -363,7 +472,113 @@ private fun SpiritLevel(pitchDeg: Float, rollDeg: Float) {
 }
 
 // ---------------------------------------------------------------------------
-// Small components
+// Recorder card — Record / Stop + live scrolling graph
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun RecorderCard(
+    recording: Boolean,
+    trace: List<Float>,
+    durationMs: Long,
+    onToggle: () -> Unit,
+) {
+    val tint = if (recording) Danger else Accent
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(Bg2)
+            .border(1.dp, tint.copy(alpha = 0.55f), RoundedCornerShape(12.dp))
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Row(
+            Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Column(Modifier.weight(1f)) {
+                M3Text(
+                    if (recording) "RECORDING · SHAKE TRACE" else "SHAKE RECORDER",
+                    fontFamily = IdrMono,
+                    color = tint,
+                    fontSize = 11.sp,
+                    letterSpacing = 1.2.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+                M3Text(
+                    if (recording) "%.1f s · %d samples".format(durationMs / 1000.0, trace.size)
+                    else "Tap RECORD, shake the phone, tap STOP. Saved to Signal history.",
+                    fontFamily = IdrSans,
+                    color = Mute,
+                    fontSize = 12.sp,
+                )
+            }
+            M3Text(
+                if (recording) "STOP" else "RECORD",
+                modifier = Modifier
+                    .defaultMinSize(minHeight = 44.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(tint.copy(alpha = 0.20f))
+                    .border(1.dp, tint, RoundedCornerShape(10.dp))
+                    .clickable(onClick = onToggle)
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .semantics {
+                        contentDescription = if (recording) "Stop recording"
+                        else "Start recording shake trace"
+                    },
+                fontFamily = IdrMono,
+                color = tint,
+                fontSize = 12.sp,
+                letterSpacing = 1.4.sp,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+
+        // Live graph area.
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(120.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(Bg)
+                .border(1.dp, Line, RoundedCornerShape(8.dp)),
+        ) {
+            Canvas(Modifier.fillMaxSize()) {
+                val w = size.width
+                val h = size.height
+
+                // Y axis: 0 → max(peak, 8 m/s²).
+                val peak = max(8f, trace.maxOrNull() ?: 8f)
+                fun yFor(v: Float): Float = h - (v / peak).coerceIn(0f, 1f) * h * 0.9f - h * 0.05f
+
+                // Baselines: 3 m/s² (vibration threshold) and 8 (bump).
+                val vibY = yFor(3f)
+                val bumpY = yFor(8f)
+                drawLine(Line.copy(alpha = 0.6f), Offset(0f, vibY), Offset(w, vibY), 1f)
+                drawLine(Line.copy(alpha = 0.6f), Offset(0f, bumpY), Offset(w, bumpY), 1f)
+
+                if (trace.isEmpty()) return@Canvas
+                val n = trace.size
+                val step = if (n <= 1) w else w / (n - 1).toFloat()
+                val path = Path().apply {
+                    moveTo(0f, yFor(trace[0]))
+                    for (i in 1 until n) {
+                        lineTo(i * step, yFor(trace[i]))
+                    }
+                }
+                drawPath(
+                    path,
+                    color = Accent,
+                    style = Stroke(width = 2.5f),
+                )
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Small components (unchanged apart from formatting)
 // ---------------------------------------------------------------------------
 
 @Composable
@@ -384,8 +599,8 @@ private fun ReadoutCard(
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         M3Text(label, fontFamily = IdrMono, color = Mute, fontSize = 10.sp, letterSpacing = 1.2.sp)
-        M3Text(value, fontFamily = IdrMono, color = tint, fontSize = 26.sp, fontWeight = FontWeight.Bold)
-        M3Text(sub, fontFamily = IdrSans, color = Mute, fontSize = 11.sp)
+        M3Text(value, fontFamily = IdrMono, color = tint, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        M3Text(sub, fontFamily = IdrSans, color = Mute, fontSize = 10.sp)
     }
 }
 
@@ -420,12 +635,7 @@ private fun ShakeBar(mag: Float) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             M3Text("SHAKE METER", fontFamily = IdrMono, color = Mute, fontSize = 10.sp, letterSpacing = 1.2.sp)
-            M3Text(
-                "%.1f m/s²".format(mag),
-                fontFamily = IdrMono,
-                color = tint,
-                fontSize = 10.sp,
-            )
+            M3Text("%.1f m/s²".format(mag), fontFamily = IdrMono, color = tint, fontSize = 10.sp)
         }
         Box(
             Modifier
@@ -437,7 +647,7 @@ private fun ShakeBar(mag: Float) {
             Canvas(Modifier.fillMaxSize()) {
                 drawRect(
                     color = tint,
-                    size = androidx.compose.ui.geometry.Size(size.width * pct, size.height),
+                    size = Size(size.width * pct, size.height),
                 )
             }
         }

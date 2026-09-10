@@ -165,6 +165,7 @@ private fun EventRow(event: SignalHistory.Event, timestamp: String) {
         SignalHistory.KIND_GNSS_REACQUIRED -> "GNSS REACQUIRED" to Gnss
         SignalHistory.KIND_SESSION_START -> "SESSION START" to Accent
         SignalHistory.KIND_SESSION_END -> "SESSION END" to Mute
+        SignalHistory.KIND_SHAKE_RECORDING -> "SHAKE TRACE" to Accent
         else -> event.kind.uppercase() to Mute
     }
     Row(

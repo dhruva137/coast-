@@ -28,6 +28,7 @@ object SignalHistory {
     const val KIND_GNSS_REACQUIRED = "gnss_reacquired"
     const val KIND_SESSION_START = "session_start"
     const val KIND_SESSION_END = "session_end"
+    const val KIND_SHAKE_RECORDING = "shake_recording"
 
     data class Event(
         val kind: String,

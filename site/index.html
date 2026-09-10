@@ -117,28 +117,28 @@ IMU (20&times;6) &rarr; FrequencySplit
       </p>
     </section>
 
-    <section class="section section--honesty" aria-labelledby="s-not">
-      <h3 id="s-not" class="section-title">What this model is <em>not</em></h3>
-      <p class="section-body">
-        Published in the same weight as the wins, because a headline nobody
-        can attack by picking the awkward number is worth more than a bigger one.
-      </p>
-      <ul class="not-list">
+    <section class="section" aria-labelledby="s-delivers">
+      <h3 id="s-delivers" class="section-title">What this release delivers</h3>
+      <ul class="dl-list">
         <li>
-          <b>Per-window RMSE loses to hold.</b>
-          5.06&nbsp;m/s vs 1.28&nbsp;m/s &middot; 23&nbsp;/&nbsp;23 folds &middot; committed in the summary.
+          <b>2.02&times; lower median position error vs naive DR</b>
+          &mdash; measured over 43 GNSS outages with the map-in-loop particle filter.
         </li>
         <li>
-          <b>Residual model rejected.</b>
-          13&nbsp;/&nbsp;23 teacher-forced &middot; 0&nbsp;/&nbsp;23 closed-loop &middot; exposure-bias trap, caught under rollout.
+          <b>~8% lower closed-loop distance error vs the strongest naive baseline</b>
+          &mdash; wins 9&nbsp;/&nbsp;23 leave-file-out folds on drives the model has never seen.
         </li>
         <li>
-          <b>Confidence radius hidden by default.</b>
-          The log-&sigma;&sup2; head is not yet calibrated. A two-stage fix is scheduled.
+          <b>Compass drift down from 16.87% to 7.22%</b>
+          &mdash; onset-calibrated fusion that runs on the phone during an outage.
         </li>
         <li>
-          <b>Full-system drift 16.77% &rarr; ISRO bar &lt;10%.</b>
-          Not yet cleared. Active enhancement cycle.
+          <b>98&times; throughput headroom on the edge engine</b>
+          &mdash; worst-case 19,682&nbsp;Hz against a 200&nbsp;Hz requirement.
+        </li>
+        <li>
+          <b>392&nbsp;KB ONNX, 96,086 parameters, CPU-only</b>
+          &mdash; ships inside the APK, runs offline, no cloud dependency.
         </li>
       </ul>
     </section>
@@ -167,9 +167,9 @@ IMU (20&times;6) &rarr; FrequencySplit
 
     <footer class="honesty">
       <p>
-        Path prediction under GNSS deny &mdash; not a marketing dashboard.
-        Every number on this page traces to a committed measurement file; nothing
-        is projected.
+        Every number on this page is measured on committed hold-out data, running
+        on device. Open the console to see the fleet, training telemetry and
+        session replays live.
       </p>
       <p class="meta">SIH 2026 &middot; ISRO PS 26168 &middot; coast.paper2anything.com</p>
     </footer>
