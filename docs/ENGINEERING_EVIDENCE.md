@@ -62,6 +62,23 @@ manifold interface in this phase; the committed report is therefore unchanged
 by construction. `tests/test_manifold.py::test_mapfilter_headline_unchanged`
 pins those floats.
 
+## Filter-trace export (Phase 3 engine viz)
+
+Per-step particle cloud for the `/engine` canvas — not a headline number.
+
+```text
+python lab/stress/export_filter_trace.py
+python lab/stress/export_filter_trace.py --drive S-M --t0 1830 --particles 200 --show 180
+python lab/stress/export_filter_trace.py --synthetic
+```
+
+Writes `lab/stress/results/traces/<drive>_<t0>.json`. Real exports set
+`meta.honesty: "REAL"` (IO-VNBD + midlands OSM + `RoadParticleFilter`). If data
+or graph is missing, the script writes a tiny `honesty: "SYNTHETIC"` plumbing
+trace instead — never invent particles labelled as real. Particles are
+downsampled (`particles_shown` / `particles_total`); `n_eff` is the pre-resample
+effective sample size. Do not resurrect spread-based confidence radii.
+
 ## Related product docs
 
 - `docs/ARCHITECTURE_V2.md` — map-in-loop doctrine
