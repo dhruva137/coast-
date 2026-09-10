@@ -10,10 +10,14 @@ import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicLong
 
 /**
- * Demo-only LAN POST of the current estimate to the presenter's laptop.
+ * Demo-only LAN POST of the current estimate to the presenter's laptop
+ * (`python -m web.tracker_server` on port 8787).
  *
  * Fire-and-forget on a background executor; never blocks the estimator thread.
  * Failures are silent. Address is presenter-entered (Prefs), never a cloud host.
+ *
+ * Console QR pairing lives in [in.sih26168.idr.pair] for all flavours — this
+ * class stays tracker-only and must not appear in the standard APK.
  */
 internal class LanUploader {
     private val executor = Executors.newSingleThreadExecutor { r ->
@@ -60,7 +64,7 @@ internal class LanUploader {
                 }
                 try {
                     conn.outputStream.use { it.write(payload.toByteArray(Charsets.UTF_8)) }
-                    conn.responseCode // drain status; ignore value
+                    conn.responseCode
                 } finally {
                     conn.disconnect()
                 }
@@ -76,7 +80,6 @@ internal class LanUploader {
     private fun looksLikeLanHost(host: String): Boolean {
         if (host.length > 64) return false
         if (host.contains('/') || host.contains(' ') || host.contains(':')) return false
-        // Presenter-entered hostname or dotted IPv4; reject obvious cloud URLs.
         if (host.contains("://")) return false
         return HOST_RE.matches(host)
     }

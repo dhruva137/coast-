@@ -83,6 +83,8 @@ import `in`.sih26168.idr.data.NavMode
 import `in`.sih26168.idr.data.OriginSource
 import `in`.sih26168.idr.data.Prefs
 import `in`.sih26168.idr.demo.TrackerHooks
+import `in`.sih26168.idr.pair.PairingStore
+import `in`.sih26168.idr.pair.PairingUploader
 import `in`.sih26168.idr.record.RecordService
 import `in`.sih26168.idr.record.SessionLastFix
 import `in`.sih26168.idr.record.SessionStore
@@ -107,8 +109,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-/** Peek height: drag handle + speed row + Start/Stop (+ Demo Mode when idle). */
-private val DriveSheetPeek = 188.dp
+/** Peek height: drag handle + speed row + Start/Stop. */
+private val DriveSheetPeek = 176.dp
 
 /**
  * Map-first Drive — Google Maps / Uber-driver layout.
@@ -124,7 +126,7 @@ fun DriveScreen(
     permsOk: Boolean,
     coarseOnly: Boolean = false,
     requestPerms: () -> Unit,
-    onOpenHelp: () -> Unit,
+    onOpenPairing: () -> Unit = {},
     onStartDemo: (() -> Unit)? = null,
 ) {
     val ctx = LocalContext.current
@@ -139,6 +141,7 @@ fun DriveScreen(
     val ghostTrack by bus.ghostTrack.collectAsStateWithLifecycle()
     val showGhost by bus.showGhost.collectAsStateWithLifecycle()
     val zuptTabletop by bus.zuptTabletop.collectAsStateWithLifecycle()
+    val forceStationary by bus.forceStationary.collectAsStateWithLifecycle()
     val naiveGhostSpeed by bus.naiveGhostSpeedMps.collectAsStateWithLifecycle()
     val coastSpeed by bus.coastSpeedMps.collectAsStateWithLifecycle()
     val live = mode == AppMode.NAVIGATE
@@ -153,16 +156,71 @@ fun DriveScreen(
     var recenterTick by remember { mutableIntStateOf(0) }
     var prevNavMode by remember { mutableStateOf(NavMode.IDLE) }
     var showHandover by remember { mutableStateOf(false) }
+    var showReacquire by remember { mutableStateOf(false) }
+
+    // Session start / end bookends. Skip the first composition so opening Drive
+    // does not fake a SESSION_END while live is still false.
+    var sessionBookendReady by remember { mutableStateOf(false) }
+    LaunchedEffect(live) {
+        if (!sessionBookendReady) {
+            sessionBookendReady = true
+            if (!live) return@LaunchedEffect
+        }
+        SignalHistory.append(
+            ctx,
+            SignalHistory.Event(
+                kind = if (live) SignalHistory.KIND_SESSION_START else SignalHistory.KIND_SESSION_END,
+                atMs = System.currentTimeMillis(),
+                lat = hud.lat.takeIf { it.isFinite() },
+                lon = hud.lon.takeIf { it.isFinite() },
+            ),
+        )
+    }
 
     LaunchedEffect(navMode, live, blackout) {
+        val coastNow = navMode == NavMode.DEAD_RECKONING || navMode == NavMode.RELATIVE
+        val coastWas = prevNavMode == NavMode.DEAD_RECKONING || prevNavMode == NavMode.RELATIVE
         val enteredIdr = live && prevNavMode == NavMode.GNSS &&
-            (navMode == NavMode.DEAD_RECKONING || navMode == NavMode.RELATIVE || blackout)
+            (coastNow || blackout)
         val demoColdStart = demoActive && live && blackout &&
             prevNavMode == NavMode.IDLE && navMode != NavMode.GNSS
-        if (enteredIdr || demoColdStart) {
-            showHandover = true
-            kotlinx.coroutines.delay(3200)
-            showHandover = false
+        val reacquiredGnss = live && !blackout && navMode == NavMode.GNSS && coastWas
+        when {
+            enteredIdr || demoColdStart -> {
+                // Persist the loss event with the last absolute fix.
+                SignalHistory.append(
+                    ctx,
+                    SignalHistory.Event(
+                        kind = SignalHistory.KIND_GNSS_LOST,
+                        atMs = System.currentTimeMillis(),
+                        lat = hud.lat.takeIf { it.isFinite() },
+                        lon = hud.lon.takeIf { it.isFinite() },
+                        nSats = hud.nSats.takeIf { it > 0 },
+                        note = if (demoColdStart) "cold-start under blackout"
+                            else "GNSS handover",
+                    ),
+                )
+                showHandover = true
+                showReacquire = false
+                kotlinx.coroutines.delay(3200)
+                showHandover = false
+            }
+            reacquiredGnss -> {
+                SignalHistory.append(
+                    ctx,
+                    SignalHistory.Event(
+                        kind = SignalHistory.KIND_GNSS_REACQUIRED,
+                        atMs = System.currentTimeMillis(),
+                        lat = hud.lat.takeIf { it.isFinite() },
+                        lon = hud.lon.takeIf { it.isFinite() },
+                        nSats = hud.nSats.takeIf { it > 0 },
+                    ),
+                )
+                showReacquire = true
+                showHandover = false
+                kotlinx.coroutines.delay(3200)
+                showReacquire = false
+            }
         }
         prevNavMode = navMode
     }
@@ -196,9 +254,13 @@ fun DriveScreen(
         else -> "MOVING"
     }
 
-    val speedText by remember {
-        derivedStateOf { if (hud.speedMps.isFinite()) "%.0f".format(hud.speedMps * 3.6) else "--" }
+    val useKmh = prefs.useKmh
+    val speedText = if (hud.speedMps.isFinite()) {
+        if (useKmh) "%.0f".format(hud.speedMps * 3.6) else "%.1f".format(hud.speedMps)
+    } else {
+        "--"
     }
+    val speedUnit = if (useKmh) "km/h" else "m/s"
     val distText by remember { derivedStateOf { distanceValue(hud.distanceM) } }
     val distUnit by remember { derivedStateOf { distanceUnit(hud.distanceM) } }
 
@@ -223,6 +285,7 @@ fun DriveScreen(
                 DriveSheetBody(
                 live = live,
                 speedText = speedText,
+                speedUnit = speedUnit,
                 distText = distText,
                 distUnit = distUnit,
                 navMode = navMode,
@@ -232,22 +295,14 @@ fun DriveScreen(
                 notifsOk = notifsOk,
                 requestNotifs = requestNotifs,
                 requestPerms = requestPerms,
-                replayEnabled = replayEnabled,
-                demoActive = demoActive,
-                onToggleReplay = {
-                    val next = !replayEnabled
-                    bus.setReplayEnabled(next)
-                    prefs.replayMode = next
-                    if (!next) DemoMode.clear(prefs, bus)
-                },
                 onShowOrigin = { showOriginDialog = true },
-                onStartDemo = onStartDemo,
+                onOpenPairing = onOpenPairing,
             )
         },
     ) { pad ->
         Box(Modifier.fillMaxSize()) {
             DriveMapPanel(
-                hud = hud,
+                bus = bus,
                 track = track,
                 navMode = navMode,
                 modifier = Modifier.fillMaxSize(),
@@ -287,34 +342,30 @@ fun DriveScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Box(Modifier.fillMaxWidth()) {
-                    Text(
-                        "HELP",
-                        modifier = Modifier
-                            .align(Alignment.CenterStart)
-                            .defaultMinSize(minWidth = 44.dp, minHeight = 44.dp)
-                            .clip(RoundedCornerShape(99.dp))
-                            .background(Bg2.copy(alpha = 0.88f))
-                            .border(1.dp, Line, RoundedCornerShape(99.dp))
-                            .semantics { contentDescription = "Open help" }
-                            .clickable(onClick = onOpenHelp)
-                            .padding(horizontal = 14.dp, vertical = 12.dp),
-                        color = Mute,
-                        fontFamily = IdrMono,
-                        fontSize = 11.sp,
-                        textAlign = TextAlign.Center,
-                    )
-                    ModePill(
-                        navMode = navMode,
-                        nSats = hud.nSats,
-                        live = live,
-                        blackout = blackout,
-                        modifier = Modifier.align(Alignment.Center),
-                    )
-                }
+                // Just the mode pill at the top — no competing labels.
+                // Demo mode is entered from Settings, not from the map.
+                ModePill(
+                    navMode = navMode,
+                    nSats = hud.nSats,
+                    live = live,
+                    blackout = blackout,
+                )
 
                 if (live) {
-                    MotionChip(label = motionLabel, speedKmh = speedText)
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        MotionChip(label = motionLabel, speedText = speedText, speedUnit = speedUnit)
+                        HoldStillChip(
+                            held = forceStationary,
+                            onToggle = {
+                                val next = !forceStationary
+                                bus.setForceStationary(next)
+                                prefs.forceStationary = next
+                            },
+                        )
+                    }
                 }
 
                 // In-frame honesty label — same visual layer as the map.
@@ -359,22 +410,51 @@ fun DriveScreen(
                 }
 
                 if (showHandover) {
-                    HandoverBanner()
+                    HandoverBanner(reacquire = false)
+                }
+                if (showReacquire) {
+                    HandoverBanner(reacquire = true)
                 }
 
-                if (TrackerHooks.bannerVisible(prefs)) {
-                    Text(
-                        "Streaming to laptop · LAN",
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(99.dp))
-                            .background(Bg2.copy(alpha = 0.92f))
-                            .border(1.dp, Accent.copy(alpha = 0.55f), RoundedCornerShape(99.dp))
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
-                        color = Accent,
-                        fontFamily = IdrMono,
-                        fontSize = 10.sp,
-                        letterSpacing = 1.0.sp,
-                    )
+                // Paired indicator — only when actively streaming to a console.
+                // Not-paired state moves into the bottom sheet to keep the map clean.
+                run {
+                    val pairStore = remember { PairingStore(ctx) }
+                    var pairTick by remember { mutableIntStateOf(0) }
+                    val consolePaired = remember(pairTick) { pairStore.paired }
+                    val pairLabel = remember(pairTick) {
+                        pairStore.label.ifBlank { "console" }
+                    }
+                    if (consolePaired) {
+                        Row(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(99.dp))
+                                .background(Bg2.copy(alpha = 0.92f))
+                                .border(1.dp, Danger.copy(alpha = 0.7f), RoundedCornerShape(99.dp))
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                                .semantics {
+                                    contentDescription =
+                                        "Paired with $pairLabel. Sharing live position."
+                                },
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Box(
+                                Modifier
+                                    .size(8.dp)
+                                    .clip(CircleShape)
+                                    .background(Danger),
+                            )
+                            Text(
+                                "PAIRED · $pairLabel",
+                                color = Danger,
+                                fontFamily = IdrMono,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 1.0.sp,
+                            )
+                        }
+                    }
                 }
 
                 DeviceWarningLine(device)
@@ -514,6 +594,7 @@ private fun DriveFab(
 private fun ColumnScope.DriveSheetBody(
     live: Boolean,
     speedText: String,
+    speedUnit: String,
     distText: String,
     distUnit: String,
     navMode: NavMode,
@@ -523,14 +604,21 @@ private fun ColumnScope.DriveSheetBody(
     notifsOk: Boolean,
     requestNotifs: () -> Unit,
     requestPerms: () -> Unit,
-    replayEnabled: Boolean,
-    demoActive: Boolean,
-    onToggleReplay: () -> Unit,
     onShowOrigin: () -> Unit,
-    onStartDemo: (() -> Unit)?,
+    onOpenPairing: () -> Unit = {},
 ) {
     val ctx = LocalContext.current
     val prefs = remember { Prefs(ctx) }
+    val pairStore = remember { PairingStore(ctx) }
+    var pairTick by remember { mutableIntStateOf(0) }
+    val consolePaired = remember(pairTick) { pairStore.paired }
+    val pairLabel = remember(pairTick) { pairStore.label.ifBlank { "console" } }
+    val replayActive by bus.replayActive.collectAsStateWithLifecycle()
+    val replayEnabled by bus.replayEnabled.collectAsStateWithLifecycle()
+    // Replay-visible speed must never share the exact visual layer of a live
+    // reading. Colour + inline REPLAY badge below make a screenshot self-labelling.
+    val isReplaySpeed = prefs.demoMode || replayActive || (replayEnabled && live)
+    val speedColor = if (isReplaySpeed) Amber else Fg
     Column(
         Modifier
             .fillMaxWidth()
@@ -542,11 +630,29 @@ private fun ColumnScope.DriveSheetBody(
         // Peek content: speed + mode + Start/Stop
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Column {
-                Text("SPEED", fontFamily = IdrMono, color = Mute, fontSize = 10.sp, letterSpacing = 1.4.sp)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("SPEED", fontFamily = IdrMono, color = Mute, fontSize = 10.sp, letterSpacing = 1.4.sp)
+                    if (isReplaySpeed) {
+                        Text(
+                            "REPLAY",
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(Amber.copy(alpha = 0.22f))
+                                .border(1.dp, Amber, RoundedCornerShape(4.dp))
+                                .padding(horizontal = 5.dp, vertical = 1.dp)
+                                .semantics { contentDescription = "Replay speed — not live" },
+                            fontFamily = IdrMono,
+                            color = Amber,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.0.sp,
+                        )
+                    }
+                }
                 Row(verticalAlignment = Alignment.Bottom) {
-                    Text(speedText, fontFamily = IdrMono, color = Fg, fontSize = 34.sp, fontWeight = FontWeight.Bold)
+                    Text(speedText, fontFamily = IdrMono, color = speedColor, fontSize = 34.sp, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.width(4.dp))
-                    Text("km/h", fontFamily = IdrMono, color = Mute, fontSize = 12.sp, modifier = Modifier.padding(bottom = 6.dp))
+                    Text(speedUnit, fontFamily = IdrMono, color = Mute, fontSize = 12.sp, modifier = Modifier.padding(bottom = 6.dp))
                 }
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -583,20 +689,6 @@ private fun ColumnScope.DriveSheetBody(
                         modifier = Modifier.padding(bottom = 6.dp),
                     )
                 }
-            }
-        }
-
-        if (!live && onStartDemo != null && !demoActive) {
-            Button(
-                onClick = onStartDemo,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp)
-                    .semantics { contentDescription = "Start Demo Mode" },
-                colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Bg),
-                shape = RoundedCornerShape(12.dp),
-            ) {
-                Text("DEMO MODE", fontFamily = IdrMono, letterSpacing = 1.4.sp, fontWeight = FontWeight.Bold)
             }
         }
 
@@ -650,16 +742,68 @@ private fun ColumnScope.DriveSheetBody(
                     Text("Clear mark", fontFamily = IdrSans, color = Mute, fontSize = 12.sp)
                 }
             }
-            SecondaryButton(
-                if (replayEnabled) "REPLAY ON" else "REPLAY",
-                Modifier.fillMaxWidth(),
-                onToggleReplay,
-            )
         }
 
         // Accuracy / uncertainty card is debug-only (broken confidence signal).
         if (prefs.showUncertaintyRadius && navMode != NavMode.IDLE) {
             AccuracyCard(hud)
+        }
+
+        // Console pairing — lives inside the sheet so the map stays clean.
+        Text(
+            "CONSOLE",
+            fontFamily = IdrMono,
+            color = Mute,
+            fontSize = 11.sp,
+            letterSpacing = 1.2.sp,
+            modifier = Modifier.padding(top = 4.dp),
+        )
+        if (consolePaired) {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Bg.copy(alpha = 0.5f))
+                    .border(1.dp, Line, RoundedCornerShape(10.dp))
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Box(
+                    Modifier
+                        .size(10.dp)
+                        .clip(CircleShape)
+                        .background(Danger),
+                )
+                Text(
+                    "PAIRED · $pairLabel",
+                    modifier = Modifier.weight(1f),
+                    color = Fg,
+                    fontFamily = IdrMono,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.8.sp,
+                )
+                Text(
+                    "UNPAIR",
+                    modifier = Modifier
+                        .defaultMinSize(minHeight = 40.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .clickable {
+                            PairingUploader.unpair(ctx)
+                            pairTick++
+                        }
+                        .padding(horizontal = 10.dp, vertical = 8.dp)
+                        .semantics { contentDescription = "Unpair from console" },
+                    color = Danger,
+                    fontFamily = IdrMono,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.8.sp,
+                )
+            }
+        } else {
+            SecondaryButton("PAIR WITH CONSOLE", Modifier.fillMaxWidth(), onOpenPairing)
         }
 
         Text(
@@ -747,20 +891,20 @@ private fun ZuptTabletopOverlay(
 }
 
 @Composable
-private fun MotionChip(label: String, speedKmh: String) {
+private fun MotionChip(label: String, speedText: String, speedUnit: String) {
     val tint = when (label) {
         "MOVING" -> Accent
         "STILL" -> Mute
         else -> Mute
     }
     Text(
-        "$label  ·  $speedKmh km/h",
+        "$label  ·  $speedText $speedUnit",
         modifier = Modifier
             .clip(RoundedCornerShape(99.dp))
             .background(Bg2.copy(alpha = 0.92f))
             .border(1.dp, tint.copy(alpha = 0.55f), RoundedCornerShape(99.dp))
             .padding(horizontal = 12.dp, vertical = 6.dp)
-            .semantics { contentDescription = "Motion $label, speed $speedKmh kilometers per hour" },
+            .semantics { contentDescription = "Motion $label, speed $speedText $speedUnit" },
         color = tint,
         fontFamily = IdrMono,
         fontSize = 11.sp,
@@ -768,8 +912,11 @@ private fun MotionChip(label: String, speedKmh: String) {
     )
 }
 
+private const val ReacquireHandover = "COAST  →  GPS  ·  reacquired"
+private const val ReacquireSemantics = "Coast to GPS reacquired"
+
 @Composable
-private fun HandoverBanner() {
+private fun HandoverBanner(reacquire: Boolean) {
     val pulse = rememberInfiniteTransition(label = "handoverPulse")
     val alpha by pulse.animateFloat(
         initialValue = 1f,
@@ -777,20 +924,24 @@ private fun HandoverBanner() {
         animationSpec = infiniteRepeatable(tween(450), RepeatMode.Reverse),
         label = "handoverAlpha",
     )
+    val fill = if (reacquire) Gnss else Amber
+    val headline = if (reacquire) ReacquireHandover else "◼ GPS  →  ◆ COAST"
+    val sub = if (reacquire) "GNSS lock restored" else DemoMode.HANDOVER
+    val desc = if (reacquire) ReacquireSemantics else DemoMode.HANDOVER
     Column(
         Modifier
             .fillMaxWidth()
             .alpha(alpha)
             .clip(RoundedCornerShape(12.dp))
-            .background(Amber)
+            .background(fill)
             .border(3.dp, Fg, RoundedCornerShape(12.dp))
             .padding(horizontal = 14.dp, vertical = 14.dp)
-            .semantics { contentDescription = DemoMode.HANDOVER },
+            .semantics { contentDescription = desc },
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Text(
-            "◼ GPS  →  ◆ COAST",
+            headline,
             color = Bg,
             fontFamily = IdrMono,
             fontSize = 18.sp,
@@ -799,7 +950,7 @@ private fun HandoverBanner() {
             textAlign = TextAlign.Center,
         )
         Text(
-            DemoMode.HANDOVER,
+            sub,
             color = Bg,
             fontFamily = IdrSans,
             fontSize = 14.sp,
@@ -807,6 +958,34 @@ private fun HandoverBanner() {
             textAlign = TextAlign.Center,
         )
     }
+}
+
+@Composable
+private fun HoldStillChip(held: Boolean, onToggle: () -> Unit) {
+    val tint = if (held) Amber else Mute
+    val label = if (held) "I AM STATIONARY" else "HOLD STILL"
+    Text(
+        label,
+        modifier = Modifier
+            .defaultMinSize(minHeight = 44.dp)
+            .clip(RoundedCornerShape(99.dp))
+            .background(if (held) Amber.copy(alpha = 0.22f) else Bg2.copy(alpha = 0.92f))
+            .border(1.dp, tint.copy(alpha = 0.7f), RoundedCornerShape(99.dp))
+            .semantics {
+                contentDescription = if (held) {
+                    "I am stationary. Force hold on. Tap to resume coast."
+                } else {
+                    "Hold still. Force stationary hold off. Tap to zero coast."
+                }
+            }
+            .clickable(onClick = onToggle)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        color = tint,
+        fontFamily = IdrMono,
+        fontSize = 11.sp,
+        letterSpacing = 1.0.sp,
+        fontWeight = FontWeight.Bold,
+    )
 }
 
 @Composable

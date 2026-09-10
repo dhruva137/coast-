@@ -5,9 +5,8 @@ import `in`.sih26168.idr.data.HudState
 import `in`.sih26168.idr.data.Prefs
 
 /**
- * `standard` flavor: no LAN uploader. Keeps the F8 claim that no position
- * data ever leaves the device. Prefs keys may still exist for UI, but this
- * is a hard no-op.
+ * `standard` flavor: no [LanUploader]. Console QR pairing still works via
+ * [in.sih26168.idr.pair] in main — that path is not gated on this flavor.
  */
 object TrackerHooks {
     fun onHud(context: Context, hud: HudState, session: String) {

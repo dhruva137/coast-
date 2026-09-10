@@ -5,9 +5,9 @@ import `in`.sih26168.idr.data.HudState
 import `in`.sih26168.idr.data.Prefs
 
 /**
- * `tracker` flavor bridge: optional LAN stream when Prefs say so.
- * Wired from [in.sih26168.idr.record.RecordService] off the HUD publish path;
- * the uploader itself hops to a background thread immediately.
+ * `tracker` flavor bridge: optional LAN stream when Prefs say so
+ * (`python -m web.tracker_server`). Console QR pairing is in
+ * [in.sih26168.idr.pair] for every flavour — not here.
  */
 object TrackerHooks {
     private val uploader = LanUploader()

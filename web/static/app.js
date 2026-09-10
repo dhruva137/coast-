@@ -8,9 +8,10 @@
   var VIEWS = [
     { id: "fleet", label: "Fleet", key: "1" },
     { id: "engine", label: "Engine", key: "2" },
-    { id: "training", label: "Training", key: "3" },
-    { id: "evidence", label: "Evidence", key: "4" },
-    { id: "sessions", label: "Sessions", key: "5" },
+    { id: "model", label: "Model", key: "3" },
+    { id: "training", label: "Training", key: "4" },
+    { id: "evidence", label: "Evidence", key: "5" },
+    { id: "sessions", label: "Sessions", key: "6" },
   ];
 
   var state = {
@@ -294,6 +295,8 @@
 
   function setConsoleActive(on) {
     state.consoleActive = !!on;
+    document.body.classList.toggle("is-console", state.consoleActive);
+    document.body.classList.toggle("is-door", !state.consoleActive);
     if (!state.consoleActive) {
       setConnectionStale(false);
     } else {

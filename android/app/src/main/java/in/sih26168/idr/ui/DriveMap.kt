@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -32,7 +31,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import `in`.sih26168.idr.data.HudState
+import `in`.sih26168.idr.IdrBus
 import `in`.sih26168.idr.data.NavMode
 import `in`.sih26168.idr.data.TrackSnapshot
 import `in`.sih26168.idr.data.TrailPoint
@@ -44,11 +43,8 @@ import `in`.sih26168.idr.ui.theme.IdrMono
 import `in`.sih26168.idr.ui.theme.Line
 import `in`.sih26168.idr.ui.theme.Mute
 import `in`.sih26168.idr.ui.theme.Telem
-import kotlin.math.atan2
-import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
-import kotlin.math.sin
 
 /**
  * The map. Draws the track the estimator actually produced, in metres, with the
@@ -73,20 +69,23 @@ import kotlin.math.sin
  *    GNSS accuracy and dashed when it comes from the drift model. When
  *    uncertainty is unknown, nothing is drawn -- a circle of radius zero would
  *    read as perfect accuracy.
- *  * The camera is smoothed, and only the camera. Positions are drawn where the
- *    estimator put them.
+ *  * The camera is smoothed. The vehicle marker is also smoothed: fixes arrive
+ *    ~10 Hz on [IdrBus.hud], collected into Animatables. The Canvas reads
+ *    `.value` only in the draw phase so interpolated frames never recompose
+ *    the map chrome. Passing a 10 Hz HudState as a composable parameter
+ *    would still recompose this tree — that is why this takes [IdrBus].
  *
  * ## Why this file is written the way it is
  *
  * This composable was the largest single source of the app feeling laggy, for
- * three compounding reasons, all now fixed and each marked in place:
+ * compounding reasons, all now fixed and each marked in place:
  *
  *  1. **The camera springs were read in composition.** `val cx by
  *     animateFloatAsState(...)` makes the READING composable recompose on every
  *     animation frame. Five springs run here, and while the vehicle is moving
  *     they never settle, so the whole map subtree -- `BoxWithConstraints`, its
  *     content lambda, and all four `Text` overlays -- was recomposed at the
- *     display refresh rate for the whole ride. They are now held as [State] and
+ *     display refresh rate for the whole ride. They are now held as State and
  *     read inside the draw lambda, so they invalidate the DRAW phase only.
  *  2. **The track `Path` was rebuilt from scratch on every draw**, in screen
  *     coordinates, from a list that grew at the full IMU rate. It is now built
@@ -95,10 +94,14 @@ import kotlin.math.sin
  *  3. **The camera bounds were recomputed by scanning every point, in
  *     composition.** [TrackSnapshot] now carries a bounding box the estimator
  *     maintains incrementally.
+ *  4. **Vehicle east/north/bearing** live in Animatables, filled from
+ *     [IdrBus.hud] inside a LaunchedEffect keyed on the flow — never on the
+ *     metres. The Canvas reads `.value` so 60 fps motion does not recompose
+ *     overlays.
  */
 @Composable
 fun DriveMap(
-    hud: HudState,
+    bus: IdrBus,
     track: TrackSnapshot,
     navMode: NavMode,
     modifier: Modifier = Modifier,
@@ -116,6 +119,34 @@ fun DriveMap(
     ghostTrack: TrackSnapshot = TrackSnapshot(),
     showGhost: Boolean = false,
 ) {
+    val motion = remember(bus) { VehicleMotionSource(bus) }
+    DriveMapFromMotion(
+        motion = motion,
+        track = track,
+        navMode = navMode,
+        modifier = modifier,
+        onLongPress = onLongPress,
+        caption = caption,
+        showUncertaintyRadius = showUncertaintyRadius,
+        ghostTrack = ghostTrack,
+        showGhost = showGhost,
+    )
+}
+
+@Composable
+internal fun DriveMapFromMotion(
+    motion: VehicleMotionSource,
+    track: TrackSnapshot,
+    navMode: NavMode,
+    modifier: Modifier = Modifier,
+    onLongPress: () -> Unit = {},
+    caption: String? = null,
+    showUncertaintyRadius: Boolean = false,
+    ghostTrack: TrackSnapshot = TrackSnapshot(),
+    showGhost: Boolean = false,
+) {
+    val vehicle = subscribeVehicleMotion(motion.hud)
+    val chrome by vehicle.chrome
     val empty = track.ins.isEmpty()
     val ghostPts = ghostTrack.ins
     val ghostEmpty = ghostPts.isEmpty()
@@ -157,12 +188,7 @@ fun DriveMap(
     val cyState = animateFloatAsState(targetCy, camSpring, label = "camY")
     val spanState = animateFloatAsState(targetSpan, camSpring, label = "camSpan")
 
-    // Heading is animated through its cosine and sine so the icon does not spin
-    // the long way round when the bearing wraps through 360.
-    val hdgRad = (hud.headingDeg * Math.PI / 180.0).toFloat()
-    val iconSpring = spring<Float>(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 300f)
-    val hcState = animateFloatAsState(cos(hdgRad), iconSpring, label = "hc")
-    val hsState = animateFloatAsState(sin(hdgRad), iconSpring, label = "hs")
+    // Pose is in [vehicle] Animatables (collected from the bus, not composition).
 
     // ---- Cached geometry, in METRES. Rebuilt once per appended point. -------
     val insPath = remember(track.version) { worldPath(track.ins) }
@@ -204,8 +230,7 @@ fun DriveMap(
             val cx = cxState.value
             val cy = cyState.value
             val scale = scaleFor(spanState.value, min(w, h))
-            val drawHeadingDeg =
-                (atan2(hsState.value, hcState.value) * 180.0 / Math.PI).toFloat()
+            val drawHeadingDeg = wrap360Deg(vehicle.bearing.value.toDouble()).toFloat()
 
             fun px(e: Float, n: Float) = Offset(
                 w / 2f + (e - cx) * scale,
@@ -275,8 +300,9 @@ fun DriveMap(
 
             // ---- Vehicle + uncertainty -----------------------------------
             if (!empty || navMode != NavMode.IDLE) {
-                val here = px(hud.east.toFloat(), hud.north.toFloat())
-                val r = hud.uncertaintyM
+                // Read Animatables here (draw phase), not in composition.
+                val here = px(vehicle.east.value, vehicle.north.value)
+                val r = vehicle.extras.uncertaintyM
                 // Debug-only: the modelled radius is anti-correlated with error.
                 if (showUncertaintyRadius && r.isFinite() && r > 0.0) {
                     val rp = (r * scale).toFloat()
@@ -305,7 +331,7 @@ fun DriveMap(
             }
 
             drawScaleBar(h, barMetres * scale)
-            if (hud.headingReferenced) drawNorthArrow(w)
+            if (vehicle.extras.headingReferenced) drawNorthArrow(w)
         }
 
         // ---- Overlays ----------------------------------------------------
@@ -346,7 +372,7 @@ fun DriveMap(
             )
         }
 
-        if (!hud.headingReferenced && navMode != NavMode.IDLE) {
+        if (!chrome.headingReferenced && navMode != NavMode.IDLE) {
             Text(
                 "UP = THE WAY YOU WERE FACING AT START (no north reference yet)",
                 modifier = Modifier

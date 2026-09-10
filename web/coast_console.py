@@ -16,15 +16,18 @@ GET  /api/claims  headline + full claim registry from win_tuning/CLAIMS.json
 POST /api/login   operator passcode → session cookie (when auth configured)
 POST /api/logout  clear operator session
 GET  /api/session open_mode / authenticated snapshot
-POST /ingest      phone LAN frames (same contract as tracker_server)
+POST /ingest      phone LAN frames (same contract as tracker_server; LAN fallback)
+POST /api/pair/open  adopt a token typed from the phone; register relay mailbox
 GET  /feed        latest + trail
 POST /train       start real ``python -m lab.demo`` subprocess (quick-run)
 GET  /train/stream  SSE: real stdout lines + parsed epoch metrics (no fake loss)
 GET  /train/status  JSON snapshot of the current / last train run
 GET  /metrics     baseline ledger from committed measured summary files
 GET  /figures/<name>  serve PNGs under figures/
-GET  /api/traces/<name.json>  filter traces from lab/stress/results/traces/ (basename only; ``latest.json`` → newest)
+GET  /api/traces  list filter traces under lab/stress/results/traces/ (name, honesty, bytes)
+GET  /api/traces/<name.json>  filter traces (basename only; ``latest.json`` → newest)
 GET  /lab/stress/results/traces/<name.json>  same traces (legacy path)
+GET  /replay      302 → /static/trace_replay.html (truth vs free-DR vs COAST)
 
 ``/pair``, ``/ingest``, and ``/api/claims`` stay reachable without an operator
 session. Static assets stay public so the front-door / sign-in can load offline.
@@ -36,6 +39,7 @@ are optional; Train/ledger stay local).
 
 from __future__ import annotations
 
+import importlib
 import json
 import mimetypes
 import os
@@ -49,7 +53,9 @@ from collections import deque
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
-from urllib.parse import unquote, urlparse
+from urllib.parse import parse_qs, unquote, urlencode, urlparse
+import urllib.error
+import urllib.request
 
 HOST = "0.0.0.0"
 PORT = 8787
@@ -66,13 +72,71 @@ _TRACE_URL_PREFIX = "/lab/stress/results/traces/"
 try:  # pragma: no cover - import shim
     from web.console_ui import PAGE as CONSOLE_PAGE
     from web.console_ui import PAIR_PAGE
-    from web.pairing import Fleet, pair_payload, qr_svg
+    from web.pairing import (
+        Fleet,
+        configured_relay_base,
+        pair_payload,
+        pull_relay_into_fleet,
+        qr_svg,
+        register_relay_mailbox,
+    )
     from web import uk_demo as _uk_demo
 except ImportError:  # pragma: no cover
     from console_ui import PAGE as CONSOLE_PAGE  # type: ignore
     from console_ui import PAIR_PAGE  # type: ignore
-    from pairing import Fleet, pair_payload, qr_svg  # type: ignore
+    from pairing import (  # type: ignore
+        Fleet,
+        configured_relay_base,
+        pair_payload,
+        pull_relay_into_fleet,
+        qr_svg,
+        register_relay_mailbox,
+    )
     import uk_demo as _uk_demo  # type: ignore
+
+_UI_PY = Path(__file__).resolve().parent / "console_ui.py"
+_ui_mtime = 0.0
+
+
+def _reload_ui() -> None:
+    """Pick up console_ui.py edits without restarting the process.
+
+    PAGE/PAIR_PAGE are imported once at boot; a long-lived laptop console
+    otherwise keeps serving yesterday's HTML until you kill Python.
+    """
+    global CONSOLE_PAGE, PAIR_PAGE, _ui_mtime
+    try:
+        mtime = _UI_PY.stat().st_mtime
+    except OSError:
+        return
+    if mtime == _ui_mtime:
+        return
+    try:
+        from web import console_ui as cui
+    except ImportError:  # pragma: no cover
+        import console_ui as cui  # type: ignore
+    cui = importlib.reload(cui)
+    CONSOLE_PAGE = cui.PAGE
+    PAIR_PAGE = cui.PAIR_PAGE
+    _ui_mtime = mtime
+
+
+_STATIC_HREF = re.compile(r"""(/static/)([A-Za-z0-9_./-]+)""")
+
+
+def _with_asset_versions(html: str) -> str:
+    """Stamp /static/... URLs with file mtime so the browser cannot keep old JS."""
+
+    def _repl(match: re.Match[str]) -> str:
+        prefix, rel = match.group(1), match.group(2)
+        fp = STATIC_DIR / rel
+        try:
+            ver = int(fp.stat().st_mtime)
+        except OSError:
+            ver = int(time.time())
+        return f"{prefix}{rel}?v={ver}"
+
+    return _STATIC_HREF.sub(_repl, html)
 
 # Operator session auth (Phase 1 §1.3). Optional only if the module is absent.
 try:  # pragma: no cover - import shim
@@ -165,8 +229,23 @@ _HEADLINE_CLAIM_IDS = (
 )
 
 # Console HTML gated when an operator hash is configured (unless open mode).
-# /pair, /ingest, /api/claims, and /static/* stay public.
+# Phone paths stay public: /pair, /ingest, /api/health, /static/*.
+# Operator HTML and control APIs (fleet, pair/new, forget, demo, train) gate
+# when a passcode is configured.
 _PROTECTED_HTML = frozenset({"/", "/index.html"})
+_OPERATOR_POST = frozenset(
+    {
+        "/train",
+        "/train/start",
+        "/train/clear",
+        "/api/demo/uk",
+        "/api/demo/uk/start",
+        "/api/demo/uk/stop",
+        "/api/pair/new",
+        "/api/pair/open",
+        "/api/forget_all",
+    }
+)
 
 _MAPFILTER_REPORT = REPO / "lab" / "stress" / "results" / "mapfilter" / "report.json"
 _MAPFILTER_SUMMARY = "lab/stress/results/mapfilter/summary.md"
@@ -191,6 +270,52 @@ _lock = threading.Lock()
 _latest: dict[str, Any] | None = None
 _trail: deque[dict[str, Any]] = deque(maxlen=MAX_TRAIL)
 _jsonl_path: str | None = None
+
+RELAY_POLL_S = 1.5
+_relay_stop = threading.Event()
+_relay_thread: threading.Thread | None = None
+
+
+def _pair_response(s: Any, lan: str, relay: str | None) -> dict[str, Any]:
+    if relay:
+        register_relay_mailbox(s.token, relay)
+    payload = pair_payload(s.token, lan, relay)
+    return {
+        "token": s.token,
+        "payload": payload,
+        "lan": lan,
+        "relay": relay,
+        "candidates": _lan_candidates(),
+        "qr_svg": qr_svg(payload),
+        "expires_in_s": 15 * 60,
+        "tip": (
+            "Same Wi-Fi often blocks phone→laptop (AP isolation). "
+            "Use the laptop hotspot, or keep the public relay — phone never needs a route to this PC."
+        ),
+    }
+
+
+def _relay_pull_loop() -> None:
+    """Laptop pulls GET {relay}/feed?s=TOKEN; phone never needs a route here."""
+    while not _relay_stop.wait(RELAY_POLL_S):
+        base = configured_relay_base()
+        if not base:
+            continue
+        for token in FLEET.active_tokens():
+            try:
+                pull_relay_into_fleet(FLEET, token, relay_base=base)
+            except Exception as exc:  # noqa: BLE001 — never kill the poller
+                sys.stderr.write(f"relay pull {token[:8]}…: {exc}\n")
+
+
+def _start_relay_puller() -> None:
+    global _relay_thread
+    if _relay_thread is not None and _relay_thread.is_alive():
+        return
+    _relay_stop.clear()
+    _relay_thread = threading.Thread(target=_relay_pull_loop, name="coast-relay-pull", daemon=True)
+    _relay_thread.start()
+
 
 _train_lock = threading.Lock()
 _train_proc: subprocess.Popen[str] | None = None
@@ -1279,7 +1404,78 @@ def _load_metrics() -> dict[str, Any]:
     }
 
 
-def _lan_base() -> str:
+def _lan_candidates() -> list[dict[str, str]]:
+    """Private IPv4 addresses this laptop is actually listening on.
+
+    Guest Wi-Fi AP isolation is why phone→laptop pairing dies silently.
+    Windows Mobile Hotspot (192.168.137.1) is the most reliable venue path.
+    """
+    import socket
+
+    ips: list[str] = []
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            s.connect(("8.8.8.8", 80))
+            ips.append(s.getsockname()[0])
+        finally:
+            s.close()
+    except OSError:
+        pass
+    try:
+        for info in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET):
+            ips.append(info[4][0])
+    except OSError:
+        pass
+    virtual = ("192.168.56.", "192.168.19.", "172.29.", "172.23.", "198.18.")
+
+    def hint(ip: str) -> str:
+        if ip == "192.168.137.1" or ip.startswith("192.168.137."):
+            return "Windows hotspot"
+        if ip.startswith("192.168.43.") or ip.startswith("192.168.49."):
+            return "phone USB tethering"
+        if ip.startswith("10.42."):
+            return "Linux hotspot"
+        if any(ip.startswith(p) for p in virtual):
+            return "VM / WSL — skip"
+        if ip.startswith("192.168.") or ip.startswith("10.") or ip.startswith("172."):
+            return "LAN"
+        return ""
+
+    def rank(ip: str) -> tuple[int, str]:
+        if ip == "127.0.0.1":
+            return (90, ip)
+        if ip == "192.168.137.1":
+            return (0, ip)
+        if ip.startswith("192.168.137."):
+            return (1, ip)
+        if any(ip.startswith(p) for p in virtual):
+            return (80, ip)
+        if ip.startswith("192.168.43.") or ip.startswith("192.168.49."):
+            return (2, ip)
+        if ip.startswith("10.42."):
+            return (3, ip)
+        if ip.startswith("192.168."):
+            return (10, ip)
+        if ip.startswith("10."):
+            return (20, ip)
+        if ip.startswith("172."):
+            return (30, ip)
+        return (70, ip)
+
+    seen: set[str] = set()
+    out: list[dict[str, str]] = []
+    for ip in sorted(set(ips), key=rank):
+        if ip in seen or ip.startswith("127."):
+            continue
+        seen.add(ip)
+        out.append({"ip": ip, "url": f"http://{ip}:{PORT}", "hint": hint(ip)})
+    if not out:
+        out.append({"ip": "127.0.0.1", "url": f"http://127.0.0.1:{PORT}", "hint": "this laptop only"})
+    return out
+
+
+def _lan_base(preferred_host: str | None = None) -> str:
     """The address a phone on the same network should POST to.
 
     Override with COAST_LAN_BASE when running the laptop as a hotspot -- Windows
@@ -1287,23 +1483,15 @@ def _lan_base() -> str:
     printable address and is immune to the AP isolation that guest wifi applies.
     """
     override = os.environ.get("COAST_LAN_BASE")
-    if override:
+    if override and not preferred_host:
         return override.rstrip("/")
-    import socket
-
-    ip = "127.0.0.1"
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        try:
-            # No packets are sent; this just asks the OS which interface would
-            # be used for an outbound route.
-            s.connect(("8.8.8.8", 80))
-            ip = s.getsockname()[0]
-        finally:
-            s.close()
-    except OSError:
-        pass
-    return f"http://{ip}:{PORT}"
+    cands = _lan_candidates()
+    if preferred_host:
+        host = preferred_host.strip().split("/")[0].split(":")[0]
+        for c in cands:
+            if c["ip"] == host:
+                return c["url"]
+    return cands[0]["url"]
 
 
 _ENG_HEAD = re.compile(r"^###\s+([A-Z])\s+[-—]+\s+(.+?)\s*$", re.MULTILINE)
@@ -1414,6 +1602,9 @@ def _static_content_type(path: Path) -> str:
         ".map": "application/json; charset=utf-8",
         ".woff": "font/woff",
         ".woff2": "font/woff2",
+        ".html": "text/html; charset=utf-8",
+        ".htm": "text/html; charset=utf-8",
+        ".md": "text/markdown; charset=utf-8",
     }.get(ext, "application/octet-stream")
 
 
@@ -1436,6 +1627,24 @@ def _resolve_trace_file(name: str) -> Path | None:
     if fp is None or not fp.is_file() or fp.suffix.lower() != ".json":
         return None
     return fp
+
+
+def _list_traces() -> list[dict[str, Any]]:
+    """Basename listing for the replay player."""
+    if not TRACES_DIR.is_dir():
+        return []
+    out: list[dict[str, Any]] = []
+    for p in sorted(TRACES_DIR.glob("*.json"), key=lambda x: x.stat().st_mtime, reverse=True):
+        if not p.is_file():
+            continue
+        out.append(
+            {
+                "name": p.name,
+                "bytes": p.stat().st_size,
+                "mtime": int(p.stat().st_mtime),
+            }
+        )
+    return out
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -1515,6 +1724,13 @@ class Handler(BaseHTTPRequestHandler):
         cookie = _auth.parse_session_cookie(self.headers.get("Cookie"))
         return _auth.validate_session(cookie)
 
+    def _require_operator(self) -> bool:
+        """401 JSON when locked and the cookie is missing/expired."""
+        if self._operator_ok():
+            return True
+        self._json(401, {"ok": False, "error": "operator sign-in required"})
+        return False
+
     def _session_payload(self) -> dict[str, Any]:
         if _auth is None:
             return {"open_mode": True, "authenticated": True, "auth_available": False}
@@ -1527,11 +1743,23 @@ class Handler(BaseHTTPRequestHandler):
             "auth_available": True,
         }
 
+    def _redirect(self, location: str, code: int = 302) -> None:
+        self.send_response(code)
+        self.send_header("Location", location)
+        self.send_header("Content-Length", "0")
+        self.send_header("Cache-Control", "no-store")
+        self._cors()
+        self._security_headers()
+        self.end_headers()
+
     def _serve_html(self, html: str, head_only: bool) -> None:
-        body = html.encode("utf-8")
+        _reload_ui()
+        body = _with_asset_versions(html).encode("utf-8")
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Cache-Control", "no-store, must-revalidate")
+        self.send_header("Pragma", "no-cache")
+        self.send_header("Expires", "0")
         self.send_header("Content-Length", str(len(body)))
         self._cors()
         self._security_headers()
@@ -1651,19 +1879,30 @@ class Handler(BaseHTTPRequestHandler):
             self._serve_static(path, head_only)
             return
 
+        if path == "/api/health":
+            # Phone pairing probes this — keep it tiny, ungated, no cookies.
+            self._json(200, {"ok": True, "service": "coast"})
+            return
+
         if path == "/api/session":
             self._json(200, self._session_payload())
             return
 
         if path == "/api/fleet":
+            if not self._require_operator():
+                return
             self._json(200, FLEET.snapshot())
             return
 
         if path == "/api/demo/uk":
+            if not self._require_operator():
+                return
             self._json(200, {"ok": True, **_uk_demo.status(), "track": _uk_demo.load_track().get("meta")})
             return
 
         if path.startswith("/api/privacy/"):
+            if not self._require_operator():
+                return
             did = unquote(path[len("/api/privacy/") :])
             rep = FLEET.privacy_report(did)
             if rep is None:
@@ -1708,9 +1947,14 @@ class Handler(BaseHTTPRequestHandler):
             self._serve_apk(head_only)
             return
 
+        if path in ("/replay", "/replay/"):
+            self._redirect("/static/trace_replay.html")
+            return
+
         if path == "/pair":
             # Scanning the QR with ANY camera app lands here. Ungated — phones
             # must pair without an operator session.
+            _reload_ui()
             self._serve_html(PAIR_PAGE, head_only)
             return
 
@@ -1720,6 +1964,7 @@ class Handler(BaseHTTPRequestHandler):
             if not self._operator_ok():
                 self._deny_html()
                 return
+            _reload_ui()
             self._serve_html(CONSOLE_PAGE, head_only)
             return
 
@@ -1738,6 +1983,8 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if path == "/train/status":
+            if not self._require_operator():
+                return
             with _train_lock:
                 snap = dict(_train_status)
                 snap["epochs"] = list(_train_status["epochs"])
@@ -1745,6 +1992,8 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if path == "/train/stream":
+            if not self._require_operator():
+                return
             if head_only:
                 self.send_response(200)
                 self.send_header("Content-Type", "text/event-stream; charset=utf-8")
@@ -1782,6 +2031,10 @@ class Handler(BaseHTTPRequestHandler):
                 self.wfile.write(data)
             return
 
+        if path in ("/api/traces", "/api/traces/"):
+            self._json(200, {"ok": True, "traces": _list_traces()})
+            return
+
         if path.startswith(_API_TRACE_PREFIX) or path.startswith(_TRACE_URL_PREFIX):
             prefix = (
                 _API_TRACE_PREFIX
@@ -1789,6 +2042,9 @@ class Handler(BaseHTTPRequestHandler):
                 else _TRACE_URL_PREFIX
             )
             name = unquote(path[len(prefix) :])
+            if not name:
+                self._json(200, {"ok": True, "traces": _list_traces()})
+                return
             fp = _resolve_trace_file(name)
             if fp is None:
                 # Distinguish traversal (slashes / ..) from missing file.
@@ -1878,7 +2134,8 @@ class Handler(BaseHTTPRequestHandler):
 
         self.send_response(200)
         self.send_header("Content-Type", "text/event-stream; charset=utf-8")
-        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Cache-Control", "no-cache, no-transform")
+        self.send_header("X-Accel-Buffering", "no")
         self.send_header("Connection", "keep-alive")
         self._cors()
         self.end_headers()
@@ -1981,6 +2238,10 @@ class Handler(BaseHTTPRequestHandler):
             self._handle_logout()
             return
 
+        if path in _OPERATOR_POST or path.startswith("/api/forget/"):
+            if not self._require_operator():
+                return
+
         if path in ("/train", "/train/start"):
             result = _start_train()
             self._json(200 if result.get("ok") else 409, result)
@@ -2005,21 +2266,34 @@ class Handler(BaseHTTPRequestHandler):
                 sys.stderr.write(f"rate limit: pair/new from {key}\n")
                 self._reject(429, "rate limit exceeded")
                 return
+            parsed = urlparse(self.path)
+            host = (parse_qs(parsed.query).get("host") or [None])[0]
             s = FLEET.new_session()
-            lan = _lan_base()
-            relay = os.environ.get("COAST_RELAY_BASE") or None
-            payload = pair_payload(s.token, lan, relay)
-            self._json(
-                200,
-                {
-                    "token": s.token,
-                    "payload": payload,
-                    "lan": lan,
-                    "relay": relay,
-                    "qr_svg": qr_svg(payload),
-                    "expires_in_s": 15 * 60,
-                },
-            )
+            lan = _lan_base(host)
+            relay = configured_relay_base()
+            self._json(200, _pair_response(s, lan, relay))
+            return
+
+        if path == "/api/pair/open":
+            key = self._client_key()
+            if not _PAIR_LIMITER.allow(key):
+                sys.stderr.write(f"rate limit: pair/open from {key}\n")
+                self._reject(429, "rate limit exceeded")
+                return
+            frame = self._read_json_body(require_body=False) or {}
+            token = frame.get("token")
+            if token is not None and str(token).strip() == "":
+                token = None
+            try:
+                s = FLEET.open_session(token if isinstance(token, str) else None)
+            except ValueError as exc:
+                self._reject(400, str(exc))
+                return
+            parsed = urlparse(self.path)
+            host = (parse_qs(parsed.query).get("host") or [None])[0]
+            lan = _lan_base(host)
+            relay = configured_relay_base()
+            self._json(200, _pair_response(s, lan, relay))
             return
 
         if path.startswith("/api/forget/"):
@@ -2078,14 +2352,16 @@ def main(argv: list[str] | None = None) -> int:
         _jsonl_path = args[i + 1] if i + 1 < len(args) else "tracker_ingest.jsonl"
 
     httpd = ThreadingHTTPServer((HOST, PORT), Handler)
+    _start_relay_puller()
+    relay = configured_relay_base()
     print(
         f"COAST live console on http://{HOST}:{PORT}/  "
         f"(open http://127.0.0.1:{PORT}/)",
         flush=True,
     )
     print(
-        "Phone: POST /ingest  |  Train: POST /train -> GET /train/stream (SSE)  |  "
-        "Ledger: GET /metrics",
+        "Phone: POST /ingest (LAN)  |  relay pull: "
+        f"{relay or 'off'}  |  Train: POST /train -> GET /train/stream (SSE)",
         flush=True,
     )
     print(

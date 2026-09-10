@@ -42,6 +42,15 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         resourceConfigurations += listOf("en")
 
+        // Public pairing relay origin (not a secret). Overridable via
+        // res/values/strings.xml `default_pair_relay`. Phone-initiated QR
+        // carries this as `relay` plus a short-lived nonce `s`.
+        buildConfigField(
+            "String",
+            "DEFAULT_PAIR_RELAY",
+            "\"https://coast.paper2anything.com\"",
+        )
+
         // ONNX Runtime ships four ABIs, which made the debug APK 91 MB: 42 MB of
         // that was x86/x86_64, used only by emulators. An emulator has no usable
         // IMU, so this app cannot be meaningfully tested on one anyway. Shipping
@@ -174,6 +183,10 @@ dependencies {
     // Tiles MapLibre has fetched are cached, so the map survives losing the
     // radio -- which is the tunnel demo. See ui/MapLibreDriveMap.kt.
     implementation("org.maplibre.gl:android-sdk:11.5.2")
+
+    // Console QR pairing (Phase 5.1) — all flavours. Embedded ZXing works
+    // offline at the venue. Prefer this over unbundled ML Kit (Play download).
+    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20240303")

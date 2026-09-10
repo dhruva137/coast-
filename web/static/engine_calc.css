@@ -34,7 +34,7 @@
 }
 .ec-mode.is-idr {
   color: var(--accent);
-  text-shadow: 0 0 10px rgba(0, 212, 170, 0.5);
+  font-weight: 600;
 }
 .ec-mode.is-gnss {
   color: var(--gnss);
@@ -106,7 +106,7 @@
 .ec-stage.is-hot .ec-sn {
   border-color: var(--accent);
   color: var(--accent);
-  box-shadow: 0 0 12px rgba(0, 212, 170, 0.28);
+  background: rgba(0, 212, 170, 0.08);
 }
 .ec-sb {
   min-width: 0;

@@ -30,8 +30,8 @@ S-Vtb3 (ratio 0.32, unreliable label) are dropped for cause.
 Run:
     python lab/models/run_speed_bakeoff.py [--folds N] [--epochs N] [--cap N]
 
-Writes lab/models/results/speed_bakeoff/{report.json,summary.md} and, from a
-model trained on every clean drive, lab/models/weights/avnet_v2.onnx.
+Writes lab/models/results/speed_bakeoff/{report.json,summary.md}. Production
+training/export is a separate gated step in ``export_avnet_production.py``.
 """
 
 from __future__ import annotations
@@ -52,25 +52,11 @@ if str(_HERE) not in sys.path:
     sys.path.insert(0, str(_HERE))
 
 from backbone import build_model  # noqa: E402
-from speed_data import DriveWindows, load_corpus  # noqa: E402
+from pipeline_integrity import ANDROID_ASSET, MODEL, asset_integrity  # noqa: E402
+from speed_data import DriveWindows, clean_drives, load_corpus  # noqa: E402
 
 SEED = 26168
 RESULTS = _HERE / "results" / "speed_bakeoff"
-WEIGHTS = _HERE / "weights"
-
-
-def clean_drives(drives: list[DriveWindows]) -> list[DriveWindows]:
-    """Keep drives with a trustworthy CAN speed label and real motion."""
-    out = []
-    for d in drives:
-        if d.label_source != "can_10hz":
-            continue
-        if not (0.8 <= d.speed_unit_ratio <= 1.25):
-            continue
-        if float(np.mean(d.speed)) < 2.0:
-            continue
-        out.append(d)
-    return out
 
 
 class Standardiser:
@@ -83,16 +69,6 @@ class Standardiser:
 
     def __call__(self, imu: np.ndarray) -> np.ndarray:
         return ((imu - self.mean) / self.std).astype(np.float32)
-
-
-def _stack(drives: list[DriveWindows]) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    imu = np.concatenate([d.imu for d in drives], axis=0)
-    speed = np.concatenate([d.speed for d in drives], axis=0)
-    # Label 2.0 s earlier = the first sample of the window (the hold baseline).
-    hold = np.concatenate(
-        [d.imu[:, 0, 0] * 0.0 + d.speed for d in drives], axis=0
-    )  # placeholder, replaced below per-drive
-    return imu, speed, hold
 
 
 def _hold_label(d: DriveWindows) -> np.ndarray:
@@ -174,7 +150,12 @@ def train_one(
 
 
 @torch.no_grad()
-def predict(model: torch.nn.Module, std: Standardiser, imu: np.ndarray, device: str):
+def predict(
+    model: torch.nn.Module,
+    std: Standardiser,
+    imu: np.ndarray,
+    device: str,
+) -> tuple[np.ndarray, np.ndarray]:
     model.eval()
     x = torch.from_numpy(std(imu)).to(device)
     out = model(x)
@@ -239,12 +220,21 @@ def outage_distance(
     }
 
 
+def _format_outage(outage: dict[str, Any] | None) -> str:
+    if outage is None:
+        return "outage: n/a"
+    outcome = "WIN" if outage["model_beats_frozen"] else "lose"
+    return (
+        f"outage: model {outage['model_dist_err_m']:.0f}m vs frozen "
+        f"{outage['frozen_dist_err_m']:.0f}m {outcome}"
+    )
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--folds", type=int, default=0, help="limit folds (0 = all clean drives)")
     ap.add_argument("--epochs", type=int, default=8)
     ap.add_argument("--cap", type=int, default=150_000, help="max training windows per fold")
-    ap.add_argument("--export", action="store_true", default=True)
     args = ap.parse_args()
 
     torch.manual_seed(SEED)
@@ -289,12 +279,8 @@ def main() -> int:
         print(
             f"[{fi + 1}/{len(folds)}] {held.name:<10} "
             f"model RMSE {row['model_rmse']:.3f}  hold RMSE {row['hold_rmse']:.3f}  "
-            f"cov68 {cov68:.2f}  "
-            + (f"outage: model {row['outage']['model_dist_err_m']:.0f}m vs frozen "
-               f"{row['outage']['frozen_dist_err_m']:.0f}m "
-               f"{'WIN' if row['outage']['model_beats_frozen'] else 'lose'}"
-               if row['outage'] else "outage: n/a")
-            + f"  ({time.time() - t0:.0f}s)"
+            f"cov68 {cov68:.2f}  {_format_outage(od)}  "
+            f"({time.time() - t0:.0f}s)"
         )
 
     model_rmse = np.array([r["model_rmse"] for r in rows])
@@ -333,42 +319,8 @@ def main() -> int:
     print(f"median improvement: {agg['median_improvement_pct']:.1f}%")
     print(f"uncertainty cov   : 68%->{agg['median_cov68']:.2f}  95%->{agg['median_cov95']:.2f}")
 
-    if args.export:
-        _export_onnx(drives, device, args.epochs, args.cap)
     print(f"\nwrote {RESULTS}")
     return 0
-
-
-def _export_onnx(drives: list[DriveWindows], device: str, epochs: int, cap: int) -> None:
-    """Train on every clean drive and export to ONNX for the phone."""
-    model, std = train_one(drives, device, epochs, cap, SEED)
-    model.eval().cpu()
-    WEIGHTS.mkdir(parents=True, exist_ok=True)
-    dummy = torch.zeros(1, 20, 6)
-    out = WEIGHTS / "avnet_v2.onnx"
-    torch.onnx.export(
-        model, dummy, str(out),
-        input_names=["imu"], output_names=["heads"],
-        dynamic_axes={"imu": {0: "batch"}}, opset_version=17, dynamo=False,
-    )
-    # Save the standardiser next to it: the phone must apply the same transform.
-    np.savez(
-        WEIGHTS / "avnet_v2_norm.npz", mean=std.mean, std=std.std,
-    )
-    # Verify ONNX matches torch.
-    try:
-        import onnxruntime as ort
-
-        sess = ort.InferenceSession(str(out), providers=["CPUExecutionProvider"])
-        x = np.random.randn(4, 20, 6).astype(np.float32)
-        xt = torch.from_numpy(std(x))
-        with torch.no_grad():
-            ref = model(xt).numpy()
-        got = sess.run(None, {"imu": std(x)})[0]
-        err = float(np.max(np.abs(ref - got)))
-        print(f"ONNX export ok: max|torch-onnx| = {err:.2e}  -> {out.name}")
-    except Exception as exc:  # noqa: BLE001
-        print(f"ONNX exported to {out.name}; verify skipped: {exc}")
 
 
 def _write_summary(path: Path, report: dict[str, Any]) -> None:
@@ -435,13 +387,48 @@ def _write_summary(path: Path, report: dict[str, Any]) -> None:
         od = r.get("outage") or {}
         om = f"{od['model_dist_err_m']:.0f}" if od else "—"
         of = f"{od['frozen_dist_err_m']:.0f}" if od else "—"
-        ow = ("yes" if od.get("model_beats_frozen") else "no") if od else "—"
+        if od:
+            ow = "yes" if od.get("model_beats_frozen") else "no"
+        else:
+            ow = "—"
         lines.append(
             f"| `{r['held']}` | {r['n']} | {r['model_rmse']:.3f} | "
             f"{r['hold_rmse']:.3f} | {'yes' if r['beats_hold'] else 'no'} | "
             f"{om} | {of} | {ow} | "
             f"{r['cov68']:.2f} | {r['cov95']:.2f} |"
         )
+    integrity = asset_integrity(MODEL, ANDROID_ASSET)
+    model = integrity["model"]
+    contract = model.get("contract") if model["exists"] else None
+    hash_text = model.get("sha256", "missing")[:16]
+    lines += [
+        "",
+        "## ONNX / Android asset contract",
+        "",
+        f"- Model and APK asset byte-identical: **{integrity['hash_match'] is True}** "
+        f"(sha256 `{hash_text}`).",
+        f"- ONNX I/O: `{contract['input_name']}` {contract['input_shape']} → "
+        f"`{contract['output_name']}` {contract['output_shape']}."
+        if contract
+        else "- ONNX model is missing; no deployment claim is allowed.",
+        "- Evaluation and production export are separate: run "
+        "`export_avnet_production.py` only after the leave-file-out gate.",
+        "- Physical-phone inference latency is not measured by this workstation run.",
+        "",
+        "## Verdict",
+        "",
+        f"**Per-window wash:** model median RMSE {a['model_median_rmse']:.3f} m/s "
+        f"vs hold {a['hold_median_rmse']:.3f} m/s; beats hold on "
+        f"{a['folds_model_beats_hold']}/{a['n_folds']} folds.",
+    ]
+    if a.get("outage_folds"):
+        lines += [
+            "",
+            f"**Closed-loop mixed:** model median 60 s distance error "
+            f"{a['outage_model_dist_err_m']:.1f} m vs frozen "
+            f"{a['outage_frozen_dist_err_m']:.1f} m "
+            f"({a['outage_folds_model_wins']}/{a['outage_folds']} folds win).",
+        ]
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 

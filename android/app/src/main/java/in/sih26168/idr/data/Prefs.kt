@@ -19,6 +19,14 @@ class Prefs(context: Context) {
         get() = sp.getBoolean(KEY_ONBOARDED, false)
         set(v) = sp.edit().putBoolean(KEY_ONBOARDED, v).apply()
 
+    /**
+     * True after the user has completed (or dismissed) the first-launch
+     * Vehicle Check pre-flight. Settings can re-open the check anytime.
+     */
+    var vehicleCheckDone: Boolean
+        get() = sp.getBoolean(KEY_VEHICLE_CHECK, false)
+        set(v) = sp.edit().putBoolean(KEY_VEHICLE_CHECK, v).apply()
+
     var diagnosticsOpen: Boolean
         get() = sp.getBoolean(KEY_DIAGNOSTICS, false)
         set(v) = sp.edit().putBoolean(KEY_DIAGNOSTICS, v).apply()
@@ -37,12 +45,33 @@ class Prefs(context: Context) {
         set(v) = sp.edit().putBoolean(KEY_KMH, v).apply()
 
     /**
-     * Prefer the dark map chrome. Light theme is not wired yet — the toggle
-     * still persists so a later Theme pass can honour it without a migration.
+     * Prefer the dark map chrome. Kept for migration: writes also update
+     * [themePreference] (Dark/Light). Prefer [themePreference] for new code.
      */
     var mapDarkTheme: Boolean
-        get() = sp.getBoolean(KEY_MAP_DARK, true)
-        set(v) = sp.edit().putBoolean(KEY_MAP_DARK, v).apply()
+        get() = themePreference != ThemePreference.Light
+        set(v) {
+            themePreference = if (v) ThemePreference.Dark else ThemePreference.Light
+        }
+
+    /**
+     * Tri-state appearance: system / light / dark. Default dark (demo primary).
+     * Migrates from the older [mapDarkTheme] boolean when unset.
+     */
+    var themePreference: ThemePreference
+        get() {
+            val raw = sp.getString(KEY_THEME_MODE, null)
+            if (raw != null) {
+                return ThemePreference.fromStorage(raw)
+            }
+            // Legacy boolean → dark/light (no system).
+            return if (sp.getBoolean(KEY_MAP_DARK, true)) {
+                ThemePreference.Dark
+            } else {
+                ThemePreference.Light
+            }
+        }
+        set(v) = sp.edit().putString(KEY_THEME_MODE, v.storageKey).apply()
 
     /** Last vehicle profile chosen in Settings; restored onto [IdrBus] at start. */
     var vehicleKind: VehicleKind
@@ -82,9 +111,30 @@ class Prefs(context: Context) {
         set(v) = sp.edit().putBoolean(KEY_ZUPT_TABLETOP, v).apply()
 
     /**
-     * Opt-in LAN phone-tracker (file 07). Off by default.
+     * User-forced stationary hold. Zeros coast until the rider turns it off.
+     * Restored onto [IdrBus.setForceStationary] at launch. ZUPT still auto-detects
+     * stops; this is the tabletop / "I am not moving" override.
+     */
+    var forceStationary: Boolean
+        get() = sp.getBoolean(KEY_FORCE_STATIONARY, false)
+        set(v) = sp.edit().putBoolean(KEY_FORCE_STATIONARY, v).apply()
+
+    /**
+     * Fuse an onset-calibrated compass during GNSS outage. Default on.
+     * Persist-only here; the estimator reads this pref if the bus has no
+     * fuse-compass setter yet.
+     */
+    var fuseCompass: Boolean
+        get() = sp.getBoolean(KEY_FUSE_COMPASS, true)
+        set(v) = sp.edit().putBoolean(KEY_FUSE_COMPASS, v).apply()
+
+    /**
+     * Opt-in LAN phone-tracker for the demo laptop bridge
+     * (`python -m web.tracker_server`). Off by default.
      * Only the `tracker` product flavor posts; `standard` never uploads
      * even when this is true (TrackerHooks is a no-op there).
+     *
+     * Console QR pairing uses [in.sih26168.idr.pair.PairingStore], not these keys.
      */
     var trackerOptIn: Boolean
         get() = sp.getBoolean(KEY_TRACKER_OPT_IN, false)
@@ -162,15 +212,19 @@ class Prefs(context: Context) {
 
     private companion object {
         const val KEY_ONBOARDED = "onboarding_done_v1"
+        const val KEY_VEHICLE_CHECK = "vehicle_check_done_v1"
         const val KEY_DIAGNOSTICS = "diagnostics_open"
         const val KEY_KMH = "speed_kmh"
         const val KEY_BASEMAP = "basemap_enabled"
         const val KEY_MAP_DARK = "map_dark_theme"
+        const val KEY_THEME_MODE = "theme_mode_v1"
         const val KEY_VEHICLE = "vehicle_kind"
         const val KEY_REPLAY = "replay_mode"
         const val KEY_DEMO_MODE = "demo_mode"
         const val KEY_GHOST = "show_ghost_car"
         const val KEY_ZUPT_TABLETOP = "zupt_tabletop"
+        const val KEY_FORCE_STATIONARY = "force_stationary"
+        const val KEY_FUSE_COMPASS = "fuse_compass"
         const val KEY_TRACKER_OPT_IN = "tracker_opt_in"
         const val KEY_TRACKER_LAN_IP = "tracker_lan_ip"
         const val KEY_AUTH_DONE = "auth_done"

@@ -1,0 +1,152 @@
+{
+  "experiment": "mapfilter_compass_onset_calibrated",
+  "graph": "maps/graphs/iovnbd_midlands.graph.npz",
+  "particles": 40,
+  "yaw_sigma": 0.3,
+  "heading_sigma_deg": 16.6,
+  "deny_s": 60.0,
+  "calibration": "last phone GNSS bearing at outage onset only",
+  "scenarios": {
+    "junctions": {
+      "n": 3,
+      "free": {
+        "median_error_m": 284.03947643906827,
+        "median_drift_pct": 41.09412707252801,
+        "pass_under_10pct": 0
+      },
+      "map_gyro": {
+        "median_error_m": 328.58003332950756,
+        "median_drift_pct": 20.87475792663831,
+        "pass_under_10pct": 1
+      },
+      "map_compass": {
+        "median_error_m": 606.3711064678585,
+        "median_drift_pct": 27.108457986042417,
+        "pass_under_10pct": 0
+      },
+      "compass_vs_gyro_x": 0.5418794362473872,
+      "compass_helped": 1,
+      "edge_accuracy_n": 3,
+      "map_gyro_edge_accuracy": 0.3333333333333333,
+      "map_compass_edge_accuracy": 0.0
+    },
+    "corridor": {
+      "n": 3,
+      "free": {
+        "median_error_m": 284.03947643906827,
+        "median_drift_pct": 41.09412707252801,
+        "pass_under_10pct": 0
+      },
+      "map_gyro": {
+        "median_error_m": 115.23834926310802,
+        "median_drift_pct": 19.479883611185468,
+        "pass_under_10pct": 1
+      },
+      "map_compass": {
+        "median_error_m": 115.23834926352694,
+        "median_drift_pct": 19.479883611256284,
+        "pass_under_10pct": 1
+      },
+      "compass_vs_gyro_x": 0.9999999999963647,
+      "compass_helped": 1,
+      "edge_accuracy_n": 3,
+      "map_gyro_edge_accuracy": 0.3333333333333333,
+      "map_compass_edge_accuracy": 0.3333333333333333
+    }
+  },
+  "files": [
+    {
+      "name": "S-M.csv",
+      "junctions": [
+        {
+          "start_idx": 8477,
+          "distance_m": 41732.97749897589,
+          "free_error_m": 20251.425360971865,
+          "map_gyro_error_m": 8711.658028489652,
+          "map_gyro_drift_pct": 20.87475792663831,
+          "map_gyro_on_true_edge": false,
+          "map_compass_error_m": 11313.166671634413,
+          "map_compass_drift_pct": 27.108457986042417,
+          "map_compass_on_true_edge": false,
+          "true_edge_known": true
+        }
+      ],
+      "corridor": [
+        {
+          "start_idx": 8477,
+          "distance_m": 41732.97749897589,
+          "free_error_m": 20251.425360971865,
+          "map_gyro_error_m": 11218.510364670487,
+          "map_gyro_drift_pct": 26.881643815004054,
+          "map_gyro_on_true_edge": false,
+          "map_compass_error_m": 11059.83788471341,
+          "map_compass_drift_pct": 26.50143495029755,
+          "map_compass_on_true_edge": false,
+          "true_edge_known": true
+        }
+      ]
+    },
+    {
+      "name": "S-S3a.csv",
+      "junctions": [
+        {
+          "start_idx": 1969,
+          "distance_m": 591.576169361389,
+          "free_error_m": 63.336234715625075,
+          "map_gyro_error_m": 328.58003332950756,
+          "map_gyro_drift_pct": 55.54314902241789,
+          "map_gyro_on_true_edge": false,
+          "map_compass_error_m": 118.95401088533875,
+          "map_compass_drift_pct": 20.107978827773014,
+          "map_compass_on_true_edge": false,
+          "true_edge_known": true
+        }
+      ],
+      "corridor": [
+        {
+          "start_idx": 1969,
+          "distance_m": 591.576169361389,
+          "free_error_m": 63.336234715625075,
+          "map_gyro_error_m": 115.23834926310802,
+          "map_gyro_drift_pct": 19.479883611185468,
+          "map_gyro_on_true_edge": false,
+          "map_compass_error_m": 115.23834926352694,
+          "map_compass_drift_pct": 19.479883611256284,
+          "map_compass_on_true_edge": false,
+          "true_edge_known": true
+        }
+      ]
+    },
+    {
+      "name": "S-S3c.csv",
+      "junctions": [
+        {
+          "start_idx": 2974,
+          "distance_m": 691.1923836166667,
+          "free_error_m": 284.03947643906827,
+          "map_gyro_error_m": 6.947633676265949,
+          "map_gyro_drift_pct": 1.0051664111100922,
+          "map_gyro_on_true_edge": true,
+          "map_compass_error_m": 606.3711064678585,
+          "map_compass_drift_pct": 87.72826796716414,
+          "map_compass_on_true_edge": false,
+          "true_edge_known": true
+        }
+      ],
+      "corridor": [
+        {
+          "start_idx": 2974,
+          "distance_m": 691.1923836166667,
+          "free_error_m": 284.03947643906827,
+          "map_gyro_error_m": 8.067456441724845,
+          "map_gyro_drift_pct": 1.1671795918108718,
+          "map_gyro_on_true_edge": true,
+          "map_compass_error_m": 41.98267288403033,
+          "map_compass_drift_pct": 6.073949001630463,
+          "map_compass_on_true_edge": true,
+          "true_edge_known": true
+        }
+      ]
+    }
+  ]
+}

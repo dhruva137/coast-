@@ -1,8 +1,10 @@
 package `in`.sih26168.idr.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -11,6 +13,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import `in`.sih26168.idr.ui.theme.Accent
@@ -21,15 +25,35 @@ import `in`.sih26168.idr.ui.theme.Mute
 import `in`.sih26168.idr.ui.theme.Telem
 import `in`.sih26168.idr.ui.theme.Text as Fg
 
+/**
+ * Project claims. Not a tab — opened as a Settings overlay (or inlined).
+ */
 @Composable
-fun AboutScreen() {
+fun AboutScreen(
+    onBack: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
+) {
     Column(
-        Modifier
+        modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
+        if (onBack != null) {
+            Text(
+                "← SETTINGS",
+                modifier = Modifier
+                    .defaultMinSize(minHeight = 44.dp)
+                    .semantics { contentDescription = "Back to settings" }
+                    .clickable(onClick = onBack)
+                    .padding(vertical = 12.dp),
+                fontFamily = IdrMono,
+                color = Accent,
+                fontSize = 11.sp,
+                letterSpacing = 1.sp,
+            )
+        }
         Text("COAST", fontFamily = IdrSans, color = Fg, fontSize = 28.sp)
         Text("INTELLIGENT DEAD RECKONING  ·  SIH 26168", fontFamily = IdrMono, color = Accent, fontSize = 11.sp, letterSpacing = 1.4.sp)
         Text(
@@ -73,6 +97,7 @@ fun AboutScreen() {
         Claim("Hard braking mid-turn is the genuine failure mode.")
         Claim("The method needs speed; it composes with learned odometry, it does not replace it.")
         Claim("Magnetometer aiding is likely unusable on a two-wheeler.")
+        Spacer(Modifier.height(24.dp))
     }
 }
 

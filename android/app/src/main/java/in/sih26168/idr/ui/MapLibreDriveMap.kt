@@ -9,6 +9,7 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -48,7 +49,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import `in`.sih26168.idr.data.HudState
+import `in`.sih26168.idr.IdrBus
 import `in`.sih26168.idr.data.NavMode
 import `in`.sih26168.idr.data.Prefs
 import `in`.sih26168.idr.data.TrackSnapshot
@@ -60,9 +61,16 @@ import `in`.sih26168.idr.ui.theme.Bg
 import `in`.sih26168.idr.ui.theme.Ghost
 import `in`.sih26168.idr.ui.theme.Gnss
 import `in`.sih26168.idr.ui.theme.IdrMono
+import `in`.sih26168.idr.ui.theme.LocalThemePreference
 import `in`.sih26168.idr.ui.theme.Mute
 import `in`.sih26168.idr.ui.theme.Text as Fg
+import `in`.sih26168.idr.ui.theme.resolveDarkTheme
 import java.io.File
+import kotlin.math.cos
+import kotlin.math.min
+import kotlin.math.roundToInt
+import kotlin.math.sin
+import kotlin.math.sqrt
 import org.maplibre.android.MapLibre
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
@@ -81,13 +89,7 @@ import org.maplibre.geojson.Feature
 import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.LineString
 import org.maplibre.geojson.Point
-import org.maplibre.geojson.Polygon
-import kotlin.math.cos
-import kotlin.math.min
-import kotlin.math.roundToInt
-import kotlin.math.sin
-
-/**
+import org.maplibre.geojson.Polygon/**
  * The map panel: a real OpenStreetMap basemap when one is possible, and the
  * metre-grid Canvas ([DriveMap]) when it is not.
  *
@@ -110,7 +112,7 @@ import kotlin.math.sin
  */
 @Composable
 fun DriveMapPanel(
-    hud: HudState,
+    bus: IdrBus,
     track: TrackSnapshot,
     navMode: NavMode,
     modifier: Modifier = Modifier,
@@ -143,6 +145,8 @@ fun DriveMapPanel(
         onBasemapWantedChange?.invoke(v)
     }
     val showUncertainty = prefs.showUncertaintyRadius
+    val themePref = LocalThemePreference.current
+    val mapDark = resolveDarkTheme(themePref, isSystemInDarkTheme())
     val online by rememberOnline()
     // Survives rotation deliberately: once tiles have arrived, MapLibre serves
     // them from its own cache, so dropping the network must NOT tear the map
@@ -154,20 +158,37 @@ fun DriveMapPanel(
     val bundledMbtilesPath = remember(ctx) { ensureBundledMbtilesOnDisk(ctx)?.absolutePath }
     val hasBundledMbtiles = bundledMbtilesPath != null
 
-    val origin = originFrom(hud.lat, hud.lon, hud.east, hud.north)
+    // MapLibre needs its native library, and the build ships arm64-v8a and
+    // armeabi-v7a only. On an x86/x86_64 emulator libmaplibre.so is simply
+    // absent, so getInstance throws UnsatisfiedLinkError during composition --
+    // on the default tab, which reads as "the app crashes on launch". ONNX
+    // degrades gracefully here; MapLibre does not, so probe it once and fall
+    // back to the Canvas map rather than taking the process down.
+    val mapLibreUsable = remember(ctx) {
+        runCatching { MapLibre.getInstance(ctx) }.isSuccess
+    }
+
+    val chrome = rememberVehicleChrome(bus.hud)
+    val origin = chrome.origin
+    val insidePack = chrome.insideBundledBounds
+    // Only hand the pack path to MapLibre when we are *inside* its coverage.
+    // Passing it outside Coventry still selects MapBackend.OSM when online, but
+    // the style would point at an empty tile source — blank dark map (the bug).
+    val useBundledMbtiles = hasBundledMbtiles && insidePack
     val choice = chooseMapBackend(
         basemapWanted = basemapOn,
         online = online,
         tilesEverLoaded = tilesEverLoaded,
         navMode = navMode,
-        hasAbsolutePosition = hud.hasAbsolutePosition && origin != null,
+        hasAbsolutePosition = chrome.hasAbsolutePosition && origin != null,
         bundledMbtilesAvailable = hasBundledMbtiles,
+        insideBundledBounds = insidePack,
     )
 
     Box(modifier) {
-        if (choice.backend == MapBackend.OSM && origin != null) {
+        if (choice.backend == MapBackend.OSM && origin != null && mapLibreUsable) {
             MapLibreDriveMap(
-                hud = hud,
+                bus = bus,
                 track = track,
                 navMode = navMode,
                 origin = origin,
@@ -175,15 +196,16 @@ fun DriveMapPanel(
                 onLongPress = onLongPress,
                 onMapLoaded = { tilesEverLoaded = true },
                 showUncertaintyRadius = showUncertainty,
-                bundledMbtilesAbsolutePath = bundledMbtilesPath,
+                bundledMbtilesAbsolutePath = if (useBundledMbtiles) bundledMbtilesPath else null,
                 ghostTrack = ghostTrack,
                 showGhost = showGhost,
                 recenterTick = recenterTick,
                 showRecenterChip = showRecenterChip,
+                darkBasemap = mapDark,
             )
         } else {
             DriveMap(
-                hud = hud,
+                bus = bus,
                 track = track,
                 navMode = navMode,
                 modifier = mapModifier.fillMaxSize(),
@@ -250,37 +272,46 @@ private const val LYR_UNC_LINE = "coast-uncertainty-line"
 internal const val BUNDLED_MBTILES_ASSET = "maps/demo_neighbourhood.mbtiles"
 
 /**
- * Dark night-mode raster basemap (Carto dark_all). No API key / billing.
- * Attribution is shown on-map; OSM data remains the underlying source.
+ * Public OSM raster basemap — the same tile source the console Fleet map uses,
+ * so the phone and console look identical. No API key, no billing, no watermark.
+ * The `dark` argument is kept for signature stability but the same OSM tiles are
+ * used in both modes — the surrounding UI carries the light/dark theme.
  * Prefer [bundledMbtilesStyleJson] when the neighbourhood `.mbtiles` is on disk.
  */
-private val OSM_STYLE_JSON = """
+private fun osmStyleJson(dark: Boolean): String {
+    val bg = if (dark) "#0B0E11" else "#E8ECF0"
+    return """
 {
   "version": 8,
   "sources": {
     "osm": {
       "type": "raster",
-      "tiles": ["https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"],
+      "tiles": [
+        "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+      ],
       "tileSize": 256,
       "minzoom": 0,
       "maxzoom": 19,
-      "attribution": "© OpenStreetMap contributors © CARTO"
+      "attribution": "© OpenStreetMap contributors"
     }
   },
   "layers": [
-    { "id": "bg", "type": "background", "paint": { "background-color": "#0B0E11" } },
-    { "id": "osm", "type": "raster", "source": "osm", "paint": { "raster-opacity": 0.92 } }
+    { "id": "bg", "type": "background", "paint": { "background-color": "$bg" } },
+    { "id": "osm", "type": "raster", "source": "osm" }
   ]
 }
 """.trimIndent()
+}
 
 /**
  * Style that reads a local raster MBTiles file via MapLibre's `mbtiles://` scheme.
  * [absolutePath] must be a real filesystem path (assets must be copied first).
+ * Bundled tiles are dark cartography; [dark] only adjusts the background fill.
  */
-internal fun bundledMbtilesStyleJson(absolutePath: String): String {
+internal fun bundledMbtilesStyleJson(absolutePath: String, dark: Boolean = true): String {
     // MapLibre expects mbtiles:///<abs-path> (three slashes + absolute Unix path).
     val uri = "mbtiles://" + absolutePath
+    val bg = if (dark) "#0B0E11" else "#E8ECF0"
     return """
 {
   "version": 8,
@@ -295,7 +326,7 @@ internal fun bundledMbtilesStyleJson(absolutePath: String): String {
     }
   },
   "layers": [
-    { "id": "bg", "type": "background", "paint": { "background-color": "#0B0E11" } },
+    { "id": "bg", "type": "background", "paint": { "background-color": "$bg" } },
     { "id": "osm", "type": "raster", "source": "osm", "paint": { "raster-opacity": 0.92 } }
   ]
 }
@@ -375,13 +406,17 @@ private class MapRefs {
  *    (`LaunchedEffect(track.version, ...)`), never per frame. The origin is
  *    quantised (see [quantiseDeg]) because it is recovered from the HUD by
  *    arithmetic whose last digits wobble as the vehicle moves.
- *  * The 60 Hz vehicle animation writes straight into the vehicle GeoJSON
- *    source and the camera from a `withFrameNanos` loop, which is OUTSIDE
- *    composition entirely -- no composable of ours recomposes per frame.
+ *  * The 60 Hz vehicle animation: east/north/bearing live in [Animatable]s
+ *    (not Compose UI state). Each ~10 Hz fix calls `animateTo`; a
+ *    `withFrameNanos` loop reads those values and writes the GeoJSON source
+ *    so interpolated frames never recompose the Compose tree.
+ *  * Theme / style swaps call [MapLibreMap.setStyle], which tears down layers —
+ *    trail sources are re-registered inside the style-loaded callback so the
+ *    path does not vanish.
  */
 @Composable
 fun MapLibreDriveMap(
-    hud: HudState,
+    bus: IdrBus,
     track: TrackSnapshot,
     navMode: NavMode,
     origin: GeoPoint,
@@ -392,7 +427,9 @@ fun MapLibreDriveMap(
     showUncertaintyRadius: Boolean = false,
     /**
      * Absolute filesystem path to the bundled neighbourhood `.mbtiles`, or null
-     * to use live Carto dark tiles. Prefer bundled for airplane-mode demos.
+     * to use live Carto tiles. Caller must pass non-null **only** when the fix
+     * is inside the pack's Coventry bbox — otherwise MapLibre paints an empty
+     * dark basemap (no streets, no error).
      */
     bundledMbtilesAbsolutePath: String? = null,
     ghostTrack: TrackSnapshot = TrackSnapshot(),
@@ -400,6 +437,8 @@ fun MapLibreDriveMap(
     /** Increment from Drive FAB to re-enable follow and animate to the vehicle. */
     recenterTick: Int = 0,
     showRecenterChip: Boolean = true,
+    /** Dark Carto / dark chrome background; false → light_all tiles. */
+    darkBasemap: Boolean = true,
 ) {
     val ctx = LocalContext.current
     val density = LocalDensity.current
@@ -407,13 +446,23 @@ fun MapLibreDriveMap(
 
     val oLat = quantiseDeg(origin.lat)
     val oLon = quantiseDeg(origin.lon)
-    val styleJson = remember(bundledMbtilesAbsolutePath) {
+    val styleJson = remember(bundledMbtilesAbsolutePath, darkBasemap) {
         val path = bundledMbtilesAbsolutePath
-        if (!path.isNullOrBlank()) bundledMbtilesStyleJson(path) else OSM_STYLE_JSON
+        if (!path.isNullOrBlank()) {
+            bundledMbtilesStyleJson(path, dark = darkBasemap)
+        } else {
+            osmStyleJson(darkBasemap)
+        }
     }
 
+    val motion = remember(bus) { VehicleMotionSource(bus) }
+    val vehicle = subscribeVehicleMotion(motion.hud)
+    val chrome by vehicle.chrome
+    val eastAnim = vehicle.east
+    val northAnim = vehicle.north
+    val bearingAnim = vehicle.bearing
+
     val refs = remember { MapRefs() }
-    val smoother = remember { VehicleSmoother() }
     // Plain array, not state: the gesture watcher needs the last drawn position
     // and must not be woken up by it.
     val rendered = remember { doubleArrayOf(oLat, oLon) }
@@ -422,6 +471,14 @@ fun MapLibreDriveMap(
     val gesturing = remember { mutableStateOf(false) }
     var viewportMinPx by remember { mutableIntStateOf(0) }
     var followTick by remember { mutableIntStateOf(0) }
+
+    val trackLatest = rememberUpdatedState(track)
+    val ghostLatest = rememberUpdatedState(ghostTrack)
+    val showGhostLatest = rememberUpdatedState(showGhost)
+    val oLatLatest = rememberUpdatedState(oLat)
+    val oLonLatest = rememberUpdatedState(oLon)
+    val onMapLoadedLatest = rememberUpdatedState(onMapLoaded)
+    val onLongPressLatest = rememberUpdatedState(onLongPress)
 
     // Drive FAB / external recenter request.
     LaunchedEffect(recenterTick) {
@@ -442,6 +499,8 @@ fun MapLibreDriveMap(
 
     // MapLibre.getInstance MUST run before a MapView is constructed. No key is
     // passed -- the style carries its own tile URLs, so none is needed.
+    // DriveMapPanel already probed ABI usability; call again (idempotent) so a
+    // MapView is never constructed without a successful init on this process.
     val mapView = remember {
         MapLibre.getInstance(ctx)
         MapView(ctx)
@@ -469,7 +528,10 @@ fun MapLibreDriveMap(
         }
     }
 
-    // One-time map wiring: style, sources, layers, gesture and load listeners.
+    var mapReadyTick by remember { mutableIntStateOf(0) }
+
+    // One-time map wiring: gestures + camera. Style/layers live in a separate
+    // effect keyed on styleJson so theme swaps re-register the track polyline.
     DisposableEffect(mapView) {
         mapView.getMapAsync { map ->
             refs.map = map
@@ -486,13 +548,10 @@ fun MapLibreDriveMap(
                 .build()
 
             map.addOnMapLongClickListener {
-                onLongPress()
+                onLongPressLatest.value()
                 true
             }
 
-            // Following stops when the user drags the map and is re-evaluated
-            // when the drag ends: a pan that carries the vehicle away hands over
-            // control, a small nudge keeps following. See [shouldBreakFollow].
             map.addOnMoveListener(object : MapLibreMap.OnMoveListener {
                 override fun onMoveBegin(detector: MoveGestureDetector) {
                     gesturing.value = true
@@ -517,108 +576,30 @@ fun MapLibreDriveMap(
                     }
                 }
             })
-
-            val directional = hud.headingReferenced
-            map.setStyle(Style.Builder().fromJson(styleJson)) { style ->
-                refs.style = style
-
-                style.addImage(
-                    VEHICLE_IMG,
-                    vehicleBitmap(density.density, directional),
-                )
-                style.addImage(GHOST_IMG, ghostBitmap(density.density))
-
-                val gnssSrc = GeoJsonSource(SRC_GNSS)
-                val drSrc = GeoJsonSource(SRC_DR)
-                val ghostSrc = GeoJsonSource(SRC_GHOST)
-                val ghostVehSrc = GeoJsonSource(SRC_GHOST_VEHICLE)
-                val vehSrc = GeoJsonSource(SRC_VEHICLE)
-                val uncSrc = GeoJsonSource(SRC_UNC)
-                style.addSource(gnssSrc)
-                style.addSource(drSrc)
-                style.addSource(ghostSrc)
-                style.addSource(ghostVehSrc)
-                style.addSource(vehSrc)
-                style.addSource(uncSrc)
-
-                // Bottom-to-top: uncertainty, ghost trail, GNSS, DR, ghost puck, vehicle.
-                val uncFill = FillLayer(LYR_UNC_FILL, SRC_UNC).withProperties(
-                    PropertyFactory.fillColor(Amber.toArgb()),
-                    PropertyFactory.fillOpacity(0.10f),
-                    PropertyFactory.visibility(Property.NONE),
-                )
-                val uncLine = LineLayer(LYR_UNC_LINE, SRC_UNC).withProperties(
-                    PropertyFactory.lineColor(Amber.toArgb()),
-                    PropertyFactory.lineWidth(2f),
-                    PropertyFactory.lineOpacity(0.6f),
-                    PropertyFactory.visibility(Property.NONE),
-                )
-                val ghostLine = LineLayer(LYR_GHOST, SRC_GHOST).withProperties(
-                    PropertyFactory.lineColor(Ghost.copy(alpha = 0.40f).toArgb()),
-                    PropertyFactory.lineWidth(3.5f),
-                    PropertyFactory.lineOpacity(0.55f),
-                    PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
-                    PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
-                    PropertyFactory.visibility(Property.NONE),
-                )
-                val gnssLine = LineLayer(LYR_GNSS, SRC_GNSS).withProperties(
-                    PropertyFactory.lineColor(Gnss.toArgb()),
-                    PropertyFactory.lineWidth(3f),
-                    PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
-                    PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
-                )
-                val drLine = LineLayer(LYR_DR, SRC_DR).withProperties(
-                    PropertyFactory.lineColor(Accent.toArgb()),
-                    PropertyFactory.lineWidth(5f),
-                    PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
-                    PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
-                )
-                val ghostVehLayer = SymbolLayer(LYR_GHOST_VEHICLE, SRC_GHOST_VEHICLE).withProperties(
-                    PropertyFactory.iconImage(GHOST_IMG),
-                    PropertyFactory.iconAllowOverlap(true),
-                    PropertyFactory.iconIgnorePlacement(true),
-                    PropertyFactory.iconAnchor(Property.ICON_ANCHOR_CENTER),
-                    PropertyFactory.visibility(Property.NONE),
-                )
-                val vehLayer = SymbolLayer(LYR_VEHICLE, SRC_VEHICLE).withProperties(
-                    PropertyFactory.iconImage(VEHICLE_IMG),
-                    PropertyFactory.iconAllowOverlap(true),
-                    PropertyFactory.iconIgnorePlacement(true),
-                    PropertyFactory.iconRotationAlignment(Property.ICON_ROTATION_ALIGNMENT_MAP),
-                    PropertyFactory.iconAnchor(Property.ICON_ANCHOR_CENTER),
-                    PropertyFactory.iconRotate(0f),
-                )
-                style.addLayer(uncFill)
-                style.addLayer(uncLine)
-                style.addLayer(ghostLine)
-                style.addLayer(gnssLine)
-                style.addLayer(drLine)
-                style.addLayer(ghostVehLayer)
-                style.addLayer(vehLayer)
-
-                refs.gnss = gnssSrc
-                refs.dr = drSrc
-                refs.ghost = ghostSrc
-                refs.ghostVehicle = ghostVehSrc
-                refs.ghostLine = ghostLine
-                refs.ghostVehicleLayer = ghostVehLayer
-                refs.vehicle = vehSrc
-                refs.unc = uncSrc
-                refs.vehicleLayer = vehLayer
-                refs.uncFill = uncFill
-                refs.uncLine = uncLine
-                refs.iconDirectional = directional
-                refs.ready = true
-
-                // Style is up and the raster source is wired. For bundled
-                // mbtiles the basemap is already local; for live tiles this
-                // latches so dropping the radio keeps the map.
-                onMapLoaded()
-                pushTrail(refs, track, oLat, oLon)
-                pushGhost(refs, ghostTrack, oLat, oLon, showGhost)
-            }
+            mapReadyTick++
         }
         onDispose { }
+    }
+
+    // setStyle tears down sources/layers — always re-install COAST overlays and
+    // pushTrail inside the style-loaded callback (Phase 5.4 gotcha).
+    LaunchedEffect(mapReadyTick, styleJson) {
+        if (mapReadyTick == 0) return@LaunchedEffect
+        val m = refs.map ?: return@LaunchedEffect
+        refs.ready = false
+        val directional = chrome.headingReferenced
+        m.setStyle(Style.Builder().fromJson(styleJson)) { style ->
+            installCoastLayers(refs, style, density.density, directional)
+            onMapLoadedLatest.value()
+            pushTrail(refs, trackLatest.value, oLatLatest.value, oLonLatest.value)
+            pushGhost(
+                refs,
+                ghostLatest.value,
+                oLatLatest.value,
+                oLonLatest.value,
+                showGhostLatest.value,
+            )
+        }
     }
 
     // Rebuild the two coloured polylines only when a point is appended.
@@ -630,36 +611,24 @@ fun MapLibreDriveMap(
         pushGhost(refs, ghostTrack, oLat, oLon, showGhost)
     }
 
-    // Read in composition, consumed in the frame loop. rememberUpdatedState is
-    // exactly the tool for "the effect must see the newest value without being
-    // restarted by it".
-    val target by rememberUpdatedState(
-        VehicleTarget(oLat, oLon, hud.east, hud.north, hud.headingDeg),
-    )
-    val directional by rememberUpdatedState(hud.headingReferenced)
+    // Pose Animatables come from subscribeVehicleMotion (bus), not HUD recomposition.
+
+    val directional by rememberUpdatedState(chrome.headingReferenced)
     val modelled by rememberUpdatedState(navMode != NavMode.GNSS)
-    val uncertaintyM by rememberUpdatedState(hud.uncertaintyM)
     val drawUncertainty by rememberUpdatedState(showUncertaintyRadius)
 
     LaunchedEffect(Unit) {
-        var lastNs = 0L
         while (true) {
-            withFrameNanos { now ->
-                if (!refs.ready) {
-                    lastNs = now
-                    return@withFrameNanos
-                }
-                val dt = if (lastNs == 0L) 0.0 else (now - lastNs) / 1e9
-                lastNs = now
+            withFrameNanos {
+                if (!refs.ready) return@withFrameNanos
 
-                val t = target
-                smoother.step(dt, t.east, t.north, t.headingDeg)
-                val g = projectFromOrigin(t.originLat, t.originLon, smoother.east, smoother.north)
+                val e = eastAnim.value.toDouble()
+                val n = northAnim.value.toDouble()
+                val bearing = bearingAnim.value.toDouble()
+                val g = projectFromOrigin(oLatLatest.value, oLonLatest.value, e, n)
                 rendered[0] = g.lat
                 rendered[1] = g.lon
 
-                // Vehicle icon: swap chevron <-> dot only when the reference
-                // state actually flips, not every frame.
                 val dir = directional
                 if (refs.iconDirectional != dir) {
                     refs.style?.addImage(VEHICLE_IMG, vehicleBitmap(density.density, dir))
@@ -667,11 +636,10 @@ fun MapLibreDriveMap(
                 }
                 refs.vehicle?.setGeoJson(Point.fromLngLat(g.lon, g.lat))
                 refs.vehicleLayer?.setProperties(
-                    PropertyFactory.iconRotate(if (dir) smoother.bearingDeg.toFloat() else 0f),
+                    PropertyFactory.iconRotate(if (dir) wrap360Deg(bearing).toFloat() else 0f),
                 )
 
-                // Uncertainty radius is debug-only (anti-correlated with error).
-                val r = uncertaintyM
+                val r = vehicle.extras.uncertaintyM
                 if (drawUncertainty && uncertaintyDrawable(r)) {
                     refs.unc?.setGeoJson(circlePolygonFeature(g.lat, g.lon, r))
                     val mdl = modelled
@@ -681,9 +649,6 @@ fun MapLibreDriveMap(
                             PropertyFactory.visibility(Property.VISIBLE),
                             PropertyFactory.fillColor(tint),
                         )
-                        // Dashed = modelled, solid = measured. Same convention as
-                        // the Canvas map and the MEASURED / MODELLED accuracy
-                        // card, so the three cannot say different things.
                         val dash = if (mdl) arrayOf(2f, 1.5f) else arrayOf(1f)
                         refs.uncLine?.setProperties(
                             PropertyFactory.visibility(Property.VISIBLE),
@@ -716,7 +681,7 @@ fun MapLibreDriveMap(
 
         MapLegend(
             navMode = navMode,
-            headingReferenced = hud.headingReferenced,
+            headingReferenced = chrome.headingReferenced,
             showGhost = showGhost,
             modifier = Modifier
                 .align(Alignment.TopStart)
@@ -772,6 +737,107 @@ fun MapLibreDriveMap(
             )
         }
     }
+}
+
+
+/**
+ * Install COAST GeoJSON sources + layers on a freshly loaded MapLibre [style].
+ * Must run after every [MapLibreMap.setStyle] — style swaps wipe prior layers.
+ */
+private fun installCoastLayers(
+    refs: MapRefs,
+    style: Style,
+    density: Float,
+    directional: Boolean,
+) {
+    refs.style = style
+    refs.ghostVisible = null
+    refs.uncShown = null
+    refs.uncModelled = null
+
+    style.addImage(VEHICLE_IMG, vehicleBitmap(density, directional))
+    style.addImage(GHOST_IMG, ghostBitmap(density))
+
+    val gnssSrc = GeoJsonSource(SRC_GNSS)
+    val drSrc = GeoJsonSource(SRC_DR)
+    val ghostSrc = GeoJsonSource(SRC_GHOST)
+    val ghostVehSrc = GeoJsonSource(SRC_GHOST_VEHICLE)
+    val vehSrc = GeoJsonSource(SRC_VEHICLE)
+    val uncSrc = GeoJsonSource(SRC_UNC)
+    style.addSource(gnssSrc)
+    style.addSource(drSrc)
+    style.addSource(ghostSrc)
+    style.addSource(ghostVehSrc)
+    style.addSource(vehSrc)
+    style.addSource(uncSrc)
+
+    val uncFill = FillLayer(LYR_UNC_FILL, SRC_UNC).withProperties(
+        PropertyFactory.fillColor(Amber.toArgb()),
+        PropertyFactory.fillOpacity(0.10f),
+        PropertyFactory.visibility(Property.NONE),
+    )
+    val uncLine = LineLayer(LYR_UNC_LINE, SRC_UNC).withProperties(
+        PropertyFactory.lineColor(Amber.toArgb()),
+        PropertyFactory.lineWidth(2f),
+        PropertyFactory.lineOpacity(0.6f),
+        PropertyFactory.visibility(Property.NONE),
+    )
+    val ghostLine = LineLayer(LYR_GHOST, SRC_GHOST).withProperties(
+        PropertyFactory.lineColor(Ghost.copy(alpha = 0.40f).toArgb()),
+        PropertyFactory.lineWidth(3.5f),
+        PropertyFactory.lineOpacity(0.55f),
+        PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
+        PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
+        PropertyFactory.visibility(Property.NONE),
+    )
+    val gnssLine = LineLayer(LYR_GNSS, SRC_GNSS).withProperties(
+        PropertyFactory.lineColor(Gnss.toArgb()),
+        PropertyFactory.lineWidth(3f),
+        PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
+        PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
+    )
+    val drLine = LineLayer(LYR_DR, SRC_DR).withProperties(
+        PropertyFactory.lineColor(Accent.toArgb()),
+        PropertyFactory.lineWidth(5f),
+        PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
+        PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
+    )
+    val ghostVehLayer = SymbolLayer(LYR_GHOST_VEHICLE, SRC_GHOST_VEHICLE).withProperties(
+        PropertyFactory.iconImage(GHOST_IMG),
+        PropertyFactory.iconAllowOverlap(true),
+        PropertyFactory.iconIgnorePlacement(true),
+        PropertyFactory.iconAnchor(Property.ICON_ANCHOR_CENTER),
+        PropertyFactory.visibility(Property.NONE),
+    )
+    val vehLayer = SymbolLayer(LYR_VEHICLE, SRC_VEHICLE).withProperties(
+        PropertyFactory.iconImage(VEHICLE_IMG),
+        PropertyFactory.iconAllowOverlap(true),
+        PropertyFactory.iconIgnorePlacement(true),
+        PropertyFactory.iconRotationAlignment(Property.ICON_ROTATION_ALIGNMENT_MAP),
+        PropertyFactory.iconAnchor(Property.ICON_ANCHOR_CENTER),
+        PropertyFactory.iconRotate(0f),
+    )
+    style.addLayer(uncFill)
+    style.addLayer(uncLine)
+    style.addLayer(ghostLine)
+    style.addLayer(gnssLine)
+    style.addLayer(drLine)
+    style.addLayer(ghostVehLayer)
+    style.addLayer(vehLayer)
+
+    refs.gnss = gnssSrc
+    refs.dr = drSrc
+    refs.ghost = ghostSrc
+    refs.ghostVehicle = ghostVehSrc
+    refs.ghostLine = ghostLine
+    refs.ghostVehicleLayer = ghostVehLayer
+    refs.vehicle = vehSrc
+    refs.unc = uncSrc
+    refs.vehicleLayer = vehLayer
+    refs.uncFill = uncFill
+    refs.uncLine = uncLine
+    refs.iconDirectional = directional
+    refs.ready = true
 }
 
 /**
@@ -911,13 +977,7 @@ private fun LegendRow(color: androidx.compose.ui.graphics.Color, label: String) 
 }
 
 /** What the frame loop needs to know, snapshotted once per composition. */
-private data class VehicleTarget(
-    val originLat: Double,
-    val originLon: Double,
-    val east: Double,
-    val north: Double,
-    val headingDeg: Double,
-)
+// Vehicle position is driven by Animatable + withFrameNanos (Phase 5.3).
 
 // ---------------------------------------------------------------------------
 // Network reachability

@@ -27,16 +27,26 @@ what makes the privacy panel honest.
 
 from __future__ import annotations
 
+import json
+import os
 import secrets
 import threading
 import time
+import urllib.error
+import urllib.parse
+import urllib.request
 from dataclasses import dataclass, field
 from typing import Any
 
 try:  # pragma: no cover - import shim
-    from web.security import MAX_DEVICES, validate_ingest_payload
+    from web.security import MAX_DEVICES, validate_ingest_batch, validate_ingest_payload, validate_token
 except ImportError:  # pragma: no cover
-    from security import MAX_DEVICES, validate_ingest_payload  # type: ignore
+    from security import MAX_DEVICES, validate_ingest_batch, validate_ingest_payload, validate_token  # type: ignore
+
+# Public store-and-forward host encoded in the QR when COAST_RELAY_BASE is unset.
+# Not claimed deployed by this repo — set COAST_RELAY_BASE to a running relay,
+# or `off` for LAN-only. See relay/README.md.
+DEFAULT_RELAY_BASE = "https://coast.paper2anything.com"
 
 # Session lifetime. Short, because a pairing code that lingers is a pairing code
 # that leaks.
@@ -68,9 +78,10 @@ class Point:
     mode: str
     speed_mps: float
     acc_m: float | None = None
+    queued: bool = False
 
     def as_json(self) -> dict[str, Any]:
-        return {
+        out = {
             "t": round(self.t, 3),
             "lat": self.lat,
             "lon": self.lon,
@@ -78,6 +89,9 @@ class Point:
             "speed_mps": round(self.speed_mps, 3),
             "acc_m": self.acc_m,
         }
+        if self.queued:
+            out["queued"] = True
+        return out
 
 
 @dataclass
@@ -128,6 +142,7 @@ class Device:
     def as_json(self, now: float, *, with_points: bool = True) -> dict[str, Any]:
         latest = self.points[-1] if self.points else None
         idr = sum(1 for p in self.points if p.mode.upper() == "IDR")
+        queued_n = sum(1 for p in self.points if p.queued)
         return {
             "device_id": self.device_id,
             "label": self.label,
@@ -138,6 +153,7 @@ class Device:
             "last_seen": round(self.last_seen, 3),
             "n_points": len(self.points),
             "n_idr_points": idr,
+            "n_queued_points": queued_n,
             "distance_m": round(self.distance_m(), 1),
             "latest": latest.as_json() if latest else None,
             "events": list(self.events),
@@ -168,12 +184,47 @@ class Fleet:
     # -- pairing ---------------------------------------------------------
 
     def new_session(self) -> Session:
+        return self.open_session(None)
+
+    def open_session(self, token: str | None = None) -> Session:
+        """Mint a nonce, or adopt a token typed from the phone.
+
+        Invalid tokens raise ValueError so the HTTP layer can 400.
+        """
         now = time.time()
         with self._lock:
             self._reap(now)
-            s = Session(token=secrets.token_urlsafe(16), created=now)
+            if token:
+                tok, err = validate_token(token)
+                if err:
+                    raise ValueError(err)
+                assert tok is not None
+                existing = self._sessions.get(tok)
+                if existing is not None and not existing.expired(now):
+                    return existing
+                s = Session(token=tok, created=now)
+            else:
+                s = Session(token=secrets.token_urlsafe(16), created=now)
             self._sessions[s.token] = s
             return s
+
+    def keep_alive(self, token: str) -> bool:
+        """Extend an unpaired session while the console is polling the relay."""
+        now = time.time()
+        with self._lock:
+            s = self._sessions.get(token)
+            if s is None:
+                return False
+            if s.device_id is None:
+                s.created = now
+            return True
+
+    def active_tokens(self) -> list[str]:
+        """Tokens the console should pull from the relay mailbox."""
+        now = time.time()
+        with self._lock:
+            self._reap(now)
+            return list(self._sessions.keys())
 
     def _reap(self, now: float) -> None:
         for tok in [t for t, s in self._sessions.items() if s.expired(now)]:
@@ -210,15 +261,15 @@ class Fleet:
 
     def ingest(self, payload: dict[str, Any]) -> dict[str, Any]:
         now = time.time()
-        cleaned = validate_ingest_payload(payload)
+        if isinstance(payload.get("points"), list):
+            cleaned = validate_ingest_batch(payload)
+        else:
+            one = validate_ingest_payload(payload)
+            cleaned = {"token": one["token"], "points": [one]} if not isinstance(one, str) else one
         if isinstance(cleaned, str):
             return {"ok": False, "error": cleaned}
         token = cleaned["token"]
-        lat = cleaned["lat"]
-        lon = cleaned["lon"]
-        mode = cleaned["mode"]
-        speed = cleaned["speed_mps"]
-        acc = cleaned["acc_m"]
+        batch = cleaned["points"]
 
         with self._lock:
             self._reap(now)
@@ -227,13 +278,28 @@ class Fleet:
                 return {"ok": False, "error": f"device limit ({MAX_DEVICES}) reached"}
             if dev is None:
                 return {"ok": False, "error": "unknown or expired pairing token"}
-            dev.add(Point(t=now, lat=lat, lon=lon, mode=mode, speed_mps=speed, acc_m=acc))
+            for row in batch:
+                t = row.get("t_client") or now
+                dev.add(
+                    Point(
+                        t=t,
+                        lat=row["lat"],
+                        lon=row["lon"],
+                        mode=row["mode"],
+                        speed_mps=row["speed_mps"],
+                        acc_m=row["acc_m"],
+                        queued=bool(row.get("queued")),
+                    )
+                )
+            # last_seen is radio contact, not the GPS clock on a queued point.
+            dev.last_seen = now
             return {
                 "ok": True,
                 "device_id": dev.device_id,
                 "label": dev.label,
                 "color": dev.color,
                 "n_points": len(dev.points),
+                "accepted": len(batch),
             }
 
     # -- read / delete ---------------------------------------------------
@@ -376,16 +442,129 @@ def qr_svg(data: str, *, scale: int = 6, dark: str = "#0A0B0D") -> str | None:
     return buf.getvalue().decode("utf-8")
 
 
+def _strip_base(url: str) -> str:
+    return (url or "").strip().rstrip("/")
+
+
+def configured_relay_base() -> str | None:
+    """Origin the phone should POST to when LAN is isolated.
+
+    ``COAST_RELAY_BASE`` overrides. ``off`` / ``none`` / ``false`` disables
+    the relay (QR host stays on LAN). When unset, :data:`DEFAULT_RELAY_BASE`
+    is used so a venue phone can still reach a public mailbox.
+    """
+    if "COAST_RELAY_BASE" in os.environ:
+        raw = os.environ["COAST_RELAY_BASE"].strip()
+        if not raw or raw.lower() in {"0", "off", "none", "false", "disable", "disabled"}:
+            return None
+        return _strip_base(raw)
+    return _strip_base(DEFAULT_RELAY_BASE)
+
+
+def _relay_http_json(
+    method: str,
+    url: str,
+    body: dict[str, Any] | None = None,
+    *,
+    timeout_s: float = 4.0,
+) -> dict[str, Any]:
+    data = None
+    headers = {"Accept": "application/json"}
+    if body is not None:
+        data = json.dumps(body).encode("utf-8")
+        headers["Content-Type"] = "application/json"
+    req = urllib.request.Request(url, data=data, headers=headers, method=method)
+    with urllib.request.urlopen(req, timeout=timeout_s) as resp:
+        raw = resp.read().decode("utf-8")
+    if not raw:
+        return {}
+    parsed = json.loads(raw)
+    if not isinstance(parsed, dict):
+        raise ValueError("relay response was not a JSON object")
+    return parsed
+
+
+def register_relay_mailbox(token: str, relay_base: str | None = None) -> bool:
+    """POST /pair/open so the public mailbox exists before the phone posts."""
+    base = _strip_base(relay_base) if relay_base else configured_relay_base()
+    if not base:
+        return False
+    try:
+        result = _relay_http_json("POST", f"{base}/pair/open", {"token": token})
+    except (urllib.error.URLError, TimeoutError, OSError, ValueError, json.JSONDecodeError):
+        return False
+    return bool(result.get("ok"))
+
+
+def pull_relay_into_fleet(
+    fleet: Fleet,
+    token: str,
+    *,
+    relay_base: str | None = None,
+) -> int:
+    """GET /feed?s=TOKEN (consume) and merge points into Fleet. LAN ingest stays separate.
+
+    Returns the number of points accepted. Never forwards device-identifier keys —
+    only lat/lon/mode/speed/acc/queued/time are passed to :meth:`Fleet.ingest`.
+    """
+    base = _strip_base(relay_base) if relay_base else configured_relay_base()
+    if not base:
+        return 0
+    fleet.keep_alive(token)
+    q = urllib.parse.urlencode({"s": token})
+    try:
+        result = _relay_http_json("GET", f"{base}/feed?{q}")
+    except (urllib.error.URLError, TimeoutError, OSError, ValueError, json.JSONDecodeError):
+        return 0
+    if not result.get("ok"):
+        return 0
+    points = result.get("points") or []
+    if not isinstance(points, list) or not points:
+        return 0
+    cleaned: list[dict[str, Any]] = []
+    for row in points:
+        if not isinstance(row, dict):
+            continue
+        one: dict[str, Any] = {
+            "lat": row.get("lat"),
+            "lon": row.get("lon"),
+            "mode": row.get("mode", "GNSS"),
+            "speed_mps": row.get("speed_mps", 0.0),
+        }
+        if row.get("acc_m") is not None:
+            one["acc_m"] = row.get("acc_m")
+        if row.get("queued"):
+            one["queued"] = True
+        t = row.get("t_client") if row.get("t_client") is not None else row.get("t")
+        if t is not None:
+            one["t"] = t
+            one["t_client"] = t
+        cleaned.append(one)
+    if not cleaned:
+        return 0
+    out = fleet.ingest({"token": token, "points": cleaned})
+    if not out.get("ok"):
+        return 0
+    return int(out.get("accepted") or len(cleaned))
+
+
 def pair_payload(token: str, lan_base: str, relay_base: str | None) -> str:
     """What the QR encodes.
 
     A plain URL, deliberately: a generic camera app can open it and land on a
     'get the app' page, which a raw JSON blob cannot do. Both endpoints ride
     along so the phone can race them.
+
+    When a relay is configured the **QR host is the relay**, with ``lan`` as a
+    query fallback. Scanning then works off-LAN (guest Wi-Fi AP isolation).
+    ``relay=`` is still in the query so the Android parser pins both bases.
     """
     from urllib.parse import urlencode
 
-    q = {"s": token, "lan": lan_base}
-    if relay_base:
-        q["relay"] = relay_base
-    return f"{lan_base}/pair?{urlencode(q)}"
+    lan = _strip_base(lan_base)
+    q = {"s": token, "lan": lan}
+    relay = _strip_base(relay_base) if relay_base else ""
+    if relay:
+        q["relay"] = relay
+        return f"{relay}/pair?{urlencode(q)}"
+    return f"{lan}/pair?{urlencode(q)}"

@@ -1,0 +1,5 @@
+# Console docs — points at repo documentation until a hosted docs site exists
+/docs/console  https://github.com/dhruva137/SIH-2026/tree/demo/docs  302
+
+# APK download — wire to R2 or console release artifact in production
+# /download/apk  https://<your-r2-or-release-url>/COAST-standard-release.apk  302

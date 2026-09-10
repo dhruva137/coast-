@@ -23,12 +23,12 @@
         cache public OSM/Carto basemap tiles. Declared for public OSM/Carto
         basemap tiles only; with basemap off, network traffic is zero.
 
-        What still holds: no position, sensor sample, log or session ever leaves
-        the device (standard flavour). Nothing is uploaded, there is no analytics
-        and no crash reporting, and the navigation itself runs with the radio off
-        — that is the entire point of the product. The only outbound traffic with
-        basemap on is ordinary map-tile requests to public tile servers; there is
-        no API key and no account behind them.
+        What still holds: no analytics and no crash reporting. Navigation itself
+        runs with the radio off — that is the product point. Optional outbound
+        traffic: (1) public map-tile requests when basemap is on; (2) console
+        pairing ingest (`POST /ingest`) only after the user consents and pairs
+        with a laptop QR — token + lat/lon/mode/speed/accuracy, never a device ID.
+        Continuous LAN tracking to tracker_server exists only in the tracker flavour.
 
         Turning the basemap off in the app (SHOW GRID INSTEAD) removes the
         traffic with it: the app falls back to its own Canvas map and makes no
@@ -49,6 +49,10 @@
     <!-- Optional at runtime. The app arms and navigates without either. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+    <!-- Console QR scan (optional). Manual code entry works if denied. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <!-- API 31+: required to sample above 200 Hz (SENSOR_DELAY_FASTEST).
          Normal-level, granted at install, not shown to the user. -->
@@ -79,23 +83,32 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.IDR"
-        android:usesCleartextTraffic="false">
+        android:usesCleartextTraffic="true">
 
         <!--
-            No map API key, no Play-services map meta-data: the basemap is
-            MapLibre Native drawing OpenStreetMap raster tiles, which need
-            neither. See ui/MapLibreDriveMap.kt.
+            Cleartext is on so venue LAN pairing can POST http://<laptop>:8787/ingest
+            without a TLS cert on the demo laptop. No third-party analytics endpoints.
+            Map tiles remain HTTPS when basemap is on.
         -->
 
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:theme="@style/Theme.IDR.Splash"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="coast"
+                    android:host="pair" />
             </intent-filter>
         </activity>
 

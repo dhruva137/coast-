@@ -53,6 +53,10 @@ data class SpeedEstimate(
  * that is the anti-aliasing IO-VNBD's native 10 Hz logger already applied to
  * the training data.
  *
+ * A later bake-off winner drops in as the same asset name (`avnet_tiny.onnx`)
+ * with this tensor contract — do not retrain from the APK. Phone `infer_ms`
+ * is ONNX Runtime Mobile on CPU; lab GPU `infer_ms` is a different number.
+ *
  * Failure is loud: if the asset is missing or the session will not build,
  * [ready] stays false, [error] carries the reason and [onImu] returns null
  * forever. There is no constant stand-in pretending to be a model.

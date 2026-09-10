@@ -39,11 +39,10 @@ import `in`.sih26168.idr.ui.theme.Mute
 import `in`.sih26168.idr.ui.theme.Text as Fg
 
 /**
- * Placeholder account gate — **no network, no real auth**.
+ * Local profile gate — **no network, no real auth**.
  *
- * "Sign in" only stores a local display name in [Prefs]. Never add an HTTP
- * client, token exchange, or analytics hook here; that would break the F8
- * privacy claim (user data must not leave the device).
+ * "Sign in" only stores a display name in [Prefs]. Console pairing is a
+ * separate opt-in under Settings. Never add an HTTP client or analytics here.
  */
 @Composable
 fun AuthScreen(
@@ -91,32 +90,13 @@ fun AuthScreen(
             letterSpacing = 2.sp,
         )
         Text(
-            "No account required. Everything stays on this phone.",
+            "Local profile. No cloud account. Pairing a laptop console is optional.",
             color = Mute,
             fontFamily = IdrSans,
             fontSize = 14.sp,
         )
 
         Spacer(Modifier.height(8.dp))
-
-        if (onDemoMode != null) {
-            Button(
-                onClick = onDemoMode,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Bg),
-                shape = RoundedCornerShape(12.dp),
-            ) {
-                Text("DEMO MODE", fontFamily = IdrMono, letterSpacing = 1.4.sp, fontWeight = FontWeight.Bold)
-            }
-            Text(
-                "One tap · no setup · works in airplane mode",
-                color = Mute,
-                fontFamily = IdrSans,
-                fontSize = 13.sp,
-            )
-        }
 
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -128,6 +108,27 @@ fun AuthScreen(
                 Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
+                if (onDemoMode != null) {
+                    Button(
+                        onClick = onDemoMode,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Accent,
+                            contentColor = Bg,
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                    ) {
+                        Text("TRY DEMO", fontFamily = IdrMono, letterSpacing = 1.2.sp)
+                    }
+                    Text(
+                        "Skip setup. Replay a real GPS outage on the map.",
+                        color = Mute,
+                        fontFamily = IdrSans,
+                        fontSize = 12.sp,
+                    )
+                }
                 Button(
                     onClick = {
                         prefs.displayName = ""
@@ -139,7 +140,11 @@ fun AuthScreen(
                         .fillMaxWidth()
                         .height(52.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (onDemoMode != null) Accent.copy(alpha = 0.2f) else Accent,
+                        containerColor = if (onDemoMode != null) {
+                            Accent.copy(alpha = 0.2f)
+                        } else {
+                            Accent
+                        },
                         contentColor = if (onDemoMode != null) Accent else Bg,
                     ),
                     shape = RoundedCornerShape(12.dp),
@@ -191,9 +196,10 @@ fun AuthScreen(
                             prefs.displayName = ""
                             localName = ""
                             email = ""
+                            // Stay past the gate; this only clears the local label.
                         },
                     ) {
-                        Text("SIGN OUT", fontFamily = IdrMono, color = Mute, fontSize = 12.sp)
+                        Text("CLEAR PROFILE", fontFamily = IdrMono, color = Mute, fontSize = 12.sp)
                     }
                 }
             }
@@ -207,7 +213,7 @@ fun AuthScreen(
 
         Spacer(Modifier.weight(1f))
         Text(
-            "Auth stub · zero network calls · Prefs only",
+            "Device-local profile · zero account servers",
             fontFamily = IdrMono,
             color = Mute,
             fontSize = 10.sp,

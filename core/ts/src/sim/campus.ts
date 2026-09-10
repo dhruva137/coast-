@@ -3,7 +3,8 @@
 import type { IRoadGraph, IGraphNode, IGraphEdge } from "../types/index.ts";
 import { enuToLla } from "../math.ts";
 
-export const CAMPUS_ORIGIN = { lat: 12.9912, lon: 77.5523, alt: 920 };
+/** Coventry / Midlands — same geography as IO-VNBD training + APK demo mbtiles. */
+export const CAMPUS_ORIGIN = { lat: 52.4095, lon: -1.5969, alt: 182 };
 
 function N(
   id: string,
@@ -123,7 +124,7 @@ export function campusGraph(): IRoadGraph {
     E("ramp_up", "ramp_bot", "ramp_top", nodes, { garage: true }),
     E("ramp_quad", "ramp_top", "quad", nodes),
   ];
-  return { name: "SIH26168 Nodal Campus", origin: CAMPUS_ORIGIN, nodes, edges };
+  return { name: "IO-VNBD Midlands (Coventry)", origin: CAMPUS_ORIGIN, nodes, edges };
 }
 
 export const ROUTES = {

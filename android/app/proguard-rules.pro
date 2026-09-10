@@ -52,3 +52,9 @@
 -keep class org.maplibre.geojson.** { *; }
 -keepclassmembers class org.maplibre.android.** { *; }
 -dontwarn org.maplibre.**
+
+# ZXing embedded (tracker flavor QR pairing). CaptureActivity is started by
+# IntentIntegrator via class name; keep the journeyapps + zxing surface.
+-keep class com.journeyapps.barcodescanner.** { *; }
+-keep class com.google.zxing.** { *; }
+-dontwarn com.google.zxing.**

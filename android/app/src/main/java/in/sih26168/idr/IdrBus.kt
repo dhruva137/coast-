@@ -101,6 +101,13 @@ class IdrBus {
     private val _zuptTabletop = MutableStateFlow(false)
     val zuptTabletop: StateFlow<Boolean> = _zuptTabletop.asStateFlow()
 
+    /**
+     * User-forced stationary hold (tabletop / "I am not moving"). Independent of
+     * auto ZUPT. Restored from [in.sih26168.idr.data.Prefs.forceStationary].
+     */
+    private val _forceStationary = MutableStateFlow(false)
+    val forceStationary: StateFlow<Boolean> = _forceStationary.asStateFlow()
+
     /** Horizontal speed from [nav.NaiveGhostEstimator], m/s. */
     private val _naiveGhostSpeedMps = MutableStateFlow(0.0)
     val naiveGhostSpeedMps: StateFlow<Double> = _naiveGhostSpeedMps.asStateFlow()
@@ -131,6 +138,21 @@ class IdrBus {
 
     fun setZuptTabletop(on: Boolean) {
         _zuptTabletop.value = on
+    }
+
+    fun setForceStationary(on: Boolean) {
+        _forceStationary.value = on
+    }
+
+    /**
+     * Onset-calibrated compass during GNSS outage. Restored from
+     * [in.sih26168.idr.data.Prefs.fuseCompass] (default on).
+     */
+    private val _fuseCompass = MutableStateFlow(true)
+    val fuseCompass: StateFlow<Boolean> = _fuseCompass.asStateFlow()
+
+    fun setFuseCompass(on: Boolean) {
+        _fuseCompass.value = on
     }
 
     /**
@@ -186,6 +208,23 @@ class IdrBus {
 
     fun publishLocation(s: LocationStatus) {
         _location.value = s
+    }
+
+    /**
+     * Deep-link / QR payload waiting for [ui.PairingScreen] (`coast://pair?…`
+     * or an http `/pair?s=` URL). Survives onboarding; cleared after the
+     * pairing screen consumes it.
+     */
+    private val _pendingPairRaw = MutableStateFlow<String?>(null)
+    val pendingPairRaw: StateFlow<String?> = _pendingPairRaw.asStateFlow()
+
+    fun offerPendingPair(raw: String) {
+        val t = raw.trim()
+        if (t.isNotEmpty()) _pendingPairRaw.value = t
+    }
+
+    fun clearPendingPair() {
+        _pendingPairRaw.value = null
     }
 
     @Volatile

@@ -24,6 +24,7 @@ object DemoMode {
     fun arm(prefs: Prefs, bus: IdrBus) {
         prefs.authDone = true
         prefs.onboardingDone = true
+        prefs.vehicleCheckDone = true
         prefs.demoMode = true
         prefs.replayMode = true
         prefs.showGhostCar = true

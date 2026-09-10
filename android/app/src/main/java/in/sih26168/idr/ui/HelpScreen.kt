@@ -1,5 +1,6 @@
 package `in`.sih26168.idr.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -16,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import `in`.sih26168.idr.IdrBus
+import `in`.sih26168.idr.ui.theme.Accent
 import `in`.sih26168.idr.ui.theme.IdrMono
 import `in`.sih26168.idr.ui.theme.IdrSans
 import `in`.sih26168.idr.ui.theme.Mute
@@ -23,11 +25,16 @@ import `in`.sih26168.idr.ui.theme.Telem
 import `in`.sih26168.idr.ui.theme.Text as Fg
 
 /**
- * The re-openable half of onboarding: replay the walkthrough, re-run the
- * hardware check, re-do the mount calibration, and read the project claims.
+ * Re-openable from Settings only (not a tab, not on Drive). Replay the
+ * walkthrough, re-run the hardware check, and re-do mount calibration.
+ * Project claims live under Settings → About.
  */
 @Composable
-fun HelpScreen(bus: IdrBus, onReplayOnboarding: () -> Unit) {
+fun HelpScreen(
+    bus: IdrBus,
+    onReplayOnboarding: () -> Unit,
+    onBack: (() -> Unit)? = null,
+) {
     Column(
         Modifier
             .fillMaxSize()
@@ -35,6 +42,18 @@ fun HelpScreen(bus: IdrBus, onReplayOnboarding: () -> Unit) {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
+        if (onBack != null) {
+            Text(
+                "← SETTINGS",
+                modifier = Modifier
+                    .padding(bottom = 4.dp)
+                    .clickable(onClick = onBack),
+                fontFamily = IdrMono,
+                color = Accent,
+                fontSize = 11.sp,
+                letterSpacing = 1.sp,
+            )
+        }
         Text(
             "Help",
             fontFamily = IdrSans,
@@ -70,19 +89,18 @@ fun HelpScreen(bus: IdrBus, onReplayOnboarding: () -> Unit) {
         )
         Qa(
             "Does it need the internet?",
-            "Navigation does not. INTERNET is declared for public OSM/Carto basemap tiles " +
-                "only; with basemap off, network traffic is zero. Turn the basemap off " +
-                "(SHOW GRID) for a fully offline map. There is no account, no analytics, " +
-                "and no upload of your position or sessions on the standard build. The " +
-                "trained model runs on the phone.",
+            "Navigation does not. INTERNET is declared for public OSM/Carto basemap " +
+                "tiles and, if you opt in, laptop-console pairing. With basemap off and " +
+                "no pair, network traffic is zero. There is no cloud account and no " +
+                "analytics. The trained speed model runs on the phone.",
         )
         Qa(
             "What does it record, and where does it go?",
-            "Navigating on the DRIVE tab records nothing at all. The RECORD tab is a " +
-                "research tool: it writes raw sensor and GPS readings to CSV files in this " +
-                "app's own folder on the phone, and the RECORD tab lists every file by " +
-                "name before you start. Nothing is uploaded, ever. Uninstalling the app " +
-                "deletes the lot.",
+            "Navigating on the DRIVE tab records nothing to disk. The RECORD tool " +
+                "(under Settings) writes raw sensor and GPS readings to CSV files in this " +
+                "app's own folder. Pairing, if you scan a console QR, streams live lat/lon " +
+                "to that laptop only — never a device ID. Uninstalling the app deletes " +
+                "local logs.",
         )
         Qa(
             "What does the accuracy figure mean?",
@@ -94,13 +112,18 @@ fun HelpScreen(bus: IdrBus, onReplayOnboarding: () -> Unit) {
         )
         Qa(
             "Why is there no street map?",
-            "Offline street tiles were not shipped in this build, and a map that needs " +
-                "wifi is worse than no map at a venue with none. Every distance drawn is a " +
-                "real measured distance on a metre grid.",
+            "There is — OpenStreetMap tiles when Basemap is on in Settings. Turn it " +
+                "off for a metre grid that works with the radio off. Offline mbtiles ship " +
+                "with Demo Mode for the UK clip.",
         )
 
-        Header("ABOUT THE PROJECT")
-        AboutScreen()
+        Text(
+            "Project claims and limits are under Settings → About.",
+            fontFamily = IdrSans,
+            color = Mute,
+            fontSize = 13.sp,
+            lineHeight = 18.sp,
+        )
         Spacer(Modifier.height(24.dp))
     }
 }

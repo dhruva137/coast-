@@ -1,4 +1,4 @@
-"""IO-VNBD loader for 10 Hz AVNet-tiny windows.
+"""Compatibility adapter for authoritative IO-VNBD training windows.
 
 Official dataset
     https://github.com/onyekpeu/IO-VNBD
@@ -12,12 +12,15 @@ If that directory is missing or empty, we fall back to ``synthetic_tw``.
 If a CSV is present but ≤ 1 MB (or is a Git LFS pointer), we raise
 ``IoVnbdLfsError`` instead of silently training on stubs.
 
-IO-VNBD is 10 Hz. Windows are 2.0 s → 20 samples (not AVNet's 200 @ 200 Hz).
+Axes, units, CAN labels and windowing are owned by
+``lab/stress/load_iovnbd.py`` and ``lab/models/speed_data.py``. This module
+keeps the historical ``WindowBatch`` API for callers such as ``train_avnet``;
+it must not independently interpret phone CSV headers.
 """
 
 from __future__ import annotations
 
-import csv
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -29,6 +32,26 @@ except ImportError:
     from log_schema import IMU_HZ_IO_VNBD, WINDOW_SAMPLES, WINDOW_SECONDS  # type: ignore
     from synthetic_tw import WindowBatch, generate_windows  # type: ignore
 
+_REPO = Path(__file__).resolve().parents[2]
+_STRESS = _REPO / "lab" / "stress"
+_MODELS = _REPO / "lab" / "models"
+for _path in (_STRESS, _MODELS):
+    if str(_path) not in sys.path:
+        sys.path.insert(0, str(_path))
+
+from load_iovnbd import (  # noqa: E402
+    IoVnbdLfsError as _AuthoritativeLfsError,
+    attach_vehicle_truth,
+    find_smartphone_csvs,
+    load_smartphone_csv,
+    verify_csv_not_lfs_stub as _verify_authoritative_csv,
+)
+from speed_data import (  # noqa: E402
+    DEFAULT_STRIDE,
+    DriveWindows,
+    load_drive_windows,
+)
+
 LFS_MIN_BYTES = 1_000_000
 DEFAULT_REL = Path("data") / "raw" / "IO-VNBD"
 LFS_HINT = (
@@ -39,53 +62,7 @@ LFS_HINT = (
     "See https://github.com/onyekpeu/IO-VNBD"
 )
 
-# Fuzzy header tokens → our 6-axis + labels. IO-VNBD smartphone tables use
-# "Gyroscope (Yaw|Pitch|Roll)" and "GPS speed" in km/h.
-_ALIASES: dict[str, tuple[str, ...]] = {
-    "ax": ("accelerometer x", "accel_x", "acc_x", "accx", "ax", "accx[m/s2]", "longitudinal acceleration"),
-    "ay": ("accelerometer y", "accel_y", "acc_y", "accy", "ay", "accy[m/s2]", "lateral acceleration"),
-    "az": ("accelerometer z", "accel_z", "acc_z", "accz", "az", "accz[m/s2]"),
-    "gx": (
-        "gyroscope roll",
-        "gyroscope (roll)",
-        "gyro_x",
-        "gyrox",
-        "gx",
-        "roll rate",
-        "rollrate",
-        "wx",
-    ),
-    "gy": (
-        "gyroscope pitch",
-        "gyroscope (pitch)",
-        "gyro_y",
-        "gyroy",
-        "gy",
-        "pitch rate",
-        "pitchrate",
-        "wy",
-    ),
-    "gz": (
-        "gyroscope yaw",
-        "gyroscope (yaw)",
-        "gyro_z",
-        "gyroz",
-        "gz",
-        "yaw rate",
-        "yawrate",
-        "yaw_rate",
-        "wz",
-    ),
-    "speed": ("gps speed", "speed", "velocity", "vf", "gps_speed", "veh_speed"),
-    "bearing": ("gps orientation", "bearing", "heading", "course", "gps heading", "orientation yaw"),
-    "lat": ("gps latitude", "latitude", "lat"),
-    "lon": ("gps longitude", "longitude", "lon", "lng"),
-    "t": ("time since start", "timestamp", "time", "t", "t_ns", "gps time", "millis"),
-}
-
-
-class IoVnbdLfsError(RuntimeError):
-    """CSV on disk is an LFS pointer stub or otherwise unusably small."""
+IoVnbdLfsError = _AuthoritativeLfsError
 
 
 def repo_root() -> Path:
@@ -96,148 +73,32 @@ def default_raw_dir() -> Path:
     return repo_root() / DEFAULT_REL
 
 
-def _norm(name: str) -> str:
-    s = name.strip().lower()
-    for ch in "[](){}":
-        s = s.replace(ch, " ")
-    s = s.replace("_", " ").replace("-", " ")
-    return " ".join(s.split())
-
-
-def _is_lfs_pointer(path: Path) -> bool:
-    try:
-        size = path.stat().st_size
-    except OSError:
-        return False
-    if size > 1024:
-        return False
-    try:
-        head = path.read_text(encoding="utf-8", errors="ignore")[:240]
-    except OSError:
-        return False
-    h = head.lower()
-    return "git-lfs" in h or head.startswith("version https://git-lfs")
-
-
 def verify_csv_not_lfs_stub(path: Path, min_bytes: int = LFS_MIN_BYTES) -> None:
-    """Raise IoVnbdLfsError unless ``path`` is a real CSV larger than 1 MB."""
-    path = Path(path)
-    if not path.is_file():
-        raise FileNotFoundError(path)
-    size = path.stat().st_size
-    if _is_lfs_pointer(path) or size <= min_bytes:
-        raise IoVnbdLfsError(
-            f"{path} is {size} bytes (need > {min_bytes}). {LFS_HINT}"
-        )
-
-
-def _map_header(header: list[str]) -> dict[str, int]:
-    norms = [_norm(h) for h in header]
-    found: dict[str, int] = {}
-    for key, aliases in _ALIASES.items():
-        alias_norms = {_norm(a) for a in aliases}
-        alias_compact = {a.replace(" ", "") for a in alias_norms}
-        for i, n in enumerate(norms):
-            n_compact = n.replace(" ", "")
-            if n in alias_norms or n_compact in alias_compact:
-                found[key] = i
-                break
-            if any(a in n for a in alias_norms if len(a) > 3):
-                found[key] = i
-                break
-    return found
-
-
-def _col_unit_is_kmh(header_cell: str) -> bool:
-    n = _norm(header_cell)
-    return "km" in n and "h" in n.replace(" ", "")
+    """Delegate LFS validation to the authoritative raw loader."""
+    _verify_authoritative_csv(Path(path), min_bytes=min_bytes)
 
 
 def parse_generic_csv(path: Path) -> dict[str, np.ndarray]:
-    """Read a smartphone / ECU CSV into SI arrays. Requires size > 1 MB."""
-    verify_csv_not_lfs_stub(path)
-    with path.open("r", newline="", encoding="utf-8", errors="ignore") as f:
-        reader = csv.reader(f)
-        header = next(reader)
-        idx = _map_header(header)
-        need = ("ax", "ay", "az", "gx", "gy", "gz")
-        missing = [k for k in need if k not in idx]
-        if missing:
-            raise ValueError(f"{path.name}: cannot map IMU columns {missing} from {header[:24]}")
-        rows: list[list[float]] = []
-        for raw in reader:
-            if len(raw) < len(header):
-                continue
-            try:
-                rec = [float(raw[idx[k]]) for k in need]
-            except (ValueError, IndexError):
-                continue
-            speed = float(raw[idx["speed"]]) if "speed" in idx else float("nan")
-            bearing = float(raw[idx["bearing"]]) if "bearing" in idx else float("nan")
-            t = float(raw[idx["t"]]) if "t" in idx else float(len(rows))
-            rows.append(rec + [speed, bearing, t])
-    if len(rows) < WINDOW_SAMPLES:
-        raise ValueError(f"{path.name}: only {len(rows)} usable rows")
-    arr = np.asarray(rows, dtype=np.float64)
-    imu = arr[:, :6].astype(np.float32)
-    speed = arr[:, 6].astype(np.float32)
-    bearing = arr[:, 7].astype(np.float32)
-    t = arr[:, 8]
-    # GPS speed in the smartphone tables is km/h.
-    hdr_speed = header[idx["speed"]] if "speed" in idx else ""
-    finite = speed[np.isfinite(speed)]
-    if _col_unit_is_kmh(hdr_speed) or (finite.size > 10 and float(np.nanmax(np.abs(finite))) > 80.0):
-        speed = speed / 3.6
-    return {"imu": imu, "speed": speed, "bearing": bearing, "t": t.astype(np.float32)}
-
-
-def _window_stream(
-    imu: np.ndarray,
-    speed: np.ndarray,
-    bearing: np.ndarray,
-    t: np.ndarray,
-    *,
-    stride: int = 5,
-) -> WindowBatch:
-    n = int(imu.shape[0])
-    starts = list(range(0, n - WINDOW_SAMPLES + 1, stride))
-    if not starts:
-        raise ValueError("not enough samples to form a 2.0 s window")
-    n_w = len(starts)
-    out_imu = np.empty((n_w, WINDOW_SAMPLES, 6), dtype=np.float32)
-    out_speed = np.empty(n_w, dtype=np.float32)
-    out_psi = np.empty(n_w, dtype=np.float32)
-    for i, s in enumerate(starts):
-        e = s + WINDOW_SAMPLES
-        out_imu[i] = imu[s:e]
-        last = e - 1
-        sp = speed[last]
-        out_speed[i] = sp if np.isfinite(sp) else 0.0
-        # Yaw-rate label: GNSS heading finite-diff, else body gz.
-        if last > 0 and np.isfinite(bearing[last]) and np.isfinite(bearing[last - 1]):
-            dt = float(t[last] - t[last - 1])
-            if dt <= 0:
-                dt = 1.0 / IMU_HZ_IO_VNBD
-            # bearing may be degrees
-            b1, b0 = float(bearing[last]), float(bearing[last - 1])
-            if abs(b1) > 2 * np.pi + 0.2 or abs(b0) > 2 * np.pi + 0.2:
-                b1, b0 = np.deg2rad(b1), np.deg2rad(b0)
-            d = (b1 - b0 + np.pi) % (2 * np.pi) - np.pi
-            out_psi[i] = np.float32(d / dt)
-        else:
-            out_psi[i] = imu[last, 5]
-    zeros = np.zeros(n_w, dtype=np.float32)
-    return WindowBatch(
-        imu=out_imu,
-        speed=out_speed,
-        psi_dot=out_psi,
-        roll_res=zeros.copy(),
-        pitch_res=zeros.copy(),
-        phi=zeros.copy(),
-        vehicle=np.zeros(n_w, dtype=np.int8),
-        hz=IMU_HZ_IO_VNBD,
-        window_s=WINDOW_SECONDS,
-    )
+    """Read a smartphone CSV through the authoritative SI/CAN parser."""
+    data = attach_vehicle_truth(load_smartphone_csv(path))
+    n = int(data.get("can_n", data["n"]))
+    imu = np.column_stack(
+        [data["ax"], data["ay"], data["az"], data["gx"], data["gy"], data["gz"]]
+    )[:n]
+    has_can = data.get("truth_source") == "can_10hz"
+    return {
+        "imu": np.ascontiguousarray(imu, dtype=np.float32),
+        "speed": np.ascontiguousarray(
+            data["can_speed_mps"][:n] if has_can else data["speed_mps"][:n],
+            dtype=np.float32,
+        ),
+        "bearing": np.ascontiguousarray(data["bearing_deg"][:n], dtype=np.float32),
+        "t": np.ascontiguousarray(data["t_s"][:n], dtype=np.float32),
+        "psi_dot": np.ascontiguousarray(
+            data["can_yaw_rate_rad_s"][:n] if has_can else data["gz"][:n],
+            dtype=np.float32,
+        ),
+    }
 
 
 def discover_csvs(raw_dir: Path, *, smartphone_only: bool = True) -> list[Path]:
@@ -245,16 +106,46 @@ def discover_csvs(raw_dir: Path, *, smartphone_only: bool = True) -> list[Path]:
         return []
     files = sorted(p for p in raw_dir.rglob("*.csv") if p.is_file())
     if smartphone_only:
-        s_files = [p for p in files if p.name.upper().startswith("S-")]
-        if s_files:
-            return s_files
+        smartphone = [p for p in files if p.name.upper().startswith("S-")]
+        if smartphone:
+            return smartphone
     return files
+
+
+def _batch_from_drives(drives: list[DriveWindows]) -> WindowBatch:
+    """Adapt authoritative drive windows to the legacy AVNet batch API."""
+    if not drives:
+        raise ValueError("no authoritative IO-VNBD drives produced windows")
+    imu = np.concatenate([drive.imu for drive in drives], axis=0)
+    speed = np.concatenate([drive.speed for drive in drives], axis=0)
+    psi_dot = np.concatenate(
+        [
+            drive.yaw_rate
+            if drive.yaw_rate is not None
+            else drive.imu[:, -1, 5]
+            for drive in drives
+        ],
+        axis=0,
+    ).astype(np.float32)
+    zeros = np.zeros(speed.shape[0], dtype=np.float32)
+    return WindowBatch(
+        imu=np.ascontiguousarray(imu, dtype=np.float32),
+        speed=np.ascontiguousarray(speed, dtype=np.float32),
+        psi_dot=psi_dot,
+        roll_res=zeros.copy(),
+        pitch_res=zeros.copy(),
+        phi=zeros.copy(),
+        vehicle=np.zeros(speed.shape[0], dtype=np.int8),
+        hz=IMU_HZ_IO_VNBD,
+        window_s=WINDOW_SECONDS,
+    )
 
 
 def load_io_vnbd(
     raw_dir: Path | None = None,
     *,
     exclude_names: set[str] | frozenset[str] | None = None,
+    can_only: bool = True,
 ) -> WindowBatch:
     """Parse every real CSV under the raw dir into 20-sample windows.
 
@@ -275,6 +166,11 @@ def load_io_vnbd(
             usable.append(p)
         except IoVnbdLfsError:
             tiny.append(p)
+    # Preserve LFS-stub detection above, then use the authoritative discovery
+    # policy to deduplicate synchronised/unsynchronised copies.
+    preferred = set(find_smartphone_csvs(raw_dir))
+    if preferred:
+        usable = [path for path in usable if path in preferred]
     if not usable:
         sample = tiny[0] if tiny else csvs[0]
         raise IoVnbdLfsError(f"{sample} {LFS_HINT}")
@@ -282,30 +178,21 @@ def load_io_vnbd(
         print(f"io_vnbd: skipping {len(tiny)} LFS stub/tiny CSV(s); using {len(usable)}")
     if exclude:
         print(f"io_vnbd: leave-file-out exclude={sorted(exclude)} train_files={len(usable)}")
-    batches: list[WindowBatch] = []
+    drives: list[DriveWindows] = []
     errors: list[str] = []
     for p in usable:
         try:
-            parsed = parse_generic_csv(p)
-            batches.append(
-                _window_stream(parsed["imu"], parsed["speed"], parsed["bearing"], parsed["t"])
-            )
+            drive = load_drive_windows(p, stride=DEFAULT_STRIDE)
+            if can_only and drive.label_source != "can_10hz":
+                continue
+            drives.append(drive)
         except Exception as exc:  # noqa: BLE001 — skip unmappable tables
             errors.append(f"{p.name}: {exc}")
-    if not batches:
+    if not drives:
         raise ValueError("no IO-VNBD tables produced windows:\n" + "\n".join(errors[:8]))
     if errors:
-        print(f"io_vnbd: skipped {len(errors)} CSV(s); used {len(batches)}")
-    imu = np.concatenate([b.imu for b in batches], axis=0)
-    return WindowBatch(
-        imu=imu,
-        speed=np.concatenate([b.speed for b in batches]),
-        psi_dot=np.concatenate([b.psi_dot for b in batches]),
-        roll_res=np.concatenate([b.roll_res for b in batches]),
-        pitch_res=np.concatenate([b.pitch_res for b in batches]),
-        phi=np.concatenate([b.phi for b in batches]),
-        vehicle=np.concatenate([b.vehicle for b in batches]),
-    )
+        print(f"io_vnbd: skipped {len(errors)} CSV(s); used {len(drives)}")
+    return _batch_from_drives(drives)
 
 
 def load_windows(

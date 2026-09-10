@@ -1,0 +1,63 @@
+{
+  "purpose": "production_export",
+  "training_scope": "all_clean_can_drives",
+  "drives": [
+    "S-M",
+    "S-S1",
+    "S-S2",
+    "S-S3a",
+    "S-S3b",
+    "S-S3c",
+    "S-S4",
+    "S-Vfa01",
+    "S-Vfa02",
+    "S-Vta16",
+    "S-Vta1a",
+    "S-Vta2",
+    "S-Vta29",
+    "S-Vta30",
+    "S-Vtb1",
+    "S-Vtb2",
+    "S-Vtb5",
+    "S-Vw14b",
+    "S-Vw14c",
+    "S-Vw16a",
+    "S-Vw2",
+    "S-Vw4",
+    "S-Y1"
+  ],
+  "n_windows": 487808,
+  "epochs": 40,
+  "device": "cuda",
+  "input_shape": [
+    1,
+    6,
+    20
+  ],
+  "output_shape": [
+    1,
+    6
+  ],
+  "input_units": [
+    "m/s^2",
+    "m/s^2",
+    "m/s^2",
+    "rad/s",
+    "rad/s",
+    "rad/s"
+  ],
+  "input_axes": [
+    "ax",
+    "ay",
+    "az",
+    "gx",
+    "gy",
+    "gz"
+  ],
+  "normalisation": "none_raw_si_including_gravity",
+  "train_seconds": 2982.0790383000003,
+  "final_loss": -0.8956287154339878,
+  "input_name": "imu",
+  "output_name": "outputs",
+  "sha256": "d7b4ef53d43e157f52504fbb3f539b9b78eb95f702622442188fa338e102418c"
+}

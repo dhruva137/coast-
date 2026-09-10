@@ -56,6 +56,7 @@ EARTH_R_M = 6_371_008.8
 DEFAULT_N_PARTICLES = 600
 DEFAULT_SPEED_SCALE_SIGMA = 0.06
 DEFAULT_YAW_SIGMA_RAD_S = 0.12
+DEFAULT_HEADING_SIGMA_DEG = 16.6
 DEFAULT_SEED_RADIUS_M = 60.0
 DEFAULT_ESS_FRACTION = 0.5
 JUNCTION_TURN_PENALTY_DEG = 100.0
@@ -232,7 +233,14 @@ class RoadParticleFilter:
         return True
 
     def step(
-        self, v_mps: float, yaw_rate_rad_s: float, dt: float, *, want_position: bool = True
+        self,
+        v_mps: float,
+        yaw_rate_rad_s: float,
+        dt: float,
+        *,
+        heading_deg: float | None = None,
+        heading_sigma_deg: float = DEFAULT_HEADING_SIGMA_DEG,
+        want_position: bool = True,
     ) -> FilterState:
         """Advance one sample: propagate along the graph, weight by turn evidence.
 
@@ -259,10 +267,25 @@ class RoadParticleFilter:
             m = inv == gi
             lens, bears, cum, total = self._geom(int(e))
             totals[m] = total
+            walk = np.where(self.forward[m], self.s[m], total - self.s[m])
+            heading_k = np.clip(
+                np.searchsorted(cum, walk, side="left"), 0, max(lens.size - 1, 0)
+            )
+            if heading_deg is not None and math.isfinite(heading_deg) and lens.size:
+                road_heading = np.where(
+                    self.forward[m],
+                    bears[heading_k],
+                    (bears[heading_k] + 180.0) % 360.0,
+                )
+                heading_residual = (
+                    float(heading_deg) - road_heading + 180.0
+                ) % 360.0 - 180.0
+                logw[m] += -0.5 * (
+                    heading_residual / max(float(heading_sigma_deg), 1e-3)
+                ) ** 2
             if lens.size < 2:
                 continue
             fwd = self.forward[m]
-            walk = np.where(fwd, self.s[m], total - self.s[m])
             k = np.clip(np.searchsorted(cum, walk, side="left"), 0, lens.size - 2)
             d = (bears[k + 1] - bears[k] + 180.0) % 360.0 - 180.0
             kappa = np.radians(d) / np.maximum(lens[k], 1.0)

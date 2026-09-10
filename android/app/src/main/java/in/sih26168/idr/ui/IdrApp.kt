@@ -1,5 +1,6 @@
 package `in`.sih26168.idr.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,9 +11,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.HelpOutline
-import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Navigation
+import androidx.compose.material.icons.outlined.QrCode
+import androidx.compose.material.icons.outlined.Sensors
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -32,37 +33,70 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `in`.sih26168.idr.IdrBus
 import `in`.sih26168.idr.data.Prefs
+import `in`.sih26168.idr.data.ThemePreference
 import `in`.sih26168.idr.sensor.DeviceProbe
 import `in`.sih26168.idr.sensor.LocationGate
 import `in`.sih26168.idr.ui.theme.Accent
 import `in`.sih26168.idr.ui.theme.Bg
 import `in`.sih26168.idr.ui.theme.Bg2
 import `in`.sih26168.idr.ui.theme.IdrMono
+import `in`.sih26168.idr.ui.theme.IdrTheme
 import `in`.sih26168.idr.ui.theme.Mute
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-private val Tabs = listOf("DRIVE", "SESSIONS", "SETTINGS", "ABOUT")
+/** Product tabs. About and Sessions are not tabs. */
+internal val IdrShellTabs = listOf("DRIVE", "SENSE", "CONNECT", "SETTINGS")
+
+internal const val TAB_DRIVE = 0
+internal const val TAB_SENSE = 1
+internal const val TAB_CONNECT = 2
+internal const val TAB_SETTINGS = 3
 
 /**
- * Shell. DRIVE is the default tab. SESSIONS lists field logs; SETTINGS holds
- * vehicle/demo/privacy; ABOUT reuses Help (onboarding replay + claims).
- * Field RECORD is reached from Settings so the bottom bar stays four items.
+ * Shell. DRIVE is the map. CONNECT hosts console pairing. SETTINGS holds
+ * vehicle, privacy, Help, and About. Sessions are not in the product nav.
  *
- * Auth stub runs once until guest/sign-in; reopenable from Settings.
- * Onboarding takes the whole window on first run and can be reopened from About.
- * Demo Mode skips both and starts the blackout replay in one tap.
+ * Local profile gate runs once until guest/sign-in; reopenable from Settings.
+ * Onboarding takes the whole window on first run and can be reopened from Help.
+ * Vehicle Check runs once after onboarding (prefs flag) and from Settings.
+ * Demo Mode skips auth/onboarding/vehicle-check and starts the blackout replay.
  */
 @Composable
 fun IdrApp(bus: IdrBus) {
     val ctx = LocalContext.current
     val prefs = remember { Prefs(ctx) }
-    var tab by rememberSaveable { mutableIntStateOf(0) }
+    var themePref by remember { mutableStateOf(prefs.themePreference) }
+    IdrTheme(preference = themePref) {
+        IdrAppContent(
+            bus = bus,
+            prefs = prefs,
+            themePref = themePref,
+            onThemePref = {
+                themePref = it
+                prefs.themePreference = it
+            },
+        )
+    }
+}
+
+@Composable
+private fun IdrAppContent(
+    bus: IdrBus,
+    prefs: Prefs,
+    themePref: ThemePreference,
+    onThemePref: (ThemePreference) -> Unit,
+) {
+    val ctx = LocalContext.current
+    var tab by rememberSaveable { mutableIntStateOf(TAB_DRIVE) }
     var authDone by remember { mutableStateOf(prefs.authDone) }
     var showAuthOverlay by remember { mutableStateOf(false) }
     var onboarding by remember { mutableStateOf(!prefs.onboardingDone) }
+    var vehicleCheck by remember { mutableStateOf(!prefs.vehicleCheckDone) }
+    var showVehicleCheckOverlay by remember { mutableStateOf(false) }
     var pendingDemoStart by rememberSaveable { mutableStateOf(false) }
     // Location-only gate for banners/onboarding. Notifications stay a separate
     // ask at START (see rememberNotificationGate). Refresh bus.location as soon
@@ -74,13 +108,28 @@ fun IdrApp(bus: IdrBus) {
     val permsOk = locPerm.granted
     val coarseOnly = locPerm.coarseOnly
     val request = locPerm.request
+    val pendingPair by bus.pendingPairRaw.collectAsStateWithLifecycle()
+    var helpOverlay by rememberSaveable { mutableStateOf(false) }
+    var historyOverlay by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(pendingPair) {
+        if (!pendingPair.isNullOrBlank()) {
+            helpOverlay = false
+            historyOverlay = false
+            tab = TAB_CONNECT
+        }
+    }
 
     fun enterDemoMode() {
         DemoMode.arm(prefs, bus)
         authDone = true
         showAuthOverlay = false
         onboarding = false
-        tab = 0
+        vehicleCheck = false
+        showVehicleCheckOverlay = false
+        helpOverlay = false
+        historyOverlay = false
+        tab = TAB_DRIVE
         pendingDemoStart = true
     }
 
@@ -90,6 +139,8 @@ fun IdrApp(bus: IdrBus) {
         bus.setReplayEnabled(prefs.replayMode)
         bus.setShowGhost(prefs.showGhostCar)
         bus.setZuptTabletop(prefs.zuptTabletop)
+        bus.setForceStationary(prefs.forceStationary)
+        bus.setFuseCompass(prefs.fuseCompass)
         if (prefs.demoMode) {
             bus.setBlackout(true)
         }
@@ -98,8 +149,8 @@ fun IdrApp(bus: IdrBus) {
         bus.publishLocation(LocationGate.status(ctx))
     }
 
-    LaunchedEffect(pendingDemoStart, authDone, onboarding) {
-        if (pendingDemoStart && authDone && !onboarding) {
+    LaunchedEffect(pendingDemoStart, authDone, onboarding, vehicleCheck) {
+        if (pendingDemoStart && authDone && !onboarding && !vehicleCheck) {
             DemoMode.start(ctx, prefs, bus)
             pendingDemoStart = false
         }
@@ -120,7 +171,6 @@ fun IdrApp(bus: IdrBus) {
 
     if (onboarding) {
         OnboardingScreen(
-            bus = bus,
             permsOk = permsOk,
             coarseOnly = coarseOnly,
             requestPerms = request,
@@ -133,6 +183,23 @@ fun IdrApp(bus: IdrBus) {
         return
     }
 
+    if (vehicleCheck || showVehicleCheckOverlay) {
+        VehicleCheckScreen(
+            bus = bus,
+            allowSkip = true,
+            onFinished = {
+                prefs.vehicleCheckDone = true
+                vehicleCheck = false
+                showVehicleCheckOverlay = false
+            },
+        )
+        return
+    }
+
+    BackHandler(enabled = helpOverlay) { helpOverlay = false }
+    BackHandler(enabled = historyOverlay && !helpOverlay) { historyOverlay = false }
+    BackHandler(enabled = !helpOverlay && !historyOverlay && tab == TAB_CONNECT) { tab = TAB_DRIVE }
+
     Scaffold(
         containerColor = Bg,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -141,23 +208,27 @@ fun IdrApp(bus: IdrBus) {
                 containerColor = Bg2,
                 modifier = Modifier.navigationBarsPadding(),
             ) {
-                Tabs.forEachIndexed { i, label ->
+                IdrShellTabs.forEachIndexed { i, label ->
                     val iconDesc = when (i) {
-                        0 -> "Drive — navigation map"
-                        1 -> "Sessions — recorded rides"
-                        2 -> "Settings"
-                        else -> "About and help"
+                        TAB_DRIVE -> "Drive — navigation map"
+                        TAB_SENSE -> "Sense — live sensor demo"
+                        TAB_CONNECT -> "Connect — pair with console"
+                        else -> "Settings"
                     }
                     NavigationBarItem(
-                        selected = tab == i,
-                        onClick = { tab = i },
+                        selected = tab == i && !helpOverlay && !historyOverlay,
+                        onClick = {
+                            helpOverlay = false
+                            historyOverlay = false
+                            tab = i
+                        },
                         icon = {
                             Icon(
                                 when (i) {
-                                    0 -> Icons.Outlined.Navigation
-                                    1 -> Icons.Outlined.Folder
-                                    2 -> Icons.Outlined.Settings
-                                    else -> Icons.AutoMirrored.Outlined.HelpOutline
+                                    TAB_DRIVE -> Icons.Outlined.Navigation
+                                    TAB_SENSE -> Icons.Outlined.Sensors
+                                    TAB_CONNECT -> Icons.Outlined.QrCode
+                                    else -> Icons.Outlined.Settings
                                 },
                                 contentDescription = iconDesc,
                                 modifier = Modifier.size(24.dp),
@@ -184,29 +255,45 @@ fun IdrApp(bus: IdrBus) {
                 .background(Bg)
                 .padding(pad),
         ) {
-            when (tab) {
-                0 -> DriveScreen(
+            when {
+                helpOverlay -> Column(Modifier.statusBarsPadding().fillMaxSize()) {
+                    HelpScreen(
+                        bus = bus,
+                        onReplayOnboarding = {
+                            helpOverlay = false
+                            onboarding = true
+                        },
+                        onBack = { helpOverlay = false },
+                    )
+                }
+                historyOverlay -> Column(Modifier.statusBarsPadding().fillMaxSize()) {
+                    HistoryScreen(onBack = { historyOverlay = false })
+                }
+                tab == TAB_DRIVE -> DriveScreen(
                     bus = bus,
                     permsOk = permsOk,
                     coarseOnly = coarseOnly,
                     requestPerms = request,
-                    onOpenHelp = { tab = 3 },
+                    onOpenPairing = { tab = TAB_CONNECT },
                     onStartDemo = { enterDemoMode() },
                 )
-                1 -> Column(Modifier.statusBarsPadding().fillMaxSize()) {
-                    SessionsScreen()
+                tab == TAB_SENSE -> LiveSensorScreen()
+                tab == TAB_CONNECT -> Column(Modifier.statusBarsPadding().fillMaxSize()) {
+                    PairingScreen(bus = bus)
                 }
-                2 -> Column(Modifier.statusBarsPadding().fillMaxSize()) {
+                else -> Column(Modifier.statusBarsPadding().fillMaxSize()) {
                     SettingsScreen(
                         bus = bus,
                         permsOk = permsOk,
                         requestPerms = request,
                         onOpenAccount = { showAuthOverlay = true },
                         onStartDemo = { enterDemoMode() },
+                        onOpenVehicleCheck = { showVehicleCheckOverlay = true },
+                        onOpenHelp = { helpOverlay = true },
+                        onOpenHistory = { historyOverlay = true },
+                        themePref = themePref,
+                        onThemePref = onThemePref,
                     )
-                }
-                else -> Column(Modifier.statusBarsPadding().fillMaxSize()) {
-                    HelpScreen(bus = bus, onReplayOnboarding = { onboarding = true })
                 }
             }
         }

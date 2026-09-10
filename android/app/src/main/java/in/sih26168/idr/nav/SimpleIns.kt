@@ -14,10 +14,18 @@ import `in`.sih26168.idr.data.TrailPoint
 import `in`.sih26168.idr.data.VehicleKind
 import kotlin.math.abs
 import kotlin.math.cos
+import kotlin.math.exp
 import kotlin.math.sin
 
 /**
- * Lean-aware strapdown coast: integrate gyro yaw-rate + speed, no magnetometer.
+ * Lean-aware strapdown coast: integrate gyro yaw-rate + speed, and during a
+ * GNSS outage pull heading toward an onset-calibrated compass.
+ *
+ * Magnetometer fusion matches `lab/stress/results/heading_fusion/summary.md`:
+ * the offset is the last GNSS bearing minus tilt-compensated mag heading at
+ * that instant — no oracle, no truth after the signal dies. Complementary
+ * filter tau = 6 s (published fused column). This is the heading channel only;
+ * the system headline remains map-in-loop 2.02× median position error.
  *
  * ## Frames
  *
@@ -146,6 +154,42 @@ class SimpleIns(
      */
     var headingReferenced: Boolean = false
         private set
+
+    /**
+     * When true (default), GNSS-outage heading is complementary-filtered toward
+     * the onset-calibrated compass. Off restores gyro-only, which existing
+     * unit tests that inject mag=0 never exercise either way.
+     */
+    var fuseCompass: Boolean = true
+        private set
+
+    /**
+     * User-asserted stationary hold. Zeros speed so IMU noise cannot coast;
+     * automatic ZUPT still runs for gyro bias.
+     */
+    var forceHold: Boolean = false
+        private set
+
+    /** Tilt-compensated mag heading, degrees. NaN when the field is unusable. */
+    private var magHeadingDeg: Double = Double.NaN
+
+    /**
+     * wrap180(GNSS bearing − mag heading) captured while locked. Applied during
+     * outage so the compass reads in the same frame as course-over-ground.
+     */
+    private var magOffsetDeg: Double = Double.NaN
+    private var compassCalibrated: Boolean = false
+    private var lastGnssBearingDeg: Double = Double.NaN
+    private var compassFusedThisTick: Boolean = false
+
+    fun setFuseCompass(on: Boolean) {
+        fuseCompass = on
+        if (!on) compassFusedThisTick = false
+    }
+
+    fun setForceHold(on: Boolean) {
+        forceHold = on
+    }
 
     // ---- Vehicle profile ---------------------------------------------------
     var profile: VehicleProfile = profile
@@ -326,6 +370,12 @@ class SimpleIns(
         lateralViolation = null
         turnViolation = null
         baroFloor.reset()
+        magHeadingDeg = Double.NaN
+        magOffsetDeg = Double.NaN
+        compassCalibrated = false
+        lastGnssBearingDeg = Double.NaN
+        compassFusedThisTick = false
+        // fuseCompass / forceHold are session preferences, not ride state.
     }
 
     /**
@@ -476,7 +526,21 @@ class SimpleIns(
             zuptNote = ""
         }
 
+        if (magFieldValid(frame.mx, frame.my, frame.mz)) {
+            magHeadingDeg = tiltCompensatedHeadingDeg(
+                frame.ax, frame.ay, frame.az, frame.mx, frame.my, frame.mz,
+            )
+        } else {
+            magHeadingDeg = Double.NaN
+        }
+
         val lock = gnssLock(frame.tNs)
+        if (lock && headingReferenced &&
+            magHeadingDeg.isFinite() && lastGnssBearingDeg.isFinite()
+        ) {
+            magOffsetDeg = wrap180(lastGnssBearingDeg - magHeadingDeg)
+            compassCalibrated = true
+        }
         val modelFresh = modelSpeed.isFinite() &&
             modelTNs != 0L &&
             frame.tNs - modelTNs in 0 until modelStaleNs
@@ -504,6 +568,14 @@ class SimpleIns(
             speedSource = SpeedSource.FALLBACK
         }
 
+        if (forceHold) {
+            speed = 0.0
+            stationary = true
+            if (zuptNote.isEmpty()) {
+                zuptNote = "HOLD — user asserted not moving"
+            }
+        }
+
         val sol = solveLean(
             LeanObservation(
                 gy = gyV,
@@ -517,6 +589,14 @@ class SimpleIns(
         coordinated = sol.coordinated
         yaw = stepHeading(yaw, dt, gyV, gzV, lean, leanAware = true)
         yawCar = stepHeading(yawCar, dt, gyV, gzV, 0.0, leanAware = false)
+
+        compassFusedThisTick = false
+        if (!lock && fuseCompass && compassCalibrated && magHeadingDeg.isFinite()) {
+            val target = deg2rad(wrap360(magHeadingDeg + magOffsetDeg))
+            val alpha = exp(-dt / COMPASS_TAU_S)
+            yaw += (1.0 - alpha) * wrapPi(target - yaw)
+            compassFusedThisTick = true
+        }
 
         // Displacement is integrated unconditionally. This is the whole point:
         // with no fix and no origin we still know how far and in what shape.
@@ -576,12 +656,18 @@ class SimpleIns(
             north = (fix.lat - originLat) * mpd.mLat
         }
         speed = maxOf(0.0, fix.speed)
+        if (forceHold) speed = 0.0
         if (fix.speed > 1.0 && !fix.bearing.isNaN()) {
             yaw = deg2rad(fix.bearing)
             yawCar = yaw
             // Only now is heading a true compass bearing rather than an angle
             // turned since arming.
             headingReferenced = true
+            lastGnssBearingDeg = wrap360(fix.bearing)
+            if (magHeadingDeg.isFinite()) {
+                magOffsetDeg = wrap180(lastGnssBearingDeg - magHeadingDeg)
+                compassCalibrated = true
+            }
         }
         anchorAccH = fix.accH
         distanceSinceFixM = 0.0
@@ -782,6 +868,10 @@ class SimpleIns(
             driftRateMeasured = measuredDrift,
             distanceSinceFixM = distanceSinceFixM,
             locationStatus = status,
+            engineLabel = when (navMode) {
+                NavMode.RELATIVE, NavMode.IDLE -> "RELATIVE"
+                else -> "FREE-DR"
+            },
             headingReferenced = headingReferenced,
             mountApplied = mount != null,
             mountNote = mountNote,
@@ -789,6 +879,10 @@ class SimpleIns(
             floorChanged = baroFloor.recentlyChanged(nowNs),
             floorChangeNote = baroFloor.note(nowNs),
             pressureHpa = baroFloor.pressureHpa,
+            stationary = stationary,
+            zuptNote = zuptNote,
+            compassFused = compassFusedThisTick,
+            forceHold = forceHold,
         )
     }
 
@@ -879,6 +973,14 @@ class SimpleIns(
     }
 
     companion object {
+        /**
+         * Complementary-filter time constant matching the published fused
+         * column in `lab/stress/results/heading_fusion/summary.md` (tau = 6 s).
+         * Compass-only and fused medians were tied (7.22% vs 7.23%); the filter
+         * is what a phone actually runs between magnetometer samples.
+         */
+        const val COMPASS_TAU_S = 6.0
+
         /**
          * Fraction of distance travelled, used as the error growth rate until a
          * loop closure measures the real one. This is the benchmark TARGET the

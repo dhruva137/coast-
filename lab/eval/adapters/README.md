@@ -26,6 +26,12 @@ Recommended first picks (two-wheeler / GPS truth):
 |---|---|
 | `synthetic` | Committed tiny fixture under `lab/eval/fixtures/dataset_stress_synthetic/` — harness runs green without a download |
 | `iovnbd` | IO-VNBD smartphone CSV headers (GPS latitude / Accelerometer X / …) |
+| `comma2k19` | Flattened comma2k19-style CSV (time + accel/gyro + lat/lon). Tiny fixture: `lab/eval/fixtures/comma2k19_tiny/`. Do **not** auto-download the ~97 GB raw corpus |
+| `gsdc` | Optional Google Smartphone Decimeter Challenge-style combined CSV |
 
 Add a new adapter by subclassing `ColumnAdapter` in `base.py`, registering it in
 `__init__.py`, and mapping that dataset's columns → `SessionArrays`.
+
+Example (comma2k19 fixture, no download)::
+
+    python -c "from lab.eval.adapters import get_adapter; a=get_adapter('comma2k19'); print(a.load(a.discover(__import__('pathlib').Path('lab/eval/fixtures/comma2k19_tiny'))[0]).name)"

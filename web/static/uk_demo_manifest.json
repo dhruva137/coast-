@@ -1,0 +1,9 @@
+{
+  "clip": "android/app/src/main/assets/demo/iovnbd_demo.csv",
+  "apk_asset": "demo/iovnbd_demo.csv",
+  "outage_s": [20.0, 80.0],
+  "region": "Coventry / Midlands UK",
+  "drive": "IO-VNBD demo clip",
+  "story": "GNSS bookends around a 20–80 s outage. Fleet, Engine, and the APK replay share this clip.",
+  "honesty": "Fleet visualizes the APK demo-clip geography with scripted GNSS→IDR→GNSS labels. That is not a live phone particle filter. Do not overwrite the frozen APK CSV or mbtiles."
+}

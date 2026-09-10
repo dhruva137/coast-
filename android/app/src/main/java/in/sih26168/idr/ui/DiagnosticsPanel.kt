@@ -57,9 +57,24 @@ fun DiagnosticsPanel(bus: IdrBus, hud: HudState) {
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Section("ESTIMATOR")
+        Kv("engine", hud.engineLabel)
         Kv("nav mode", hud.navMode.name)
         Kv("origin", hud.originSource.name)
         Kv("heading referenced to north", if (hud.headingReferenced) "yes" else "no (relative to start)")
+        Kv(
+            "compass fusion",
+            when {
+                hud.compassFused -> "onset-calibrated (outage)"
+                hud.gnssLock -> "armed · GNSS heading"
+                else -> "idle (no onset offset yet)"
+            },
+            if (hud.compassFused) Telem else Mute,
+        )
+        Kv(
+            "force hold",
+            if (hud.forceHold) "user: not moving" else "off (ZUPT still auto)",
+            if (hud.forceHold) Amber else Mute,
+        )
         Kv("heading", "%.1f deg".format(hud.headingDeg))
         val disagree = abs(hud.headingDeg - hud.headingCarDeg).let { d -> minOf(d, 360.0 - d) }
         Kv("car-style heading delta", "%.1f deg".format(disagree), Accent)
@@ -99,6 +114,11 @@ fun DiagnosticsPanel(bus: IdrBus, hud: HudState) {
             SpeedSource.FALLBACK -> Amber
         }
         Kv("speed source", hud.speedSource.name, srcColor)
+        Kv(
+            "vibration path",
+            "VNet high-band · potholes/engine; low-band motion. Idle → ZUPT.",
+            Mute,
+        )
         Kv("session loaded", if (hud.modelReady) "yes" else "NO", if (hud.modelReady) Telem else Danger)
         Kv(
             "measured inference (ONNX)",

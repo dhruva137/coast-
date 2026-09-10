@@ -21,9 +21,11 @@ import `in`.sih26168.idr.data.OriginSource
 import `in`.sih26168.idr.data.Prefs
 import `in`.sih26168.idr.data.RecordStats
 import `in`.sih26168.idr.demo.TrackerHooks
+import `in`.sih26168.idr.nav.GraphPfEngine
 import `in`.sih26168.idr.nav.NaiveGhostEstimator
 import `in`.sih26168.idr.nav.OnnxSpeedModel
 import `in`.sih26168.idr.nav.SimpleIns
+import `in`.sih26168.idr.pair.PairingUploader
 import `in`.sih26168.idr.sensor.GnssHub
 import `in`.sih26168.idr.sensor.IoVnbdCsv
 import `in`.sih26168.idr.sensor.LiveSensorSource
@@ -38,7 +40,10 @@ import java.util.Locale
 import java.util.UUID
 
 /**
- * Foreground service: RECORD writes frozen CSV; NAVIGATE runs [SimpleIns].
+ * Foreground service: RECORD writes frozen CSV; NAVIGATE runs [SimpleIns]
+ * (FREE-DR). If `libcoast_graph_pf` is packaged, [GraphPfEngine.tryLoad]
+ * lights MAP-PF without changing Drive, pairing, or this service's wiring
+ * beyond overlay application.
  * Survives screen-off via FGS + partial wake lock.
  *
  * NAVIGATE does not require location. It arms on the IMU alone and runs in
@@ -56,6 +61,11 @@ class RecordService : LifecycleService() {
     private var source: SensorSource? = null
     private var logger: CsvLogger? = null
     private val ins = SimpleIns()
+    /**
+     * Optional map-in-loop overlay. Null on this APK (no `libcoast_graph_pf`)
+     * so NAVIGATE stays on [SimpleIns]. A later .so drops in without UI work.
+     */
+    private val mapPf: GraphPfEngine? = GraphPfEngine.tryLoad()
     /** Parallel naive DR for the ghost puck — same IMU frames, no ZUPT/map. */
     private val ghost = NaiveGhostEstimator()
     private val insLock = Any()
@@ -110,6 +120,7 @@ class RecordService : LifecycleService() {
         synchronized(insLock) {
             ins.reset()
             ghost.reset()
+            mapPf?.reset()
         }
         bus.setMode(mode)
         startedAt = SystemClock.elapsedRealtimeNanos()
@@ -165,6 +176,8 @@ class RecordService : LifecycleService() {
             synchronized(insLock) {
                 ins.setModelStatus(model.ready, model.error, model.droppedWindows)
                 applyMountLocked(prefs)
+                ins.setForceHold(bus.forceStationary.value)
+                ins.setFuseCompass(bus.fuseCompass.value)
             }
             val blackout = { bus.gnssBlackout.value }
             val wantReplay = bus.replayEnabled.value
@@ -196,6 +209,8 @@ class RecordService : LifecycleService() {
                         ins.setModelStatus(model.ready, model.error, model.droppedWindows)
                         drainMarksLocked()
                         drainOriginLocked()
+                        ins.setForceHold(bus.forceStationary.value)
+                        ins.setFuseCompass(bus.fuseCompass.value)
                         ins.onImu(frame)
                         ghost.onImu(frame)
                         maybeRecheckLocationLocked(frame.tNs)
@@ -221,7 +236,10 @@ class RecordService : LifecycleService() {
             bus.publishSensors(navSource.sensorReport())
             synchronized(insLock) {
                 val t0 = SystemClock.elapsedRealtimeNanos()
-                val snap = ins.snapshot(t0, AppMode.NAVIGATE)
+                val snap0 = ins.snapshot(t0, AppMode.NAVIGATE)
+                val snap = snap0.copy(
+                    engineLabel = GraphPfEngine.hudLabel(mapPf, snap0.navMode),
+                )
                 bus.publishHud(snap)
                 bus.publishGhostSpeeds(ghost.speedMps, snap.speedMps)
                 bus.publishTrack(ins.trackSnapshot())
@@ -329,10 +347,15 @@ class RecordService : LifecycleService() {
     private fun maybePublishHudLocked(tNs: Long, force: Boolean = false) {
         if (!force && lastHudNs != 0L && tNs - lastHudNs < HUD_PERIOD_NS) return
         lastHudNs = tNs
-        val snap = ins.snapshot(tNs, AppMode.NAVIGATE)
+        val snap0 = ins.snapshot(tNs, AppMode.NAVIGATE)
+        val snap = snap0.copy(
+            engineLabel = GraphPfEngine.hudLabel(mapPf, snap0.navMode),
+        )
         bus.publishHud(snap)
         bus.publishGhostSpeeds(ghost.speedMps, snap.speedMps)
-        // Flavor-specific: standard no-ops; tracker may POST off a bg thread.
+        // Console pairing ingest (standard + tracker). LanUploader stays tracker-only.
+        PairingUploader.maybePost(this, snap)
+        // Flavor-specific: standard no-ops; tracker may POST to tracker_server.
         TrackerHooks.onHud(this, snap, sessionId)
         if (force || lastTrackNs == 0L || tNs - lastTrackNs >= TRACK_PERIOD_NS) {
             lastTrackNs = tNs
@@ -474,12 +497,24 @@ class RecordService : LifecycleService() {
     }
 
     /**
-     * Android 15+ dataSync budget exhausted. The system gives us a few seconds
-     * to stop before it throws RemoteServiceException, so shut the session down
-     * cleanly and let the UI fall back to IDLE rather than dying mid-drive.
+     * Foreground-service budget exhausted. The system gives us a few seconds to
+     * stop before throwing, so shut the session down cleanly and let the UI fall
+     * back to IDLE rather than dying mid-drive.
+     *
+     * There are two callbacks, and overriding only the first is a silent miss:
+     * the one-argument form is API 34's `shortService` timeout, while Android
+     * 15's `dataSync` budget calls the two-argument form. We claim `dataSync`
+     * whenever CSV logging is active, so it is the two-argument one that
+     * actually fires for us.
      */
-    @androidx.annotation.RequiresApi(35)
+    @androidx.annotation.RequiresApi(34)
     override fun onTimeout(startId: Int) {
+        stopEverything()
+        stopSelf()
+    }
+
+    @androidx.annotation.RequiresApi(35)
+    override fun onTimeout(startId: Int, fgsType: Int) {
         stopEverything()
         stopSelf()
     }

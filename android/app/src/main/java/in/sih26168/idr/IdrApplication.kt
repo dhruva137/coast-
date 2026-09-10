@@ -4,6 +4,7 @@ import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
+import `in`.sih26168.idr.pair.PairingUploader
 
 class IdrApplication : Application() {
     lateinit var bus: IdrBus
@@ -12,6 +13,7 @@ class IdrApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         bus = IdrBus()
+        PairingUploader.start(this)
         if (Build.VERSION.SDK_INT >= 26) {
             val nm = getSystemService(NotificationManager::class.java)
             nm.createNotificationChannel(

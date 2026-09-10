@@ -38,8 +38,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterator
 
+from web.demo_contract import demo_csv_path, outage_bounds
+
 REPO = Path(__file__).resolve().parents[1]
-DEMO_CSV = REPO / "android" / "app" / "src" / "main" / "assets" / "demo" / "iovnbd_demo.csv"
+DEMO_CSV = demo_csv_path()
 
 # Column indices in the committed demo strip. Verified against its header.
 C_LAT, C_LON = 0, 1
@@ -53,8 +55,8 @@ C_GNSS_VALID = 24
 C_CAN_SPEED = 25
 
 # Treated as a GNSS outage for the demo: the estimator is on its own from here.
-OUTAGE_START_S = 20.0
-OUTAGE_END_S = 80.0
+# Shared with Fleet / APK via web/static/uk_demo_manifest.json.
+OUTAGE_START_S, OUTAGE_END_S = outage_bounds()
 
 ZUPT_ACCEL_EPS = 0.35  # m/s^2, |a_lin| below this for a sustained window
 ZUPT_GYRO_EPS = 0.05  # rad/s

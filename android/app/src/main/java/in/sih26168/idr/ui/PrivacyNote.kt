@@ -31,6 +31,7 @@ import `in`.sih26168.idr.ui.theme.Text as Fg
  *    basemap off, network traffic is zero. Position, sensors, logs and sessions
  *    never leave the device on the standard flavour.
  *  * There is no analytics, crash reporting or advertising library.
+ *  * Console pairing is opt-in (QR). Until then, position does not leave the phone.
  *  * `allowBackup` is false and both backup rule files exclude everything, so
  *    ride logs are not swept into a cloud backup either.
  *
@@ -48,32 +49,32 @@ fun PrivacyNote(modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
-            "Everything stays on this phone",
+            "On this phone, unless you opt in",
             fontFamily = IdrSans,
             color = Telem,
             fontSize = 15.sp,
             fontWeight = FontWeight.SemiBold,
         )
         Line(
-            "INTERNET is declared for public OSM/Carto basemap tiles only; with " +
-                "basemap off, network traffic is zero. Your position and session " +
-                "logs never leave this phone.",
+            "INTERNET is declared for public OSM/Carto basemap tiles and, if you " +
+                "scan a console QR, for opt-in laptop ingest. With basemap off and no " +
+                "pair, network traffic is zero.",
         )
         Line(
-            "There is no account, no server, no cloud and no analytics. Nobody, " +
-                "including us, can see where you went.",
+            "There is no cloud account and no analytics. A local display name is " +
+                "optional. Pairing streams lat/lon to that laptop only — never a device ID.",
         )
         Line(
-            "The trained model runs here, on the phone's own processor, from a file " +
-                "inside the app. Nothing is sent away to be computed.",
+            "The trained speed model runs here, on the phone's own processor, from a " +
+                "file inside the app. Nothing is sent away to be computed.",
         )
         Line(
-            "Navigating records nothing at all. Only the RECORD tab writes files, " +
-                "and it tells you where they go.",
+            "Navigating records nothing to disk. Only RECORD (under Settings) writes " +
+                "files, and it tells you where they go.",
         )
         Line(
-            "Ride logs are excluded from Android backup and device transfer. They " +
-                "leave the phone only if you choose SHARE on a session yourself.",
+            "Ride logs are excluded from Android backup. They leave the phone only if " +
+                "you SHARE a session or pair a console.",
         )
     }
 }

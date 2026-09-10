@@ -3,10 +3,16 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <!--
-        Demo flavor only. Main already declares INTERNET for OSM tiles.
-        Cleartext is required for http://<laptop-ip>:8787/ingest on the LAN;
-        standard keeps usesCleartextTraffic=false and has no uploader.
+        Demo / tracker flavour only.
+        Cleartext for http://<laptop>:8787/ingest. CAMERA for console QR scan
+        (manual code entry works without it). Standard keeps cleartext=false
+        and has no pairing upload path.
     -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+
     <application
         android:usesCleartextTraffic="true"
         tools:replace="android:usesCleartextTraffic">

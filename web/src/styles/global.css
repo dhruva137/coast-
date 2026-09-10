@@ -75,6 +75,39 @@ a { color: inherit; text-decoration: none; }
 .landing {
   position: relative;
   background: var(--bg);
+  /* Light mode overrides for the landing page */
+  --bg: #fdfdfd;
+  --bg-elev: #ffffff;
+  --text: #1a1f24;
+  --mute: #6b7a8c;
+  --faint: #a0aebc;
+  --line: rgba(0, 0, 0, 0.08);
+  --line-strong: rgba(0, 0, 0, 0.15);
+  --ours: #0070f3;
+  --base: #ff3366;
+  --panel: rgba(255, 255, 255, 0.85);
+  color: var(--text);
+  overflow: hidden;
+}
+
+/* Background grid effect */
+.landing::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: 
+    linear-gradient(to right, rgba(0, 112, 243, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 112, 243, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(circle at top, black 20%, transparent 80%);
+  -webkit-mask-image: radial-gradient(circle at top, black 20%, transparent 80%);
+}
+
+.landing > * {
+  position: relative;
+  z-index: 1;
 }
 
 .landing-nav {
@@ -85,7 +118,7 @@ a { color: inherit; text-decoration: none; }
   align-items: center;
   gap: 28px;
   padding: 18px 28px;
-  background: linear-gradient(180deg, rgba(5, 7, 11, 0.92), rgba(5, 7, 11, 0));
+  background: linear-gradient(180deg, rgba(253, 253, 253, 0.95), rgba(253, 253, 253, 0));
   pointer-events: none;
 }
 .landing-nav > * { pointer-events: auto; }

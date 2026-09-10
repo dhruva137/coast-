@@ -7,10 +7,12 @@ From repo root::
     python lab/models/train_avnet.py --device auto --source auto --epochs 40
     python lab/models/train_avnet.py --device cuda --source io-vnbd --epochs 60
 
-Writes
+Writes evaluation/LFO artifacts
     lab/models/weights/avnet_tiny.pt
     lab/models/weights/metrics.json
-    lab/models/weights/avnet_tiny.onnx   (best-effort)
+
+Production ONNX export is intentionally separate; use
+``lab/models/export_avnet_production.py`` after evaluation gates pass.
 """
 
 from __future__ import annotations
@@ -181,6 +183,7 @@ def train(
     weights_dir: Path | str | None = None,
     ckpt_name: str = CKPT_NAME,
     gravity_canon: bool = False,
+    export_eval_onnx: bool = False,
 ) -> dict:
     if epochs < 1:
         raise ValueError("epochs must be >= 1")
@@ -278,7 +281,8 @@ def train(
         "window_s": 2.0,
         "cutoff_hz": float(cfg["cutoff_hz"]),
         "train_seconds": float(train_s),
-        "infer_ms": float(infer_ms),
+        "workstation_infer_ms": float(infer_ms),
+        "latency_scope": "workstation_pytorch",
         "n_train": int(n_train),
         "n_val": int(n_val),
         "seed": int(seed),
@@ -300,7 +304,13 @@ def train(
     )
     metrics_path = out_dir / METRICS_NAME
     metrics_path.write_text(json.dumps(metrics, indent=2), encoding="utf-8")
-    onnx_path = export_onnx(model, out_dir / ONNX_NAME, window=int(cfg["window"]))
+    onnx_path = None
+    if export_eval_onnx:
+        onnx_path = export_onnx(
+            model,
+            out_dir / ONNX_NAME,
+            window=int(cfg["window"]),
+        )
     metrics["ckpt"] = str(ckpt_path)
     metrics["onnx"] = onnx_path
     print(
@@ -333,6 +343,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="EqNIO-style gravity-axis canonicalization on IMU windows before train",
     )
+    p.add_argument(
+        "--export-eval-onnx",
+        action="store_true",
+        help="Export this evaluation model; production export uses export_avnet_production.py",
+    )
     return p.parse_args(argv)
 
 
@@ -353,6 +368,7 @@ def main(argv: list[str] | None = None) -> None:
         exclude_names=exclude or None,
         weights_dir=args.weights_dir or None,
         gravity_canon=bool(args.gravity_canon),
+        export_eval_onnx=bool(args.export_eval_onnx),
     )
 
 

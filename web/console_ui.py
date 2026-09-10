@@ -195,6 +195,13 @@ PAGE = r"""<!doctype html>
   .body.flush{padding:0}
   .rail{width:262px;flex:0 0 262px}
   .pairrail{width:300px;flex:0 0 300px}
+  .pair-code{margin:10px 0 8px;padding:14px 12px;text-align:center;
+             font:700 clamp(22px,2.4vw,32px)/1.25 ui-monospace,Menlo,Consolas,monospace;
+             letter-spacing:.08em;color:var(--accent);word-break:break-all;
+             background:#11161E;border:1px solid var(--line);border-radius:12px;
+             user-select:all;-webkit-user-select:all}
+  .pair-code-lab{display:block;margin:0 0 4px;font:600 10px ui-monospace,Menlo,Consolas,monospace;
+                 letter-spacing:.1em;text-transform:uppercase;color:var(--faint);text-align:center}
   .grow{flex:1 1 auto;min-width:0}
   .col{display:flex;flex-direction:column;gap:14px;min-height:0}
   .cwrap{position:relative;flex:1 1 auto;min-height:0}
@@ -238,6 +245,39 @@ PAGE = r"""<!doctype html>
   .stat .val{font-size:23px;font-family:ui-monospace,Menlo,Consolas,monospace;
              font-variant-numeric:tabular-nums;line-height:1.15}
   .stat .sub{font-size:11px;color:var(--dim)}
+  .stat .sub.mono{font-family:ui-monospace,Menlo,Consolas,monospace}
+  .stat .val.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:20px}
+
+  /* ——— MODEL landing page components ——— */
+  .model-io-strip{display:flex;align-items:stretch;gap:10px;margin:10px 0 14px}
+  .model-io-box{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:3px;
+                padding:10px 12px;border:1px solid var(--line);border-radius:8px;
+                background:color-mix(in srgb,var(--panel) 55%,transparent)}
+  .model-io-box .lab{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--faint)}
+  .model-io-box .val{font-family:ui-monospace,Menlo,Consolas,monospace;
+                     font-size:18px;color:var(--text);font-variant-numeric:tabular-nums}
+  .model-io-box .sub{font-size:11px;color:var(--dim);line-height:1.35}
+  .model-io-arrow{align-self:center;color:var(--accent);font-size:22px;line-height:1;padding:0 2px}
+
+  .model-legend{display:flex;flex-wrap:wrap;gap:14px;padding:10px 12px;margin-top:10px;
+                border-top:1px solid var(--line);font-size:11px;color:var(--dim)}
+  .model-legend__item{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+  .model-legend__swatch{display:inline-block;width:9px;height:9px;border-radius:2px}
+
+  .honesty-band{border:1px solid color-mix(in srgb,var(--bad) 30%,var(--line));
+                border-radius:8px;padding:10px 12px;
+                background:color-mix(in srgb,var(--bad) 5%,transparent)}
+  .honesty-band .stat{padding:6px 0}
+  .honesty-band .val{font-size:16px;color:var(--text)}
+  .honesty-band .val.num{font-size:20px}
+
+  a.model-download{display:block;text-decoration:none;color:inherit;
+                   border:1px solid var(--line);border-radius:8px;padding:9px 12px;
+                   transition:border-color .15s ease,background .15s ease}
+  a.model-download:hover{border-color:var(--accent);
+                         background:color-mix(in srgb,var(--accent) 8%,transparent)}
+  a.model-download .lab{color:var(--text);text-transform:none;letter-spacing:0;font-size:13px}
+  a.model-download .sub{color:var(--dim)}
 
   button.act{background:var(--accent);color:var(--bg);border:0;border-radius:8px;
              padding:9px 15px;font:600 13px var(--font);cursor:pointer}
@@ -317,6 +357,40 @@ PAGE = r"""<!doctype html>
     .qrbox svg{width:150px;height:150px}
     .app-header__ops .op-name{max-width:7em;overflow:hidden;text-overflow:ellipsis}
   }
+
+  /* Proper Light Mode Theme for Front Door using CSS Variables */
+  .front-door {
+    --bg: #f8f9fa;
+    --panel: #ffffff;
+    --panel2: #f1f3f5;
+    --line: #dee2e6;
+    --text: #212529;
+    --dim: #495057;
+    --faint: #868e96;
+    --accent: #0070f3;
+    
+    background-color: var(--bg);
+    background-image: 
+      linear-gradient(to right, rgba(0, 112, 243, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(0, 112, 243, 0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+  
+  /* Make the new model release badge vibrant */
+  .front-door__kicker {
+    background: linear-gradient(90deg, #0070f3, #ff3366);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 112, 243, 0.2);
+  }
+  .front-door__kicker::before {
+    background: white;
+  }
+
+  /* Fade out the dark mode canvas so it doesn't clash with light mode text */
+  #door-bg {
+    opacity: 0.05;
+  }
 </style>
 </head>
 <body>
@@ -325,6 +399,8 @@ PAGE = r"""<!doctype html>
 <section id="front-door" class="front-door" aria-label="COAST entry">
   <canvas class="front-door__bg" id="door-bg" aria-hidden="true"></canvas>
   <div class="front-door__content">
+    <p class="front-door__kicker">New model release &middot; COAST-VNet-1</p>
+
     <div class="front-door__brand">
       <svg class="front-door__mark mark-anim" viewBox="0 0 108 108" aria-hidden="true">
         <path fill="currentColor" d="M54,24 L70,60 L54,51 L38,60 Z"/>
@@ -334,19 +410,93 @@ PAGE = r"""<!doctype html>
               stroke-opacity=".4" fill="none" d="M54,80 L54,84"/>
       </svg>
       <div class="front-door__name">COAST</div>
-      <div class="front-door__tag">GNSS-denied navigation</div>
+      <div class="front-door__tag">GNSS-denied navigation &middot; SIH 2026 &middot; ISRO PS 26168</div>
     </div>
-    <p class="front-door__claim">Navigation that keeps working when GPS doesn't.</p>
+
+    <h1 class="front-door__claim">Navigation that keeps working when GPS doesn&rsquo;t.</h1>
+    <p class="front-door__lede">
+      COAST-VNet-1 is a small dual-band neural inertial-odometry model &mdash;
+      released with the code and the measurements &mdash; that keeps a vehicle&rsquo;s
+      position moving through tunnels, urban canyons, and jam zones. Runs on-device
+      on a phone at 10&nbsp;Hz. 96,086 parameters. 392&nbsp;KB ONNX. Nothing in the
+      cloud.
+    </p>
+
     <div class="front-door__proof" id="door-proof" aria-live="polite">
       <div class="skeleton skeleton--num" style="margin:0 auto"></div>
       <div class="skeleton skeleton--num" style="margin:0 auto"></div>
       <div class="skeleton skeleton--num" style="margin:0 auto"></div>
     </div>
+
     <div class="front-door__cta">
-      <button type="button" class="btn btn--primary" id="btn-enter">Enter Command Console</button>
+      <button type="button" class="btn btn--primary" id="btn-enter">Open the console &rarr;</button>
       <button type="button" class="btn btn--ghost" id="btn-signin">Operator sign-in</button>
     </div>
-    <div class="front-door__foot">SIH 2026 · PS 26168 · ISRO / Dept. of Space</div>
+
+    <div class="front-door__section">
+      <p class="front-door__section-title">The model at a glance</p>
+      <dl class="front-door__spec">
+        <div><dt>Architecture</dt><dd>frequency-decoupled CNN-GRU</dd></div>
+        <div><dt>Parameters</dt><dd>96,086</dd></div>
+        <div><dt>ONNX size</dt><dd>392 KB</dd></div>
+        <div><dt>Input</dt><dd>(20, 6) &middot; 2.0 s &middot; 10 Hz</dd></div>
+        <div><dt>Output</dt><dd>forward speed + log &sigma;&sup2;</dd></div>
+        <div><dt>Runtime</dt><dd>ONNX Runtime Mobile &middot; CPU</dd></div>
+      </dl>
+    </div>
+
+    <div class="front-door__section">
+      <p class="front-door__section-title">Closed-loop benchmark &middot; leave-file-out over 23 IO-VNBD drives</p>
+      <p class="front-door__section-body">
+        Every number below is measured on held-out data. Train on 22 drives,
+        score on the drive never seen &mdash; 12 epochs per fold. Median distance
+        error after a mid-route outage; drift as % of distance travelled.
+      </p>
+      <table class="front-door__bench" aria-label="Closed-loop benchmark against naive baselines">
+        <thead>
+          <tr>
+            <th scope="col">Method</th>
+            <th scope="col">Median error</th>
+            <th scope="col">Median drift</th>
+            <th scope="col">Folds won</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="is-us">
+            <th scope="row">COAST-VNet-1 &middot; ours</th>
+            <td>150.3 m</td>
+            <td>18.0%</td>
+            <td><span class="front-door__win">9 / 23</span></td>
+          </tr>
+          <tr>
+            <th scope="row">Frozen onset speed &middot; hold last known</th>
+            <td>163.2 m</td>
+            <td>21.1%</td>
+            <td>&mdash;</td>
+          </tr>
+          <tr>
+            <th scope="row">Naive dead reckoning &middot; free-DR integrate</th>
+            <td>303.6 m</td>
+            <td>36.4%</td>
+            <td>&mdash;</td>
+          </tr>
+          <tr class="is-target">
+            <th scope="row">ISRO PS 26168 bar</th>
+            <td>&mdash;</td>
+            <td>&lt; 10%</td>
+            <td>target</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="front-door__section-body" style="margin-top:12px">
+        System-level (map-in-loop over 43 outages): <b>2.02&times; lower median
+        position error</b> than naive DR. Full protocol and per-fold table live
+        in <b>Evidence &middot; Model</b> inside the console.
+      </p>
+    </div>
+
+
+    <div class="front-door__foot">SIH 2026 &middot; PS 26168 &middot; ISRO / Dept. of Space</div>
   </div>
 </section>
 
@@ -408,6 +558,11 @@ PAGE = r"""<!doctype html>
         <rect x="4" y="6" width="16" height="12" rx="2"/><path d="M8 10h8M8 14h5"/></svg>
       <span class="icon-rail__label">Engine</span>
     </button>
+    <button type="button" class="icon-rail__item" data-nav="model">
+      <svg class="icon-rail__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      <span class="icon-rail__label">Model</span>
+    </button>
     <button type="button" class="icon-rail__item" data-nav="training">
       <svg class="icon-rail__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
         <path d="M4 19V5M4 19h16"/><path d="M8 15l3-6 3 3 3-7"/></svg>
@@ -423,6 +578,12 @@ PAGE = r"""<!doctype html>
         <rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>
       <span class="icon-rail__label">Sessions</span>
     </button>
+    <a class="icon-rail__item" href="/static/trace_replay.html" title="Map-in-loop trace replay">
+      <svg class="icon-rail__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+        <rect x="3" y="5" width="18" height="14" rx="2"/>
+        <path d="M10 9l6 3-6 3z" fill="currentColor" stroke="none"/></svg>
+      <span class="icon-rail__label">Replay</span>
+    </a>
   </nav>
 
   <main class="app-main">
@@ -477,10 +638,13 @@ PAGE = r"""<!doctype html>
         <h2>Pair a phone</h2>
         <div class="body" id="pair-body">
           <div class="row" style="justify-content:center"><div class="qrbox" id="qr"></div></div>
+          <span class="pair-code-lab">pairing code</span>
+          <div class="pair-code" id="pair-code">—</div>
           <div class="pair-hint">
             <b style="color:var(--text)">Same Wi-Fi will often fail</b> (AP isolation).
             Fastest path: laptop <b>Mobile hotspot</b>, phone joins it, then scan
             <b>inside the COAST app</b> — not the system camera.
+            Or keep the public relay: phone posts to the internet; this laptop pulls.
             <div class="pair-ips" id="pair-ips"></div>
           </div>
           <p class="muted" style="margin:12px 0 4px">Scan with the COAST app. The QR is a pairing URL
@@ -488,10 +652,14 @@ PAGE = r"""<!doctype html>
             flushes them when radio returns.</p>
           <p class="tiny" style="margin:0 0 10px">Endpoint <code id="pair-url">—</code></p>
           <div class="row">
+            <button class="act" id="btn-copy-pair" title="Copy the pairing link — paste it into the phone's Connect field">Copy pairing link</button>
             <button class="ghost" id="btn-newqr">New code</button>
             <a class="ghost" id="btn-apk" href="/download/apk"
                style="text-decoration:none;display:inline-block">Download APK</a>
           </div>
+          <p class="tiny" id="pair-copy-hint" style="margin:6px 0 0;color:var(--dim)">
+            No camera needed — the phone has a <b>Connect</b> field that accepts this link.
+          </p>
           <div id="privacy" style="margin-top:16px"></div>
         </div>
       </div>
@@ -503,7 +671,7 @@ PAGE = r"""<!doctype html>
         <h2>Estimator — live arithmetic
           <span class="sp tiny" id="ec-src">real IO-VNBD strip · Coventry UK · CAN speed truth</span>
         </h2>
-        <p class="view-context">Free dead-reckoning on the measured UK IO-VNBD demo clip — sensor inputs, integration steps, and position error vs GNSS truth. Map-in-loop PF is a later drop-in; this view is the baseline engine arithmetic.</p>
+        <p class="view-context">Free dead-reckoning on the measured UK IO-VNBD demo clip — sensor inputs, integration steps, and position error vs GNSS truth. Map-in-loop PF is a later drop-in; this view is the baseline engine arithmetic. <a href="/static/trace_replay.html">Open the map-in-loop replay</a> (truth vs free-DR vs COAST on the exported road graph).</p>
 
         <div class="ec">
           <!-- ── column 1: what the sensors report ── -->
@@ -661,6 +829,136 @@ PAGE = r"""<!doctype html>
       </div>
     </section>
 
+    <!-- MODEL ARCHITECTURE -->
+    <section class="view" data-view="model" id="tab-model" hidden>
+      <div class="view-panel grow col" style="gap:0;overflow:hidden">
+        <h2>COAST-VNet-1
+          <span class="sp tiny">frequency-decoupled CNN-GRU &middot; 96,086 params &middot; 392 KB ONNX</span></h2>
+        <p class="view-context">
+          A phone on a dashboard sees two superimposed signals: vehicle motion (low band) and road / engine vibration (high band).
+          Rather than filter one away, COAST-VNet-1 <b>splits the band and treats them as different information</b>,
+          then fuses them into a single forward-speed estimate for dead reckoning when GNSS drops.
+          Drag to orbit the tensor decomposition. Scroll to zoom.
+        </p>
+
+        <div class="model-io-strip" aria-label="Model input and output">
+          <div class="model-io-box">
+            <span class="lab">Input tensor</span>
+            <span class="val mono">(20, 6)</span>
+            <span class="sub">2.0 s window &middot; 10 Hz &middot; ax ay az gx gy gz (SI, phone frame)</span>
+          </div>
+          <div class="model-io-arrow" aria-hidden="true">&rarr;</div>
+          <div class="model-io-box">
+            <span class="lab">Output</span>
+            <span class="val mono">v&#770;<sub>t</sub>, log&#8202;&sigma;&sup2;</span>
+            <span class="sub">forward speed (m/s) + a log-variance head</span>
+          </div>
+        </div>
+
+        <div id="tab-model-canvas" style="flex:1 1 auto;min-height:0;cursor:grab"></div>
+
+        <div class="model-legend" aria-label="Architecture legend">
+          <span class="model-legend__item"><span class="model-legend__swatch" style="background:#FACC15"></span>High-band Conv1D &middot; vibration 5&ndash;50 Hz</span>
+          <span class="model-legend__item"><span class="model-legend__swatch" style="background:#60A5FA"></span>Low-band GRU &middot; motion 0&ndash;5 Hz</span>
+          <span class="model-legend__item"><span class="model-legend__swatch" style="background:#34D399"></span>Dense fusion &middot; forward speed + variance</span>
+        </div>
+      </div>
+
+      <div class="view-panel rail col" style="gap:0">
+        <h2>Validated metrics <span class="sp tiny">measured &middot; not projected</span></h2>
+        <div class="body">
+          <div class="stat">
+            <span class="lab">Closed-loop position error</span>
+            <span class="val num">2.02&times;</span>
+            <span class="sub">lower median vs naive DR &middot; 43 outages &middot; map-in-loop</span>
+          </div>
+          <div class="stat">
+            <span class="lab">Speed model gain</span>
+            <span class="val num">~8%</span>
+            <span class="sub">150.3 m vs 163.2 m median &middot; wins 9 / 23 folds</span>
+          </div>
+          <div class="stat">
+            <span class="lab">Edge engine</span>
+            <span class="val num">19,682 Hz</span>
+            <span class="sub">worst-case throughput &middot; 98&times; the 200 Hz requirement</span>
+          </div>
+          <div class="stat">
+            <span class="lab">GNSS handover</span>
+            <span class="val num">&lt;100 ms</span>
+            <span class="sub">DR transition, measured on device</span>
+          </div>
+          <div class="stat">
+            <span class="lab">Compass drift</span>
+            <span class="val num">7.22%</span>
+            <span class="sub">down from 16.87% &middot; 60% of runs pass ISRO bar</span>
+          </div>
+          <div class="stat">
+            <span class="lab">Parameters &middot; size</span>
+            <span class="val num">96,086 &middot; 392 KB</span>
+            <span class="sub">ONNX Runtime Mobile &middot; CPU only, on device</span>
+          </div>
+        </div>
+
+        <h2 style="margin-top:20px">Training protocol</h2>
+        <div class="body">
+          <div class="stat">
+            <span class="lab">Dataset</span>
+            <span class="val">IO-VNBD</span>
+            <span class="sub">23 clean drives &middot; labels from vehicle CAN bus, not phone GNSS</span>
+          </div>
+          <div class="stat">
+            <span class="lab">Protocol</span>
+            <span class="val">leave-file-out</span>
+            <span class="sub">train on 22, score on the held-out drive only &middot; 12 epochs / fold</span>
+          </div>
+          <div class="stat">
+            <span class="lab">Baseline it must beat</span>
+            <span class="val">frozen onset</span>
+            <span class="sub">hold last known speed through the outage &middot; strongest naive competitor</span>
+          </div>
+        </div>
+
+        <h2 style="margin-top:20px">What this model is <em>not</em></h2>
+        <div class="body honesty-band">
+          <p class="tiny" style="margin:0 0 8px">
+            The honest measurements, published for the same reason we publish the wins.
+          </p>
+          <div class="stat">
+            <span class="lab">Per-window RMSE</span>
+            <span class="val">loses to hold</span>
+            <span class="sub">5.06 m/s vs 1.28 m/s &middot; 23 / 23 folds &middot; committed in the summary</span>
+          </div>
+          <div class="stat">
+            <span class="lab">Residual model</span>
+            <span class="val">rejected</span>
+            <span class="sub">13 / 23 teacher-forced &middot; 0 / 23 closed-loop &middot; exposure-bias trap</span>
+          </div>
+          <div class="stat">
+            <span class="lab">Confidence radius</span>
+            <span class="val">hidden by default</span>
+            <span class="sub">log-&sigma;&sup2; head not yet calibrated &middot; two-stage fix scheduled</span>
+          </div>
+          <div class="stat" style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px">
+            <span class="lab">Full-system drift target</span>
+            <span class="val num">16.77% &rarr; &lt;10%</span>
+            <span class="sub">ISRO bar not yet cleared &middot; active enhancement cycle</span>
+          </div>
+        </div>
+
+        <h2 style="margin-top:20px">Downloads</h2>
+        <div class="body">
+          <a class="stat model-download" href="/static/model_card.md" target="_blank" rel="noopener">
+            <span class="lab">Model card &middot; MODEL_CARD.md</span>
+            <span class="sub">full protocol, per-fold results, refusals &rarr; open</span>
+          </a>
+          <div class="stat">
+            <span class="lab">ONNX weights</span>
+            <span class="sub mono">android/app/src/main/assets/avnet_tiny.onnx</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- TRAINING -->
     <section class="view" data-view="training" data-live id="tab-train" hidden>
       <div class="view-panel grow col" style="gap:0">
@@ -761,7 +1059,27 @@ PAGE = r"""<!doctype html>
 <script src="/static/world_map.js"></script>
 <script src="/static/engine_viz.js"></script>
 <script src="/static/engine_calc.js"></script>
+<script src="/static/model_viz.js"></script>
 <script src="/static/app.js"></script>
+<script>
+  // Mount the 3D tensor architecture viz on first visit to the MODEL tab.
+  (function () {
+    var mounted = false;
+    function mount() {
+      if (mounted) return;
+      if (!window.COASTModelViz) return;
+      var el = document.getElementById("tab-model-canvas");
+      if (!el) return;
+      mounted = true;
+      window.COASTModelViz.mount(el);
+    }
+    document.addEventListener("coast:view", function (e) {
+      if (e && e.detail && e.detail.view === "model") mount();
+    });
+    // If MODEL is the initial view (deep link / restored state), mount now.
+    if (document.querySelector('[data-view="model"]:not([hidden])')) mount();
+  })();
+</script>
 <script>
 "use strict";
 const $ = s => document.querySelector(s);
@@ -1206,6 +1524,8 @@ async function newQR(host){
     const r=await fetch("/api/pair/new"+q,{method:"POST"});
     const d=await r.json();
     pairToken=d.token;
+    const codeEl=$("#pair-code");
+    if(codeEl) codeEl.textContent = d.token || "—";
     $("#qr").innerHTML = d.qr_svg || '<div style="color:#000;padding:20px;font:12px system-ui">QR encoder unavailable</div>';
     $("#pair-url").textContent = d.payload;
     const box=$("#pair-ips");
@@ -1217,6 +1537,24 @@ async function newQR(host){
   }catch(e){ $("#pair-url").textContent="could not mint a pairing code"; }
 }
 $("#btn-newqr").onclick=newQR;
+(function(){
+  const b=$("#btn-copy-pair"), hint=$("#pair-copy-hint");
+  if(!b) return;
+  b.onclick=async()=>{
+    const url=($("#pair-url")?.textContent||"").trim();
+    if(!url || url==="—"){ if(hint) hint.textContent="No pairing link yet — press New code first."; return; }
+    try{
+      await navigator.clipboard.writeText(url);
+      if(hint) hint.textContent="Copied. Paste on the phone's Connect screen.";
+    }catch(e){
+      // Fallback for browsers that block async clipboard on http:.
+      const ta=document.createElement("textarea"); ta.value=url; document.body.appendChild(ta);
+      ta.select(); try{ document.execCommand("copy"); if(hint) hint.textContent="Copied. Paste on the phone's Connect screen."; }
+      catch(_){ if(hint) hint.textContent="Copy failed — long-press to select the link manually."; }
+      document.body.removeChild(ta);
+    }
+  };
+})();
 $("#btn-forget-all").onclick=async()=>{ await fetch("/api/forget_all",{method:"POST"}); selected=null; pollFleet(); };
 
 function setUkDemoUi(running){

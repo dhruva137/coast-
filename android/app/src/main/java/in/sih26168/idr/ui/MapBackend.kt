@@ -1,6 +1,7 @@
 package `in`.sih26168.idr.ui
 
 import androidx.compose.runtime.Immutable
+import `in`.sih26168.idr.data.HudState
 import `in`.sih26168.idr.data.NavMode
 import `in`.sih26168.idr.data.TrailPoint
 import `in`.sih26168.idr.nav.metersPerDeg
@@ -64,6 +65,24 @@ data class MapChoice(
  *     tiles HAVE loaded (or bundled mbtiles are present), going offline keeps
  *     the map — the whole point of a tunnel demo.
  */
+/**
+ * Bounds of the bundled offline tile pack (`assets/maps/demo_neighbourhood.mbtiles`),
+ * from its own README: Coventry, UK, zooms 13–18.
+ *
+ * This matters because the pack is *not* a world map. Preferring it outside these
+ * bounds points MapLibre at a tile source with nothing in it, and the result is a
+ * dark rectangle with no streets and no error — which looked, reasonably, like a
+ * broken app. The replay demo runs inside these bounds, so the fault only appeared
+ * on a live drive anywhere else.
+ */
+private const val BUNDLED_LAT_MIN = 52.398
+private const val BUNDLED_LAT_MAX = 52.4115
+private const val BUNDLED_LON_MIN = -1.601
+private const val BUNDLED_LON_MAX = -1.587
+
+fun insideBundledTilePack(lat: Double, lon: Double): Boolean =
+    lat in BUNDLED_LAT_MIN..BUNDLED_LAT_MAX && lon in BUNDLED_LON_MIN..BUNDLED_LON_MAX
+
 fun chooseMapBackend(
     basemapWanted: Boolean,
     online: Boolean,
@@ -71,6 +90,7 @@ fun chooseMapBackend(
     navMode: NavMode,
     hasAbsolutePosition: Boolean,
     bundledMbtilesAvailable: Boolean = false,
+    insideBundledBounds: Boolean = false,
 ): MapChoice = when {
     !basemapWanted ->
         MapChoice(MapBackend.CANVAS, "Basemap off — showing track only")
@@ -78,14 +98,18 @@ fun chooseMapBackend(
     navMode == NavMode.RELATIVE || !hasAbsolutePosition ->
         MapChoice(MapBackend.CANVAS, "No absolute position — showing displacement only")
 
-    // Bundled offline neighbourhood tiles beat live/cached preference when present.
-    bundledMbtilesAvailable ->
+    // Bundled tiles win only where they actually have coverage.
+    bundledMbtilesAvailable && insideBundledBounds ->
         MapChoice(MapBackend.OSM, null)
 
-    !online && !tilesEverLoaded ->
-        MapChoice(MapBackend.CANVAS, "Offline, no tiles cached — showing track only")
+    online -> MapChoice(MapBackend.OSM, null)
 
-    else -> MapChoice(MapBackend.OSM, null)
+    tilesEverLoaded -> MapChoice(MapBackend.OSM, null)
+
+    // Offline, outside the bundled pack, nothing cached: the honest answer is
+    // the track on a grid, not an empty basemap pretending to be a map.
+    else ->
+        MapChoice(MapBackend.CANVAS, "Offline, no tiles for this area — showing track only")
 }
 
 // ---------------------------------------------------------------------------
@@ -97,14 +121,45 @@ fun chooseMapBackend(
 data class GeoPoint(val lat: Double, val lon: Double)
 
 /**
+ * Rare map chrome derived from a HUD frame: origin, pack coverage, heading
+ * reference, mode. Pose (east/north/heading/lat/lon) is deliberately absent so
+ * equality holds across 10 Hz fixes that did not change the basemap
+ * decision.
+ */
+@Immutable
+data class VehicleChrome(
+    val headingReferenced: Boolean,
+    val hasAbsolutePosition: Boolean,
+    val navMode: NavMode,
+    val origin: GeoPoint?,
+    val insideBundledBounds: Boolean,
+)
+
+/** Map-tree chrome for [h]. Origin is quantised; 10 Hz pose ticks compare equal. */
+fun vehicleChromeOf(h: HudState): VehicleChrome {
+    val origin = originFrom(h.lat, h.lon, h.east, h.north)?.let {
+        GeoPoint(quantiseDeg(it.lat), quantiseDeg(it.lon))
+    }
+    val inside = h.lat.isFinite() && h.lon.isFinite() && insideBundledTilePack(h.lat, h.lon)
+    return VehicleChrome(
+        headingReferenced = h.headingReferenced,
+        hasAbsolutePosition = h.hasAbsolutePosition,
+        navMode = h.navMode,
+        origin = origin,
+        insideBundledBounds = origin != null && inside,
+    )
+}
+
+/**
  * Quantise a coordinate to ~1 cm.
  *
- * PERFORMANCE. The session origin is recovered from the HUD every frame (see
- * [originFrom]) and the arithmetic that recovers it is not bit-for-bit stable as
- * the vehicle moves -- the last couple of digits wobble. Those digits are the
- * `remember` key the projected polyline cache hangs off, so without this the map
- * would rebuild every polyline ten times a second. 1e-7 degrees is about 1.1 cm,
- * far below any error this app can claim, and the wobble is around 1e-13.
+ * PERFORMANCE. The session origin is recovered from the HUD (see [originFrom])
+ * and the arithmetic that recovers it is not bit-for-bit stable as the vehicle
+ * moves -- the last couple of digits wobble. Those digits used to be a
+ * `remember` key, so the map rebuilt every polyline ten times a second. Maps
+ * now keep pose in Animatables and only promote a [VehicleChrome] when this
+ * quantised origin (or another chrome field) actually changes. 1e-7 degrees is
+ * about 1.1 cm, far below any error this app can claim; the wobble is ~1e-13.
  */
 fun quantiseDeg(d: Double): Double =
     if (!d.isFinite()) d else Math.round(d * 1e7) / 1e7
@@ -316,6 +371,10 @@ fun approachAlpha(dtSec: Double, tauSec: Double): Double = when {
 }
 
 fun wrap360Deg(d: Double): Double = ((d % 360.0) + 360.0) % 360.0
+
+/** Animatable target that turns the short way round north (350° → 10° = 370). */
+fun shortestBearingTarget(from: Float, to: Float): Float =
+    from + bearingDelta(from.toDouble(), to.toDouble()).toFloat()
 
 /** Signed difference from [from] to [to], in (-180, 180]. */
 fun bearingDelta(from: Double, to: Double): Double {

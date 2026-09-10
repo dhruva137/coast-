@@ -47,5 +47,53 @@ fun haversineM(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
 
 fun hypot3(x: Double, y: Double, z: Double): Double = sqrt(x * x + y * y + z * z)
 
+fun wrap180(deg: Double): Double =
+    ((deg + 180.0) % 360.0 + 360.0) % 360.0 - 180.0
+
+/**
+ * True when the magnetometer sample looks like a real Earth field (µT),
+ * not a missing channel (zeros) or a saturated spike.
+ */
+fun magFieldValid(mx: Double, my: Double, mz: Double): Boolean {
+    if (!mx.isFinite() || !my.isFinite() || !mz.isFinite()) return false
+    val n = hypot3(mx, my, mz)
+    return n in 5.0..200.0
+}
+
+/**
+ * Tilt-compensated heading of the device +y axis, degrees, 0 = magnetic north,
+ * clockwise. Same construction as `lab/stress/run_magnetometer_study.py`:
+ * East = down × mag, North = East × down, heading = atan2(East_y, North_y).
+ *
+ * [ax]/[ay]/[az] are the gravity/accelerometer vector in the device frame
+ * (Android TYPE_GRAVITY / still accel). Returns NaN when the field is
+ * degenerate (free-fall, or mag parallel to gravity).
+ */
+fun tiltCompensatedHeadingDeg(
+    ax: Double,
+    ay: Double,
+    az: Double,
+    mx: Double,
+    my: Double,
+    mz: Double,
+): Double {
+    val g = hypot3(ax, ay, az)
+    val b = hypot3(mx, my, mz)
+    if (g < 1e-6 || b < 1e-6) return Double.NaN
+    val dx = ax / g
+    val dy = ay / g
+    val dz = az / g
+    var ex = dy * mz - dz * my
+    var ey = dz * mx - dx * mz
+    var ez = dx * my - dy * mx
+    val en = hypot3(ex, ey, ez)
+    if (en < 1e-9) return Double.NaN
+    ex /= en
+    ey /= en
+    ez /= en
+    val ny = ez * dx - ex * dz
+    return wrap360(rad2deg(atan2(ey, ny)))
+}
+
 /** Compass heading 0 = north, positive east (clockwise). */
 fun compassDeg(yawRad: Double): Double = wrap360(rad2deg(yawRad))

@@ -59,6 +59,13 @@ from load_iovnbd import (  # noqa: E402
     load_smartphone_csv,
 )
 from metrics import lla_to_enu  # noqa: E402
+from learned_gnss_policy import (  # noqa: E402
+    LearnedGainPolicy,
+    fit_gain_policy,
+    gain_features,
+    optimal_scalar_gain,
+    split_drive_paths,
+)
 
 EARTH_R_M = 6_371_008.8
 GYRO_CUTOFF_HZ = 0.5
@@ -192,6 +199,31 @@ def _lc_update_gnss(
     return LcState(e=e, n=n, v=v, yaw=yaw, bg=bg, P=P)
 
 
+def _lc_update_learned(
+    st: LcState,
+    e_meas: float,
+    n_meas: float,
+    gain: float,
+    *,
+    speed: float | None = None,
+    bearing_rad: float | None = None,
+) -> LcState:
+    """GNSS correction whose scalar position gain came from training drives."""
+    k = float(np.clip(gain, 0.0, 1.0))
+    e = st.e + k * (e_meas - st.e)
+    n = st.n + k * (n_meas - st.n)
+    P = st.P.copy()
+    P[:2, :] *= 1.0 - k
+    P[:, :2] *= 1.0 - k
+    yaw, v = st.yaw, st.v
+    if speed is not None and speed > 1.0 and bearing_rad is not None and np.isfinite(
+        bearing_rad
+    ):
+        yaw = _wrap_pi(yaw + 0.35 * _wrap_pi(float(bearing_rad) - yaw))
+        v = 0.65 * float(speed) + 0.35 * v
+    return LcState(e=e, n=n, v=v, yaw=yaw, bg=st.bg, P=P)
+
+
 def _ins_only_track(
     t: np.ndarray,
     speed: np.ndarray,
@@ -232,11 +264,13 @@ def _fused_track(
     e0: float,
     n0: float,
     yaw0: float,
+    learned_policy: LearnedGainPolicy | None = None,
 ) -> np.ndarray:
     n = t.size
     xy = np.empty((n, 2), dtype=np.float64)
     st = _lc_seed(e0, n0, float(speed[0]) if np.isfinite(speed[0]) else 0.0, yaw0, float(acc_h[0]))
     xy[0] = (st.e, st.n)
+    last_fix_t = float(t[0])
     for i in range(1, n):
         dt = float(t[i] - t[i - 1])
         spd = float(speed[i - 1]) if np.isfinite(speed[i - 1]) else st.v
@@ -251,14 +285,31 @@ def _fused_track(
             br = float(bearing_deg[i]) if np.isfinite(bearing_deg[i]) else float("nan")
             br_rad = math.radians(br) if np.isfinite(br) else None
             spd_i = float(speed[i]) if np.isfinite(speed[i]) else None
-            st = _lc_update_gnss(
-                st,
-                float(enu[0]),
-                float(enu[1]),
-                float(acc_h[i]),
-                speed=spd_i,
-                bearing_rad=br_rad,
-            )
+            if learned_policy is None:
+                st = _lc_update_gnss(
+                    st,
+                    float(enu[0]),
+                    float(enu[1]),
+                    float(acc_h[i]),
+                    speed=spd_i,
+                    bearing_rad=br_rad,
+                )
+            else:
+                innovation = math.hypot(float(enu[0]) - st.e, float(enu[1]) - st.n)
+                sigma = math.sqrt(max(float(st.P[0, 0] + st.P[1, 1]), 0.0) / 2.0)
+                features = gain_features(
+                    float(acc_h[i]), innovation, sigma, float(t[i] - last_fix_t)
+                )
+                gain = float(learned_policy.predict(features)[0])
+                st = _lc_update_learned(
+                    st,
+                    float(enu[0]),
+                    float(enu[1]),
+                    gain,
+                    speed=spd_i,
+                    bearing_rad=br_rad,
+                )
+            last_fix_t = float(t[i])
         xy[i] = (st.e, st.n)
     return xy
 
@@ -282,6 +333,7 @@ def run_window(
     i1: int,
     gz: np.ndarray,
     fix_changed: np.ndarray,
+    learned_policy: LearnedGainPolicy | None = None,
 ) -> dict[str, Any] | None:
     t = data["_t"]
     lat, lon = data["_lat"], data["_lon"]
@@ -328,6 +380,26 @@ def run_window(
     err_g = _enu_err(gnss_xy, truth)
     err_i = _enu_err(ins_xy, truth)
     err_f = _enu_err(fused_xy, truth)
+    learned_xy = None
+    err_l = None
+    if learned_policy is not None:
+        learned_xy = _fused_track(
+            t[sl],
+            lat[sl],
+            lon[sl],
+            speed[sl],
+            bearing[sl],
+            acc_h[sl],
+            gz[sl],
+            fix_changed[sl],
+            lat0,
+            lon0,
+            e0,
+            n0,
+            yaw0,
+            learned_policy,
+        )
+        err_l = _enu_err(learned_xy, truth)
 
     acc = np.asarray(acc_h[sl], dtype=np.float64)
     degraded = np.isfinite(acc) & (acc >= DEGRADED_ACC_H_M)
@@ -360,25 +432,31 @@ def run_window(
     dist = float(np.nansum(np.clip(data["_cv"][sl], 0, None) * np.clip(dt, 0, 0.5)))
     n_fixes = int(np.sum(fix_changed[sl]))
 
+    all_methods = {
+        "gnss_only": _stats(err_g),
+        "ins_only": _stats(err_i),
+        "fused": _stats(err_f),
+    }
+    degraded_methods = {
+        "gnss_only": _stats(err_g, soft_degraded),
+        "ins_only": _stats(err_i, soft_degraded),
+        "fused": _stats(err_f, soft_degraded),
+        "n_mask": int(np.sum(soft_degraded)),
+        "n_acc_h_ge": int(np.sum(degraded)),
+        "n_held": int(np.sum(held)),
+    }
+    if err_l is not None:
+        all_methods["learned_fused"] = _stats(err_l)
+        degraded_methods["learned_fused"] = _stats(err_l, soft_degraded)
+
     return {
         "start_idx": int(i0),
         "n_samples": n_samp,
         "duration_s": float(t[i1 - 1] - t[i0]),
         "distance_m": dist,
         "n_gnss_fixes": n_fixes,
-        "all": {
-            "gnss_only": _stats(err_g),
-            "ins_only": _stats(err_i),
-            "fused": _stats(err_f),
-        },
-        "degraded": {
-            "gnss_only": _stats(err_g, soft_degraded),
-            "ins_only": _stats(err_i, soft_degraded),
-            "fused": _stats(err_f, soft_degraded),
-            "n_mask": int(np.sum(soft_degraded)),
-            "n_acc_h_ge": int(np.sum(degraded)),
-            "n_held": int(np.sum(held)),
-        },
+        "all": all_methods,
+        "degraded": degraded_methods,
         "fused_beats_gnss_median": bool(
             _stats(err_f)["median_m"] < _stats(err_g)["median_m"]
         ),
@@ -404,10 +482,15 @@ def summarise(rows: list[dict[str, Any]]) -> dict[str, Any]:
                 vals.append(v)
         return np.asarray(vals, dtype=np.float64)
 
-    out: dict[str, Any] = {"n_windows": len(rows)}
+    methods = [
+        name
+        for name in ("gnss_only", "ins_only", "fused", "learned_fused")
+        if name in rows[0]["all"]
+    ]
+    out: dict[str, Any] = {"n_windows": len(rows), "methods": methods}
     for bucket in ("all", "degraded"):
         block: dict[str, Any] = {}
-        for method in ("gnss_only", "ins_only", "fused"):
+        for method in methods:
             med = gather(bucket, method, "median_m")
             rmse = gather(bucket, method, "rmse_m")
             p90 = gather(bucket, method, "p90_m")
@@ -423,6 +506,18 @@ def summarise(rows: list[dict[str, Any]]) -> dict[str, Any]:
         block["fused_vs_ins_x"] = float(i / max(f, 1e-9)) if np.isfinite(i) and np.isfinite(f) else float("nan")
         block["fused_beats_gnss"] = bool(np.isfinite(f) and np.isfinite(g) and f < g)
         block["fused_beats_ins"] = bool(np.isfinite(f) and np.isfinite(i) and f < i)
+        if "learned_fused" in block:
+            learned = block["learned_fused"]["median_of_medians_m"]
+            block["learned_vs_gnss_x"] = (
+                float(g / max(learned, 1e-9))
+                if np.isfinite(g) and np.isfinite(learned)
+                else float("nan")
+            )
+            block["learned_vs_classical_x"] = (
+                float(f / max(learned, 1e-9))
+                if np.isfinite(f) and np.isfinite(learned)
+                else float("nan")
+            )
         out[bucket] = block
 
     out["windows_fused_beats_gnss"] = int(sum(r["fused_beats_gnss_median"] for r in rows))
@@ -471,7 +566,10 @@ def write_summary(path: Path, report: dict[str, Any]) -> None:
             ("GNSS-only (phone)", "gnss_only"),
             ("INS-only (open DR)", "ins_only"),
             ("Fused LC-EKF", "fused"),
+            ("Learned-gain fused", "learned_fused"),
         ):
+            if key not in a:
+                continue
             b = a[key]
             lines.append(
                 f"| {name} | {b['median_of_medians_m']:.2f} m | "
@@ -502,7 +600,10 @@ def write_summary(path: Path, report: dict[str, Any]) -> None:
             ("GNSS-only (phone)", "gnss_only"),
             ("INS-only (open DR)", "ins_only"),
             ("Fused LC-EKF", "fused"),
+            ("Learned-gain fused", "learned_fused"),
         ):
+            if key not in d:
+                continue
             b = d[key]
             lines.append(
                 f"| {name} | {b['median_of_medians_m']:.2f} m | "
@@ -522,6 +623,16 @@ def write_summary(path: Path, report: dict[str, Any]) -> None:
             f"**{s['windows_fused_beats_gnss_degraded']}/{s['n_windows']}**.",
             "",
         ]
+        if "learned_fused" in d:
+            lines += [
+                "## Learned gain policy (held-out drives)",
+                "",
+                f"Learned vs GNSS-only (degraded): **{d['learned_vs_gnss_x']:.2f}×**.",
+                f"Learned vs classical fused (degraded): **{d['learned_vs_classical_x']:.2f}×**.",
+                "Parameters were fitted only on training-drive CAN truth; no drive appears "
+                "in both train and evaluation sets.",
+                "",
+            ]
 
     lines += [
         "## Method notes",
@@ -549,15 +660,150 @@ def write_summary(path: Path, report: dict[str, Any]) -> None:
     path.write_text("\n".join(lines), encoding="utf-8")
 
 
+def _prepare_data(
+    path: Path,
+) -> tuple[dict[str, Any], np.ndarray, np.ndarray] | None:
+    try:
+        data = attach_vehicle_truth(load_smartphone_csv(path))
+    except (OSError, ValueError):
+        return None
+    if data.get("truth_source") != "can_10hz":
+        return None
+    n = min(int(data["n"]), int(data.get("can_n", 0)))
+    if n < 2000:
+        return None
+    data["_t"] = np.asarray(data["t_s"][:n], dtype=np.float64)
+    data["_lat"] = np.asarray(data["lat"][:n], dtype=np.float64)
+    data["_lon"] = np.asarray(data["lon"][:n], dtype=np.float64)
+    data["_v"] = np.asarray(data["speed_mps"][:n], dtype=np.float64)
+    data["_bearing"] = np.asarray(data["bearing_deg"][:n], dtype=np.float64)
+    data["_acc"] = np.asarray(data["acc_h_m"][:n], dtype=np.float64)
+    data["_cla"] = np.asarray(data["can_lat"][:n], dtype=np.float64)
+    data["_clo"] = np.asarray(data["can_lon"][:n], dtype=np.float64)
+    data["_cv"] = np.asarray(data["can_speed_mps"][:n], dtype=np.float64)
+    data["_outage"] = np.asarray(data["outage"][:n], dtype=bool)
+    gz = -lowpass_causal(
+        np.asarray(data["gyro_pitch_raw"][:n], dtype=np.float64),
+        cutoff_hz=GYRO_CUTOFF_HZ,
+        fs_hz=max(data["hz_est"], 5.0),
+    )
+    return data, gz, _changed_fix_mask(data["_lat"], data["_lon"])
+
+
+def _eligible_windows(
+    data: dict[str, Any], segments: int, window_s: float
+) -> list[tuple[int, int]]:
+    t = data["_t"]
+    n = t.size
+    starts = np.linspace(int(0.05 * n), int(0.80 * n), segments).astype(int)
+    windows: list[tuple[int, int]] = []
+    for i0 in starts:
+        i1 = int(np.searchsorted(t, t[i0] + window_s))
+        if i1 >= n - 1 or i1 - i0 < 30:
+            continue
+        if float(np.mean(~data["_outage"][i0:i1])) < 0.85:
+            continue
+        if float(np.nanmean(data["_cv"][i0:i1])) < MIN_SPEED_MPS:
+            continue
+        windows.append((int(i0), i1))
+    return windows
+
+
+def _training_examples(
+    data: dict[str, Any],
+    i0: int,
+    i1: int,
+    gz: np.ndarray,
+    fix_changed: np.ndarray,
+) -> tuple[list[np.ndarray], list[float]]:
+    yaw0 = _yaw0_from_truth(data["_cla"], data["_clo"], i0)
+    if yaw0 is None:
+        return [], []
+    lat0, lon0 = float(data["_cla"][i0]), float(data["_clo"][i0])
+    truth = lla_to_enu(
+        data["_cla"][i0:i1],
+        data["_clo"][i0:i1],
+        origin_lat_deg=lat0,
+        origin_lon_deg=lon0,
+    )
+    st = _lc_seed(
+        0.0,
+        0.0,
+        float(data["_v"][i0]) if np.isfinite(data["_v"][i0]) else 0.0,
+        yaw0,
+        float(data["_acc"][i0]),
+    )
+    features: list[np.ndarray] = []
+    targets: list[float] = []
+    last_fix_t = float(data["_t"][i0])
+    for local_i, i in enumerate(range(i0 + 1, i1), start=1):
+        dt = float(data["_t"][i] - data["_t"][i - 1])
+        speed = float(data["_v"][i - 1]) if np.isfinite(data["_v"][i - 1]) else st.v
+        st = _lc_propagate(st, dt, float(gz[i - 1]), speed)
+        if not fix_changed[i] or not (
+            np.isfinite(data["_lat"][i]) and np.isfinite(data["_lon"][i])
+        ):
+            continue
+        measured = lla_to_enu(
+            np.asarray([data["_lat"][i]]),
+            np.asarray([data["_lon"][i]]),
+            origin_lat_deg=lat0,
+            origin_lon_deg=lon0,
+        )[0]
+        predicted = np.asarray([st.e, st.n])
+        innovation = float(np.linalg.norm(measured - predicted))
+        sigma = math.sqrt(max(float(st.P[0, 0] + st.P[1, 1]), 0.0) / 2.0)
+        features.append(
+            gain_features(
+                float(data["_acc"][i]),
+                innovation,
+                sigma,
+                float(data["_t"][i] - last_fix_t),
+            )
+        )
+        targets.append(optimal_scalar_gain(predicted, measured, truth[local_i]))
+        bearing = float(data["_bearing"][i])
+        st = _lc_update_gnss(
+            st,
+            float(measured[0]),
+            float(measured[1]),
+            float(data["_acc"][i]),
+            speed=float(data["_v"][i]) if np.isfinite(data["_v"][i]) else None,
+            bearing_rad=math.radians(bearing) if np.isfinite(bearing) else None,
+        )
+        last_fix_t = float(data["_t"][i])
+    return features, targets
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--files", type=int, default=0, help="Cap number of S-*.csv files (0=all)")
     ap.add_argument("--segments", type=int, default=8, help="Windows per file")
     ap.add_argument("--window-s", type=float, default=WINDOW_S)
+    ap.add_argument(
+        "--learned",
+        action="store_true",
+        help="Fit gain policy on training drives and score it on held-out drives",
+    )
+    ap.add_argument("--eval-fraction", type=float, default=0.3)
+    ap.add_argument("--ridge", type=float, default=1.0)
+    ap.add_argument("--output-dir")
     args = ap.parse_args()
 
     limitations: list[str] = []
     csvs = find_smartphone_csvs()
+    if args.files:
+        csvs = csvs[: args.files]
+    learned_root = _STRESS / "results" / "gnss_ins_fusion_learned"
+    out_dir = (
+        Path(args.output_dir).resolve()
+        if args.output_dir
+        else (learned_root if args.learned else _STRESS / "results" / "gnss_ins_fusion")
+    )
+    if args.learned:
+        root = learned_root.resolve()
+        if out_dir.resolve() != root and root not in out_dir.resolve().parents:
+            raise ValueError(f"learned output must stay below {root}")
     if not csvs:
         limitations.append(
             "No real S-*.csv (>1 MB) under data/raw/IO-VNBD — cannot score. "
@@ -572,15 +818,11 @@ def main() -> int:
             "coupling": "loosely-coupled position-domain",
             "tight_coupling_possible": False,
         }
-        out_dir = _STRESS / "results" / "gnss_ins_fusion"
         out_dir.mkdir(parents=True, exist_ok=True)
         (out_dir / "report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
         write_summary(out_dir / "summary.md", report)
         print("NO DATA — wrote empty summary with limitation")
         return 1
-
-    if args.files:
-        csvs = csvs[: args.files]
 
     limitations.append(
         "IO-VNBD exposes LLA/speed/acc_h only — loosely-coupled fusion, not "
@@ -594,52 +836,50 @@ def main() -> int:
     rows: list[dict[str, Any]] = []
     per_file: list[dict[str, Any]] = []
     n_files_used = 0
-
-    for p in csvs:
-        try:
-            data = attach_vehicle_truth(load_smartphone_csv(p))
-        except (OSError, ValueError) as exc:
-            print(f"  skip {p.name}: {exc}")
-            continue
-        if data.get("truth_source") != "can_10hz":
-            print(f"  skip {data['name']}: no CAN pair")
-            continue
-        n = min(int(data["n"]), int(data.get("can_n", 0)))
-        if n < 2000:
-            print(f"  skip {data['name']}: too short ({n})")
-            continue
-
-        data["_t"] = np.asarray(data["t_s"][:n], dtype=np.float64)
-        data["_lat"] = np.asarray(data["lat"][:n], dtype=np.float64)
-        data["_lon"] = np.asarray(data["lon"][:n], dtype=np.float64)
-        data["_v"] = np.asarray(data["speed_mps"][:n], dtype=np.float64)
-        data["_bearing"] = np.asarray(data["bearing_deg"][:n], dtype=np.float64)
-        data["_acc"] = np.asarray(data["acc_h_m"][:n], dtype=np.float64)
-        data["_cla"] = np.asarray(data["can_lat"][:n], dtype=np.float64)
-        data["_clo"] = np.asarray(data["can_lon"][:n], dtype=np.float64)
-        data["_cv"] = np.asarray(data["can_speed_mps"][:n], dtype=np.float64)
-        outage = np.asarray(data["outage"][:n], dtype=bool)
-        gz = -lowpass_causal(
-            np.asarray(data["gyro_pitch_raw"][:n], dtype=np.float64),
-            cutoff_hz=GYRO_CUTOFF_HZ,
-            fs_hz=max(data["hz_est"], 5.0),
+    learned_policy: LearnedGainPolicy | None = None
+    training_paths: list[Path] = []
+    eval_paths = list(csvs)
+    if args.learned:
+        training_paths, eval_paths = split_drive_paths(
+            csvs, eval_fraction=args.eval_fraction
         )
-        fix_changed = _changed_fix_mask(data["_lat"], data["_lon"])
+        train_features: list[np.ndarray] = []
+        train_targets: list[float] = []
+        for path in training_paths:
+            prepared = _prepare_data(path)
+            if prepared is None:
+                continue
+            data, gz, fix_changed = prepared
+            for i0, i1 in _eligible_windows(data, args.segments, args.window_s):
+                features, targets = _training_examples(
+                    data, i0, i1, gz, fix_changed
+                )
+                train_features.extend(features)
+                train_targets.extend(targets)
+        if len(train_features) < 6:
+            print(
+                "ABORT: learned policy has fewer than 6 leakage-safe training examples."
+            )
+            return 2
+        learned_policy = fit_gain_policy(
+            np.vstack(train_features), np.asarray(train_targets), ridge=args.ridge
+        )
+        print(
+            f"trained learned gain on {len(training_paths)} drives, "
+            f"{learned_policy.n_training_examples} fix updates"
+        )
 
-        t = data["_t"]
-        available = ~outage
-        # Candidate starts: evenly spaced, require mostly GNSS-available window.
-        starts = np.linspace(int(0.05 * n), int(0.80 * n), args.segments).astype(int)
+    for p in eval_paths:
+        prepared = _prepare_data(p)
+        if prepared is None:
+            print(f"  skip {p.name}: no usable CAN-paired drive")
+            continue
+        data, gz, fix_changed = prepared
         file_rows: list[dict[str, Any]] = []
-        for i0 in starts:
-            i1 = int(np.searchsorted(t, t[i0] + args.window_s))
-            if i1 >= n - 1 or i1 - i0 < 30:
-                continue
-            if float(np.mean(available[i0:i1])) < 0.85:
-                continue
-            if float(np.nanmean(data["_cv"][i0:i1])) < MIN_SPEED_MPS:
-                continue
-            row = run_window(data, int(i0), i1, gz, fix_changed)
+        for i0, i1 in _eligible_windows(data, args.segments, args.window_s):
+            row = run_window(
+                data, int(i0), i1, gz, fix_changed, learned_policy
+            )
             if row is None:
                 continue
             row["file"] = data["name"]
@@ -651,9 +891,19 @@ def main() -> int:
             med_g = float(np.median([r["all"]["gnss_only"]["median_m"] for r in file_rows]))
             med_i = float(np.median([r["all"]["ins_only"]["median_m"] for r in file_rows]))
             med_f = float(np.median([r["all"]["fused"]["median_m"] for r in file_rows]))
+            med_l = (
+                float(
+                    np.median(
+                        [r["all"]["learned_fused"]["median_m"] for r in file_rows]
+                    )
+                )
+                if learned_policy is not None
+                else None
+            )
             print(
                 f"  {data['name']:16s} n={len(file_rows):2d}  "
                 f"gnss={med_g:6.1f}m  ins={med_i:6.1f}m  fused={med_f:6.1f}m"
+                + (f"  learned={med_l:6.1f}m" if med_l is not None else "")
             )
             per_file.append(
                 {
@@ -662,6 +912,7 @@ def main() -> int:
                     "med_gnss_m": med_g,
                     "med_ins_m": med_i,
                     "med_fused_m": med_f,
+                    "med_learned_m": med_l,
                     "windows": file_rows,
                 }
             )
@@ -675,6 +926,18 @@ def main() -> int:
         "gyro_cutoff_hz": GYRO_CUTOFF_HZ,
         "n_files": n_files_used,
         "n_candidates_scanned": len(csvs),
+        "evaluation_protocol": (
+            {
+                "split_unit": "drive basename",
+                "seed": 26168,
+                "training_drives": [p.name for p in training_paths],
+                "evaluation_drives": [p.name for p in eval_paths],
+                "overlap": [],
+                "model": learned_policy.to_dict() if learned_policy else None,
+            }
+            if args.learned
+            else None
+        ),
         "summary": summary,
         "limitations": limitations,
         "files": [
@@ -684,13 +947,13 @@ def main() -> int:
                 "med_gnss_m": f["med_gnss_m"],
                 "med_ins_m": f["med_ins_m"],
                 "med_fused_m": f["med_fused_m"],
+                "med_learned_m": f["med_learned_m"],
             }
             for f in per_file
         ],
         "windows": rows,
     }
 
-    out_dir = _STRESS / "results" / "gnss_ins_fusion"
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "report.json").write_text(
         json.dumps(report, indent=2, default=float), encoding="utf-8"

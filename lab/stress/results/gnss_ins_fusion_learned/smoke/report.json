@@ -1,0 +1,308 @@
+{
+  "coupling": "loosely-coupled position-domain",
+  "tight_coupling_possible": false,
+  "window_s": 60.0,
+  "degraded_acc_h_m": 8.0,
+  "gyro_cutoff_hz": 0.5,
+  "n_files": 2,
+  "n_candidates_scanned": 20,
+  "evaluation_protocol": {
+    "split_unit": "drive basename",
+    "seed": 26168,
+    "training_drives": [
+      "S-A1.csv",
+      "S-A10.csv",
+      "S-A13.csv",
+      "S-A2.csv",
+      "S-A5.csv",
+      "S-A6.csv",
+      "S-A7.csv",
+      "S-A8.csv",
+      "S-A9.csv",
+      "S-M.csv",
+      "S-S1.csv",
+      "S-S3b.csv",
+      "S-S3c.csv",
+      "S-S4.csv",
+      "S-T1.csv"
+    ],
+    "evaluation_drives": [
+      "S-A3.csv",
+      "S-A4.csv",
+      "S-S2.csv",
+      "S-S3a.csv",
+      "S-T10.csv"
+    ],
+    "overlap": [],
+    "model": {
+      "coefficients": [
+        -0.38181992455083624,
+        0.5159092841293742,
+        0.013400547973404587,
+        0.7807002603881047
+      ],
+      "intercept": 2.3251315508592363,
+      "feature_mean": [
+        1.2979987582968835,
+        3.062712222547185,
+        2.4750337585891806,
+        2.190919220021472
+      ],
+      "feature_scale": [
+        0.17687125765753042,
+        0.6588252900568413,
+        0.5117218896597499,
+        0.46183472263415376
+      ],
+      "ridge": 1.0,
+      "n_training_examples": 25,
+      "feature_names": [
+        "log1p_acc_h_m",
+        "log1p_innovation_m",
+        "log1p_predicted_sigma_m",
+        "log1p_fix_age_s"
+      ],
+      "model_type": "ridge_logit_gain"
+    }
+  },
+  "summary": {
+    "n_windows": 2,
+    "methods": [
+      "gnss_only",
+      "ins_only",
+      "fused",
+      "learned_fused"
+    ],
+    "all": {
+      "gnss_only": {
+        "median_of_medians_m": 82.75620282766158,
+        "median_of_rmse_m": 91.46336066995093,
+        "median_of_p90_m": 127.12383384812156
+      },
+      "ins_only": {
+        "median_of_medians_m": 58.32882437722728,
+        "median_of_rmse_m": 58.74573204923533,
+        "median_of_p90_m": 80.68884404466824
+      },
+      "fused": {
+        "median_of_medians_m": 64.65560399643213,
+        "median_of_rmse_m": 66.81657511882949,
+        "median_of_p90_m": 83.75198428210386
+      },
+      "learned_fused": {
+        "median_of_medians_m": 66.31137495762178,
+        "median_of_rmse_m": 68.97242141956634,
+        "median_of_p90_m": 90.78778398718751
+      },
+      "fused_vs_gnss_x": 1.2799540598557906,
+      "fused_vs_ins_x": 0.902146461742837,
+      "fused_beats_gnss": true,
+      "fused_beats_ins": false,
+      "learned_vs_gnss_x": 1.2479940716136462,
+      "learned_vs_classical_x": 0.975030363007134
+    },
+    "degraded": {
+      "gnss_only": {
+        "median_of_medians_m": 83.1353702122176,
+        "median_of_rmse_m": 91.48349466211893,
+        "median_of_p90_m": 126.68669762058585
+      },
+      "ins_only": {
+        "median_of_medians_m": 58.26374734151411,
+        "median_of_rmse_m": 58.79246132424905,
+        "median_of_p90_m": 80.71090737376113
+      },
+      "fused": {
+        "median_of_medians_m": 64.53730953665867,
+        "median_of_rmse_m": 66.83158152644636,
+        "median_of_p90_m": 83.77065950421105
+      },
+      "learned_fused": {
+        "median_of_medians_m": 66.3266129271224,
+        "median_of_rmse_m": 68.98460471977975,
+        "median_of_p90_m": 90.78019582873557
+      },
+      "fused_vs_gnss_x": 1.2881753331380323,
+      "fused_vs_ins_x": 0.902791699248308,
+      "fused_beats_gnss": true,
+      "fused_beats_ins": false,
+      "learned_vs_gnss_x": 1.2534240260928766,
+      "learned_vs_classical_x": 0.9730228439008373
+    },
+    "windows_fused_beats_gnss": 1,
+    "windows_fused_beats_ins": 1,
+    "windows_fused_beats_gnss_degraded": 1
+  },
+  "limitations": [
+    "IO-VNBD exposes LLA/speed/acc_h only \u2014 loosely-coupled fusion, not tight (no pseudoranges).",
+    "Phone GNSS is sparse (~0.1 Hz unique fixes held across ~10 Hz rows); GNSS-only error includes hold quantization vs 10 Hz CAN."
+  ],
+  "files": [
+    {
+      "name": "S-S2.csv",
+      "n_windows": 1,
+      "med_gnss_m": 29.3863626662695,
+      "med_ins_m": 79.20169449094007,
+      "med_fused_m": 46.45739537823486,
+      "med_learned_m": 49.786189922582004
+    },
+    {
+      "name": "S-S3a.csv",
+      "n_windows": 1,
+      "med_gnss_m": 136.12604298905367,
+      "med_ins_m": 37.455954263514485,
+      "med_fused_m": 82.85381261462942,
+      "med_learned_m": 82.83655999266156
+    }
+  ],
+  "windows": [
+    {
+      "start_idx": 4693,
+      "n_samples": 600,
+      "duration_s": 59.899,
+      "distance_m": 484.68251663861116,
+      "n_gnss_fixes": 6,
+      "all": {
+        "gnss_only": {
+          "n": 600,
+          "rmse_m": 43.08975814587741,
+          "median_m": 29.3863626662695,
+          "p90_m": 74.16597572864474,
+          "end_m": 17.997891811109124
+        },
+        "ins_only": {
+          "n": 600,
+          "rmse_m": 81.94333759981986,
+          "median_m": 79.20169449094007,
+          "p90_m": 116.81067338276019,
+          "end_m": 134.99126900763008
+        },
+        "fused": {
+          "n": 600,
+          "rmse_m": 53.46637952880318,
+          "median_m": 46.45739537823486,
+          "p90_m": 76.29173447415242,
+          "end_m": 52.41547591386618
+        },
+        "learned_fused": {
+          "n": 600,
+          "rmse_m": 57.1494897627964,
+          "median_m": 49.786189922582004,
+          "p90_m": 90.11207407582215,
+          "end_m": 61.2678431060694
+        }
+      },
+      "degraded": {
+        "gnss_only": {
+          "n": 593,
+          "rmse_m": 42.58838901729387,
+          "median_m": 29.17237234249836,
+          "p90_m": 73.2096787742028,
+          "end_m": 17.997891811109124
+        },
+        "ins_only": {
+          "n": 593,
+          "rmse_m": 82.00333387495851,
+          "median_m": 79.07154041951374,
+          "p90_m": 116.8619241631267,
+          "end_m": 134.99126900763008
+        },
+        "fused": {
+          "n": 593,
+          "rmse_m": 53.43721207213737,
+          "median_m": 46.19330913529866,
+          "p90_m": 76.28983567064864,
+          "end_m": 52.41547591386618
+        },
+        "n_mask": 593,
+        "n_acc_h_ge": 0,
+        "n_held": 593,
+        "learned_fused": {
+          "n": 593,
+          "rmse_m": 57.12335900483863,
+          "median_m": 49.807907219901765,
+          "p90_m": 90.07859953410765,
+          "end_m": 61.2678431060694
+        }
+      },
+      "fused_beats_gnss_median": false,
+      "fused_beats_ins_median": true,
+      "fused_beats_gnss_degraded": false,
+      "file": "S-S2.csv"
+    },
+    {
+      "start_idx": 1231,
+      "n_samples": 600,
+      "duration_s": 59.89999999999999,
+      "distance_m": 737.0226666666665,
+      "n_gnss_fixes": 7,
+      "all": {
+        "gnss_only": {
+          "n": 600,
+          "rmse_m": 139.83696319402446,
+          "median_m": 136.12604298905367,
+          "p90_m": 180.0816919675984,
+          "end_m": 123.17744623417882
+        },
+        "ins_only": {
+          "n": 600,
+          "rmse_m": 35.5481264986508,
+          "median_m": 37.455954263514485,
+          "p90_m": 44.5670147065763,
+          "end_m": 42.61870855975003
+        },
+        "fused": {
+          "n": 600,
+          "rmse_m": 80.1667707088558,
+          "median_m": 82.85381261462942,
+          "p90_m": 91.2122340900553,
+          "end_m": 86.153747342553
+        },
+        "learned_fused": {
+          "n": 600,
+          "rmse_m": 80.7953530763363,
+          "median_m": 82.83655999266156,
+          "p90_m": 91.46349389855288,
+          "end_m": 86.31340488790482
+        }
+      },
+      "degraded": {
+        "gnss_only": {
+          "n": 592,
+          "rmse_m": 140.37860030694398,
+          "median_m": 137.09836808193683,
+          "p90_m": 180.1637164669689,
+          "end_m": 123.17744623417882
+        },
+        "ins_only": {
+          "n": 592,
+          "rmse_m": 35.58158877353958,
+          "median_m": 37.455954263514485,
+          "p90_m": 44.55989058439555,
+          "end_m": 42.61870855975003
+        },
+        "fused": {
+          "n": 592,
+          "rmse_m": 80.22595098075534,
+          "median_m": 82.88130993801867,
+          "p90_m": 91.25148333777346,
+          "end_m": 86.153747342553
+        },
+        "n_mask": 592,
+        "n_acc_h_ge": 0,
+        "n_held": 592,
+        "learned_fused": {
+          "n": 592,
+          "rmse_m": 80.84585043472087,
+          "median_m": 82.84531863434303,
+          "p90_m": 91.48179212336349,
+          "end_m": 86.31340488790482
+        }
+      },
+      "fused_beats_gnss_median": true,
+      "fused_beats_ins_median": false,
+      "fused_beats_gnss_degraded": true,
+      "file": "S-S3a.csv"
+    }
+  ]
+}

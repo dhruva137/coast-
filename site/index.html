@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="COAST-VNet-1 — a small dual-band neural inertial-odometry model for keeping vehicle position moving when GNSS is denied.">
+  <meta name="theme-color" content="#07090D">
+  <title>COAST-VNet-1 — path prediction when GNSS dies</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="atmosphere" aria-hidden="true"></div>
+  <div class="grid-overlay" aria-hidden="true"></div>
+
+  <main class="shell page">
+    <header class="hero">
+      <p class="brand-kicker">Intelligent Dead Reckoning &middot; SIH 2026 &middot; ISRO PS 26168</p>
+      <h1 class="brand">
+        COAST<span class="brand-dot" aria-hidden="true">.</span>
+      </h1>
+
+      <h2 class="headline">Predict the path when GNSS dies.</h2>
+      <p class="lede">
+        A small dual-band neural inertial-odometry model, released with the code
+        and the measurements, that keeps vehicle position moving through tunnels,
+        urban canyons, and jam zones &mdash; on-device, no cloud fix required.
+      </p>
+
+      <div class="cta-group">
+        <a class="btn btn-primary" href="/console/" rel="noopener">
+          Open Console &rarr;
+        </a>
+        <a class="btn btn-ghost"
+           href="https://github.com/coast/coast/releases/latest/download/coast.apk"
+           rel="noopener">
+          Download APK
+        </a>
+        <a class="btn btn-ghost" href="https://github.com/coast/coast" rel="noopener">
+          Source on GitHub
+        </a>
+      </div>
+      <p class="apk-hint">
+        APK ~47 MB &middot; Android 8+ &middot;
+        <a href="/console/#/model" rel="noopener">Model card in the console</a>
+      </p>
+    </header>
+
+    <section class="section" aria-labelledby="s-overview">
+      <h3 id="s-overview" class="section-title">COAST-VNet-1</h3>
+      <p class="section-body">
+        A frequency-decoupled CNN-GRU that reads a phone's raw IMU at 10&nbsp;Hz
+        and returns forward speed for dead reckoning. 96,086 trainable parameters,
+        a 392&nbsp;KB ONNX file, and a log-variance head. Trained on IO-VNBD with
+        CAN-bus speed labels &mdash; not phone GNSS.
+      </p>
+      <dl class="spec-grid">
+        <div><dt>Architecture</dt><dd>frequency-decoupled CNN-GRU</dd></div>
+        <div><dt>Parameters</dt><dd>96,086</dd></div>
+        <div><dt>ONNX size</dt><dd>392 KB</dd></div>
+        <div><dt>Input</dt><dd><code>(20, 6)</code> &middot; 2.0&nbsp;s &middot; 10 Hz</dd></div>
+        <div><dt>Output</dt><dd>forward speed (m/s) + log-&sigma;&sup2;</dd></div>
+        <div><dt>Runtime</dt><dd>ONNX Runtime Mobile &middot; CPU</dd></div>
+      </dl>
+    </section>
+
+    <section class="section" aria-labelledby="s-arch">
+      <h3 id="s-arch" class="section-title">Why this architecture</h3>
+      <p class="section-body">
+        A phone on a dashboard sees two superimposed signals: <b>vehicle motion</b>
+        (low band) and <b>road / engine vibration</b> (high band). Rather than
+        filter one away, COAST-VNet-1 splits the band and treats the two as
+        different information, then fuses them into a single forward-speed
+        estimate.
+      </p>
+      <pre class="arch-diagram" aria-label="Architecture sketch">
+IMU (20&times;6) &rarr; FrequencySplit
+                 &darr;
+    low  band &rarr; Conv1d(6&rarr;32) &rarr; GRU(32&rarr;80, 2 layers)   vehicle motion
+                 &darr;
+    high band &rarr; Conv1d(6&rarr;48) &rarr; GroupNorm &rarr; Conv&times;2    surface / vibration
+                                             &darr;
+                     concat &rarr; Linear(135&rarr;96) &rarr; Linear(96&rarr;6)</pre>
+    </section>
+
+    <section class="section" aria-labelledby="s-perf">
+      <h3 id="s-perf" class="section-title">Measured performance</h3>
+      <p class="section-body">
+        Protocol: <b>leave-file-out over 23 IO-VNBD drives</b> &mdash; train on 22,
+        score the held-out drive only, 12 epochs per fold. Labels are CAN-bus
+        indicated vehicle speed at 10&nbsp;Hz. Full per-fold results are in the
+        committed summary.
+      </p>
+      <table class="perf-table">
+        <thead>
+          <tr><th></th><th>median distance error</th><th>median drift</th><th>folds won</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">COAST-VNet-1</th>
+            <td><b>150.3 m</b></td>
+            <td><b>18.0%</b></td>
+            <td><b>9 / 23</b></td>
+          </tr>
+          <tr>
+            <th scope="row">Frozen onset speed</th>
+            <td>163.2 m</td>
+            <td>21.1%</td>
+            <td>&mdash;</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="section-note">
+        ~8% better than freezing the last known speed &mdash; a real but modest
+        improvement, wins on 9 of 23 drives. The system-level gain from
+        map-in-loop over naive DR is <b>2.02&times;</b> lower median position error
+        across 43 outages.
+      </p>
+    </section>
+
+    <section class="section section--honesty" aria-labelledby="s-not">
+      <h3 id="s-not" class="section-title">What this model is <em>not</em></h3>
+      <p class="section-body">
+        Published in the same weight as the wins, because a headline nobody
+        can attack by picking the awkward number is worth more than a bigger one.
+      </p>
+      <ul class="not-list">
+        <li>
+          <b>Per-window RMSE loses to hold.</b>
+          5.06&nbsp;m/s vs 1.28&nbsp;m/s &middot; 23&nbsp;/&nbsp;23 folds &middot; committed in the summary.
+        </li>
+        <li>
+          <b>Residual model rejected.</b>
+          13&nbsp;/&nbsp;23 teacher-forced &middot; 0&nbsp;/&nbsp;23 closed-loop &middot; exposure-bias trap, caught under rollout.
+        </li>
+        <li>
+          <b>Confidence radius hidden by default.</b>
+          The log-&sigma;&sup2; head is not yet calibrated. A two-stage fix is scheduled.
+        </li>
+        <li>
+          <b>Full-system drift 16.77% &rarr; ISRO bar &lt;10%.</b>
+          Not yet cleared. Active enhancement cycle.
+        </li>
+      </ul>
+    </section>
+
+    <section class="section" aria-labelledby="s-downloads">
+      <h3 id="s-downloads" class="section-title">Downloads</h3>
+      <ul class="dl-list">
+        <li>
+          <a href="/console/" rel="noopener">Open Console</a> &mdash; live fleet,
+          engine benchmarks, training telemetry, evidence table.
+        </li>
+        <li>
+          <a href="https://github.com/coast/coast/releases/latest/download/coast.apk" rel="noopener">COAST.apk</a>
+          &mdash; the on-device Android build.
+        </li>
+        <li>
+          <a href="https://github.com/coast/coast/blob/main/docs/MODEL_CARD.md" rel="noopener">Model card</a>
+          &mdash; full protocol, per-fold results, refusals.
+        </li>
+        <li>
+          <a href="https://github.com/coast/coast" rel="noopener">Source</a>
+          &mdash; the training code, the estimator, and this page.
+        </li>
+      </ul>
+    </section>
+
+    <footer class="honesty">
+      <p>
+        Path prediction under GNSS deny &mdash; not a marketing dashboard.
+        Every number on this page traces to a committed measurement file; nothing
+        is projected.
+      </p>
+      <p class="meta">SIH 2026 &middot; ISRO PS 26168 &middot; coast.paper2anything.com</p>
+    </footer>
+  </main>
+</body>
+</html>

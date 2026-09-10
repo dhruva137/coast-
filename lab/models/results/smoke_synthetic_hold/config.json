@@ -1,0 +1,27 @@
+{
+  "name": "smoke_synthetic_hold",
+  "arch": {
+    "id": "hold_baseline",
+    "params": {
+      "blend": 0.15
+    }
+  },
+  "objective": "mse",
+  "features": {
+    "kind": "raw",
+    "params": {}
+  },
+  "folds": 3,
+  "epochs": 1,
+  "seed": 26168,
+  "runner": {
+    "mode": "synthetic",
+    "parallel": 2,
+    "io_vnbd": {
+      "path": "C:\\Users\\Dhruva P Gowda\\Desktop\\New folder\\SIH 2026\\data\\raw\\IO-VNBD",
+      "present": true,
+      "n_smartphone_csv": 241,
+      "note": "IO-VNBD found locally"
+    }
+  }
+}

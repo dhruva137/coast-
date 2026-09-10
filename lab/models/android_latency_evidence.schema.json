@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sih26168.in/schemas/android-latency-evidence-v1.json",
+  "title": "Physical Android AVNet latency evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "measurement_scope",
+    "device_model",
+    "android_version",
+    "app_variant",
+    "model_sha256",
+    "runtime",
+    "sample_count",
+    "latency_ms",
+    "captured_at_utc"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "measurement_scope": { "const": "physical_android_device" },
+    "device_model": { "type": "string", "minLength": 1 },
+    "android_version": { "type": "string", "minLength": 1 },
+    "app_variant": { "type": "string", "minLength": 1 },
+    "model_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "runtime": { "const": "onnxruntime-android" },
+    "sample_count": { "type": "integer", "minimum": 1 },
+    "latency_ms": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["p50", "p95", "max"],
+      "properties": {
+        "p50": { "type": "number", "minimum": 0 },
+        "p95": { "type": "number", "minimum": 0 },
+        "max": { "type": "number", "minimum": 0 }
+      }
+    },
+    "captured_at_utc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "notes": { "type": "string" }
+  }
+}

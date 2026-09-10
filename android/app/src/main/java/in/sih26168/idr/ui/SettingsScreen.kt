@@ -20,8 +20,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -42,7 +40,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `in`.sih26168.idr.IdrBus
 import `in`.sih26168.idr.data.Prefs
+import `in`.sih26168.idr.data.ThemePreference
 import `in`.sih26168.idr.data.VehicleKind
+import `in`.sih26168.idr.pair.PairingStore
 import `in`.sih26168.idr.ui.theme.Accent
 import `in`.sih26168.idr.ui.theme.Amber
 import `in`.sih26168.idr.ui.theme.Bg
@@ -55,7 +55,8 @@ import `in`.sih26168.idr.ui.theme.Telem
 import `in`.sih26168.idr.ui.theme.Text as Fg
 
 /**
- * Demo / privacy / vehicle controls. Everything here persists through [Prefs]
+ * Privacy / vehicle / map controls. Replay and tabletop tools live under Advanced.
+ * Everything here persists through [Prefs]
  * (and bus setters where the nav pipeline already listens).
  */
 @OptIn(ExperimentalLayoutApi::class)
@@ -66,22 +67,33 @@ fun SettingsScreen(
     requestPerms: () -> Unit,
     onOpenAccount: () -> Unit = {},
     onStartDemo: (() -> Unit)? = null,
+    onOpenVehicleCheck: (() -> Unit)? = null,
+    onOpenHelp: (() -> Unit)? = null,
+    onOpenHistory: (() -> Unit)? = null,
+    themePref: ThemePreference = ThemePreference.Dark,
+    onThemePref: (ThemePreference) -> Unit = {},
 ) {
     val ctx = LocalContext.current
     val prefs = remember { Prefs(ctx) }
     val cfg by bus.config.collectAsStateWithLifecycle()
     val blackout by bus.gnssBlackout.collectAsStateWithLifecycle()
     val replayEnabled by bus.replayEnabled.collectAsStateWithLifecycle()
+    val forceStationary by bus.forceStationary.collectAsStateWithLifecycle()
 
     var basemap by remember { mutableStateOf(prefs.basemapEnabled) }
-    var mapDark by remember { mutableStateOf(prefs.mapDarkTheme) }
     var useKmh by remember { mutableStateOf(prefs.useKmh) }
     var showGhost by remember { mutableStateOf(prefs.showGhostCar) }
     var zuptTabletop by remember { mutableStateOf(prefs.zuptTabletop) }
-    var trackerOptIn by remember { mutableStateOf(prefs.trackerOptIn) }
-    var trackerIp by remember { mutableStateOf(prefs.trackerLanIp) }
+    var fuseCompass by remember { mutableStateOf(prefs.fuseCompass) }
     var showRecord by remember { mutableStateOf(false) }
+    var showAbout by remember { mutableStateOf(false) }
     val displayName = prefs.displayName
+    val pairStore = remember { PairingStore(ctx) }
+
+    if (showAbout) {
+        AboutScreen(onBack = { showAbout = false })
+        return
+    }
 
     if (showRecord) {
         Column(Modifier.fillMaxSize()) {
@@ -101,16 +113,6 @@ fun SettingsScreen(
         }
         return
     }
-
-    val fieldColors = OutlinedTextFieldDefaults.colors(
-        focusedBorderColor = Accent,
-        unfocusedBorderColor = Line,
-        focusedLabelColor = Accent,
-        unfocusedLabelColor = Mute,
-        cursorColor = Accent,
-        focusedTextColor = Fg,
-        unfocusedTextColor = Fg,
-    )
 
     Column(
         Modifier
@@ -136,6 +138,13 @@ fun SettingsScreen(
 
         SettingsCard {
             SecondaryButton("ACCOUNT", Modifier.fillMaxWidth(), onOpenAccount)
+            if (onOpenHelp != null) {
+                SecondaryButton("HELP", Modifier.fillMaxWidth(), onOpenHelp)
+            }
+            if (onOpenHistory != null) {
+                SecondaryButton("SIGNAL HISTORY", Modifier.fillMaxWidth(), onOpenHistory)
+            }
+            SecondaryButton("ABOUT", Modifier.fillMaxWidth()) { showAbout = true }
         }
 
         Section("VEHICLE")
@@ -151,28 +160,52 @@ fun SettingsScreen(
                     }
                 }
             }
+            if (onOpenVehicleCheck != null) {
+                Spacer(Modifier.height(4.dp))
+                SecondaryButton("VEHICLE CHECK", Modifier.fillMaxWidth(), onOpenVehicleCheck)
+                Text(
+                    "Pre-flight sensor checklist — rates, compass disclosure, mount.",
+                    fontFamily = IdrSans,
+                    color = Mute,
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                )
+            }
         }
 
         Section("MAP")
         SettingsCard {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                SettingsToggle(
-                    title = "Dark map",
-                    subtitle = if (mapDark) {
-                        "Night chrome (default). Light theme not wired yet — preference still saved."
-                    } else {
-                        "Light preference saved; UI stays dark until a light theme ships."
-                    },
-                    checked = mapDark,
-                    onCheckedChange = {
-                        mapDark = it
-                        prefs.mapDarkTheme = it
-                    },
-                    bordered = false,
+                Text(
+                    "APPEARANCE",
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
+                    color = Mute,
+                    fontFamily = IdrMono,
+                    fontSize = 10.sp,
+                    letterSpacing = 1.sp,
+                )
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(bottom = 8.dp),
+                ) {
+                    ThemePreference.entries.forEach { mode ->
+                        SettingsChip(mode.name.uppercase(), themePref == mode) {
+                            onThemePref(mode)
+                        }
+                    }
+                }
+                Text(
+                    "Dark is the demo default. Light switches Material + basemap tiles; " +
+                        "many chrome colours still use dark tokens.",
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                    color = Mute,
+                    fontFamily = IdrSans,
+                    fontSize = 12.sp,
                 )
                 SettingsToggle(
                     title = "Basemap",
-                    subtitle = "Off → metre grid, zero tile traffic.",
+                    subtitle = "OpenStreetMap (the map PS 26168 names). No Google key. Off → metre grid, zero tile traffic.",
                     checked = basemap,
                     onCheckedChange = {
                         basemap = it
@@ -193,42 +226,38 @@ fun SettingsScreen(
             }
         }
 
-        Section("DEMO")
+        Section("STATIONARY")
+        SettingsCard {
+            SettingsToggle(
+                title = "I am not moving (force hold)",
+                subtitle = "Zeros coast until off. ZUPT still auto-detects stops; this is the user override for tabletop.",
+                checked = forceStationary,
+                onCheckedChange = {
+                    bus.setForceStationary(it)
+                    prefs.forceStationary = it
+                },
+                bordered = false,
+            )
+        }
+
+        Section("ADVANCED")
         SettingsCard {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                if (onStartDemo != null) {
+                if (onStartDemo != null && !prefs.demoMode) {
                     Button(
                         onClick = onStartDemo,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(52.dp)
-                            .semantics { contentDescription = "Start Demo Mode" },
-                        colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Bg),
+                            .height(44.dp)
+                            .semantics { contentDescription = "Play Demo Mode" },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Accent.copy(alpha = 0.2f),
+                            contentColor = Accent,
+                        ),
                         shape = RoundedCornerShape(12.dp),
                     ) {
-                        Text("DEMO MODE", fontFamily = IdrMono, fontSize = 13.sp, letterSpacing = 1.2.sp, fontWeight = FontWeight.Bold)
+                        Text("PLAY DEMO", fontFamily = IdrMono, fontSize = 12.sp, letterSpacing = 1.sp)
                     }
-                    Text(
-                        "One tap · blackout replay · works offline",
-                        fontFamily = IdrSans,
-                        color = Mute,
-                        fontSize = 12.sp,
-                        modifier = Modifier.padding(bottom = 6.dp),
-                    )
-                }
-                Button(
-                    onClick = {
-                        DemoMode.arm(prefs, bus)
-                        showGhost = true
-                    },
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Accent.copy(alpha = 0.22f),
-                        contentColor = Accent,
-                    ),
-                    shape = RoundedCornerShape(12.dp),
-                ) {
-                    Text("ARM DEMO (next Start)", fontFamily = IdrMono, fontSize = 12.sp, letterSpacing = 1.sp)
                 }
                 if (prefs.demoMode || blackout) {
                     Button(
@@ -249,8 +278,8 @@ fun SettingsScreen(
                     }
                 }
                 SettingsToggle(
-                    title = "Replay mode",
-                    subtitle = "Next drive uses the bundled IO-VNBD-style stream.",
+                    title = "Replay bundled IO-VNBD (console-style dataset — not a live ride)",
+                    subtitle = "Next Start plays the bundled stream instead of this phone's sensors.",
                     checked = replayEnabled,
                     onCheckedChange = {
                         bus.setReplayEnabled(it)
@@ -281,6 +310,17 @@ fun SettingsScreen(
                     },
                     bordered = false,
                 )
+                SettingsToggle(
+                    title = "Fuse compass during GNSS outage",
+                    subtitle = "Onset-calibrated heading. Lab heading-induced drift 16.87%→7.22%. Map-in-loop still locks the road.",
+                    checked = fuseCompass,
+                    onCheckedChange = {
+                        fuseCompass = it
+                        prefs.fuseCompass = it
+                        bus.setFuseCompass(it)
+                    },
+                    bordered = false,
+                )
                 Button(
                     onClick = { bus.setBlackout(!blackout) },
                     modifier = Modifier.fillMaxWidth().height(48.dp),
@@ -304,15 +344,17 @@ fun SettingsScreen(
         SettingsCard {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    "No user data leaves the device · basemap-off = zero network",
+                    "No cloud account. Position stays on this phone unless you pair a console. " +
+                        "Basemap-off and unpaired = zero network.",
                     color = Telem,
                     fontFamily = IdrSans,
                     fontSize = 14.sp,
                     lineHeight = 20.sp,
                 )
                 Text(
-                    "Position, sensors, and sessions stay on this phone. The only optional " +
-                        "outbound traffic is public map tiles when basemap is on.",
+                    "Position and sessions stay on this phone unless you pair with a console. " +
+                        "Optional outbound: public map tiles when basemap is on; console ingest " +
+                        "only while paired (token + fix, never a device ID).",
                     color = Mute,
                     fontFamily = IdrSans,
                     fontSize = 12.sp,
@@ -321,34 +363,22 @@ fun SettingsScreen(
             }
         }
 
-        Section("PHONE TRACKER (OPT-IN)")
+        Section("CONSOLE")
         SettingsCard {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                SettingsToggle(
-                    title = "Stream to laptop",
-                    subtitle = "Off by default. Prefs only for now — uploader comes later.",
-                    checked = trackerOptIn,
-                    onCheckedChange = {
-                        trackerOptIn = it
-                        prefs.trackerOptIn = it
-                    },
-                    bordered = false,
-                )
-                OutlinedTextField(
-                    value = trackerIp,
-                    onValueChange = {
-                        trackerIp = it
-                        prefs.trackerLanIp = it.trim()
-                    },
-                    label = { Text("Laptop LAN IP") },
-                    placeholder = { Text("192.168.1.10") },
-                    singleLine = true,
-                    enabled = trackerOptIn,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = fieldColors,
-                    shape = RoundedCornerShape(12.dp),
-                )
-            }
+            Text(
+                if (pairStore.paired) {
+                    val who = pairStore.label.ifBlank { "console" }
+                    "Paired with $who. Open the CONNECT tab to unpair or copy the session code."
+                } else {
+                    "Pairing lives on the CONNECT tab — scan the console QR, paste a " +
+                        "token, or show a code the laptop can type. Never sends IMEI " +
+                        "or advertising ID."
+                },
+                color = Mute,
+                fontFamily = IdrSans,
+                fontSize = 13.sp,
+                lineHeight = 18.sp,
+            )
         }
 
         Section("FIELD LOGGING")

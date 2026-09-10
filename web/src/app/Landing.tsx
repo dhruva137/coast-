@@ -9,6 +9,19 @@ type LandingProps = {
 export function Landing({ onOpenConsole, onRunDemo, onNavigate }: LandingProps) {
   return (
     <div className="landing">
+      <div className="announcement-banner" style={{
+        background: "linear-gradient(90deg, #0070f3, #ff3366)",
+        color: "white",
+        textAlign: "center",
+        padding: "8px 16px",
+        fontSize: "13px",
+        fontWeight: 600,
+        letterSpacing: "0.02em",
+        position: "relative",
+        zIndex: 41
+      }}>
+        NEW: AVNet-tiny IDR Backbone released! 10Hz on-device inference for leaning two-wheelers.
+      </div>
       <nav className="landing-nav" aria-label="Product">
         <div className="brand-mark" aria-hidden="true">
           <CoastWordmark size={22} />

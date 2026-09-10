@@ -1,0 +1,80 @@
+{
+  "experiment": "smoke_synthetic_hold",
+  "status": "dry_run",
+  "folds": [
+    {
+      "fold_id": "synth-0",
+      "per_window_rmse_mps": 0.568422093890097,
+      "hold_baseline_rmse_mps": 0.47062462409570166,
+      "rmse_vs_hold_mps": 0.09779746979439535,
+      "closed_loop_60s_distance_error_m": 5.817413324393783e-06,
+      "outage_drift_pct": 5.121235249028657e-06,
+      "mount_swap_delta_rmse_mps": null,
+      "params": 0,
+      "onnx_size_bytes": null,
+      "on_device_latency_ms": null,
+      "notes": [
+        "synthetic fold  -  not IO-VNBD; numbers are harness smoke only",
+        "closed-loop hold baseline endpoint err=13.904 m (synthetic)",
+        "mount_swap_delta_rmse_mps null  -  probe not run in smoke",
+        "onnx_size_bytes / on_device_latency_ms null  -  no export in smoke"
+      ]
+    },
+    {
+      "fold_id": "synth-1",
+      "per_window_rmse_mps": 0.31607769405405245,
+      "hold_baseline_rmse_mps": 0.4206075591845887,
+      "rmse_vs_hold_mps": -0.10452986513053625,
+      "closed_loop_60s_distance_error_m": 4.005432117537566e-06,
+      "outage_drift_pct": 2.885683713618173e-06,
+      "mount_swap_delta_rmse_mps": null,
+      "params": 0,
+      "onnx_size_bytes": null,
+      "on_device_latency_ms": null,
+      "notes": [
+        "synthetic fold  -  not IO-VNBD; numbers are harness smoke only",
+        "closed-loop hold baseline endpoint err=7.912 m (synthetic)",
+        "mount_swap_delta_rmse_mps null  -  probe not run in smoke",
+        "onnx_size_bytes / on_device_latency_ms null  -  no export in smoke"
+      ]
+    },
+    {
+      "fold_id": "synth-2",
+      "per_window_rmse_mps": 0.43779069765666095,
+      "hold_baseline_rmse_mps": 0.4303863996001944,
+      "rmse_vs_hold_mps": 0.0074042980564665295,
+      "closed_loop_60s_distance_error_m": 5.1498412858563825e-06,
+      "outage_drift_pct": 3.951707887291482e-06,
+      "mount_swap_delta_rmse_mps": null,
+      "params": 0,
+      "onnx_size_bytes": null,
+      "on_device_latency_ms": null,
+      "notes": [
+        "synthetic fold  -  not IO-VNBD; numbers are harness smoke only",
+        "closed-loop hold baseline endpoint err=9.497 m (synthetic)",
+        "mount_swap_delta_rmse_mps null  -  probe not run in smoke",
+        "onnx_size_bytes / on_device_latency_ms null  -  no export in smoke"
+      ]
+    }
+  ],
+  "per_window_rmse_mps": 0.43779069765666095,
+  "hold_baseline_rmse_mps": 0.4303863996001944,
+  "rmse_vs_hold_mps": 0.0074042980564665295,
+  "closed_loop_60s_distance_error_m": 5.1498412858563825e-06,
+  "outage_drift_pct": 3.951707887291482e-06,
+  "mount_swap_delta_rmse_mps": null,
+  "params": 0,
+  "onnx_size_bytes": null,
+  "on_device_latency_ms": null,
+  "closed_loop_note": "closed-loop measured on synthetic 60 s integrate; not a field / IO-VNBD product number",
+  "win_claims": [],
+  "disagreement_flags": [
+    "disagreement: per-window loses to hold, closed-loop wins  -  report both (this pattern appears in the AVNet bake-off)",
+    "suppressed synthetic win_claims  -  dry-run is not a product result"
+  ],
+  "notes": [
+    "Harness smoke / dry-run unless a real fold_fn and IO-VNBD trainer are plugged in.",
+    "IO-VNBD found locally",
+    "mount_swap / onnx / latency left null deliberately  -  not measured."
+  ]
+}

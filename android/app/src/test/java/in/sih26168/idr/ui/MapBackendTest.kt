@@ -32,9 +32,10 @@ class MapBackendTest {
         navMode: NavMode = NavMode.GNSS,
         hasAbsolutePosition: Boolean = true,
         bundledMbtilesAvailable: Boolean = false,
+        insideBundledBounds: Boolean = false,
     ) = chooseMapBackend(
         basemapWanted, online, tilesEverLoaded, navMode, hasAbsolutePosition,
-        bundledMbtilesAvailable,
+        bundledMbtilesAvailable, insideBundledBounds,
     )
 
     @Test
@@ -86,10 +87,47 @@ class MapBackendTest {
     }
 
     @Test
-    fun `bundled mbtiles preferred offline even with empty tile cache`() {
-        // P0-4: airplane mode at the venue must still show a basemap when the
-        // neighbourhood .mbtiles is bundled — ahead of live/cached tiles.
-        val c = choose(online = false, tilesEverLoaded = false, bundledMbtilesAvailable = true)
+    fun `bundled mbtiles preferred offline inside their coverage`() {
+        // Airplane mode at the venue must still show a basemap when the
+        // neighbourhood .mbtiles covers where we are.
+        val c = choose(
+            online = false, tilesEverLoaded = false,
+            bundledMbtilesAvailable = true, insideBundledBounds = true,
+        )
+        assertEquals(MapBackend.OSM, c.backend)
+        assertNull(c.reason)
+    }
+
+    @Test
+    fun `bundled tile pack bounds match Coventry neighbourhood`() {
+        // Replay / airplane demo sits inside the pack; Bangalore / India live
+        // drives sit outside and must not select the empty mbtiles style.
+        assertTrue(insideBundledTilePack(52.4095, -1.5969))
+        assertTrue(!insideBundledTilePack(12.9716, 77.5946))
+        assertTrue(!insideBundledTilePack(52.42, -1.50)) // near but outside pack
+    }
+
+    @Test
+    fun `bundled mbtiles are not used outside their coverage`() {
+        // The pack only covers Coventry. Preferring it anywhere else pointed
+        // MapLibre at an empty tile source and rendered a dark rectangle with
+        // no streets and no error -- which read as a broken app on any live
+        // drive outside the UK. Offline with nothing cached, the honest answer
+        // is the track on a grid.
+        val c = choose(
+            online = false, tilesEverLoaded = false,
+            bundledMbtilesAvailable = true, insideBundledBounds = false,
+        )
+        assertEquals(MapBackend.CANVAS, c.backend)
+        assertNotNull("the user must be told why there is no basemap", c.reason)
+    }
+
+    @Test
+    fun `live tiles win outside the bundled pack when online`() {
+        val c = choose(
+            online = true, tilesEverLoaded = false,
+            bundledMbtilesAvailable = true, insideBundledBounds = false,
+        )
         assertEquals(MapBackend.OSM, c.backend)
         assertNull(c.reason)
     }

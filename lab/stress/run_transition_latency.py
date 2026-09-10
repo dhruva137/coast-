@@ -30,12 +30,14 @@ Three numbers per event
     ``reacquire_jump_m`` with a small ``reacquire_latency_ms`` is a teleport,
     not a good result -- report both together or the metric lies.
 
-Two rejoin policies are compared:
+Three rejoin policies are compared:
 
 ``hard_snap``   set position to GNSS the instant it returns. Fast, discontinuous.
 ``blended``     first-order blend toward GNSS with time constant ``tau_s``.
                 Smooth, slower to converge. This is the tradeoff the metric exists
                 to expose; neither policy is universally correct.
+``adaptive``    innovation- and covariance-aware correction. It trusts GNSS more
+                as DR covariance grows, while capping each visible correction.
 
 Run:
     python lab/stress/run_transition_latency.py [--deny 60] [--segments 8]
@@ -47,6 +49,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 from pathlib import Path
 from typing import Any
@@ -70,6 +73,10 @@ SETTLE_HOLD_S = 2.0
 BLEND_TAU_S = 2.0
 REJOIN_WINDOW_S = 30.0
 METHOD = "idr_lean"
+POLICIES = ("hard_snap", "blended", "adaptive")
+ADAPTIVE_DR_SIGMA0_M = 5.0
+ADAPTIVE_DR_GROWTH_MPS = 0.8
+ADAPTIVE_GNSS_SIGMA_M = 5.0
 
 
 def _enu(lat: np.ndarray, lon: np.ndarray, lat0: float, lon0: float) -> np.ndarray:
@@ -84,18 +91,68 @@ def _rejoin(
     dt: np.ndarray,
     policy: str,
     tau_s: float,
+    initial_cov_m2: float | None = None,
 ) -> np.ndarray:
     """Fused track after GNSS returns, starting from the DR estimate."""
     out = np.empty_like(gnss_xy)
     pos = start_xy.astype(np.float64).copy()
+    covariance = max(
+        float(initial_cov_m2) if initial_cov_m2 is not None else 25.0, 1e-6
+    )
     for i in range(gnss_xy.shape[0]):
         if policy == "hard_snap":
             pos = gnss_xy[i].copy()
-        else:
+        elif policy == "blended":
             alpha = 1.0 - float(np.exp(-max(dt[i], 1e-6) / max(tau_s, 1e-6)))
             pos = pos + alpha * (gnss_xy[i] - pos)
+        elif policy == "adaptive":
+            step_s = max(float(dt[i]), 1e-6)
+            covariance += (ADAPTIVE_DR_GROWTH_MPS * step_s) ** 2
+            innovation = gnss_xy[i] - pos
+            innovation_m = float(np.linalg.norm(innovation))
+            innovation_sigma = math.sqrt(
+                covariance + ADAPTIVE_GNSS_SIGMA_M**2
+            )
+            normalized_error = innovation_m / max(innovation_sigma, 1e-6)
+            kalman_trust = covariance / (
+                covariance + ADAPTIVE_GNSS_SIGMA_M**2
+            )
+            tau = float(
+                np.clip(
+                    3.0
+                    / max(
+                        kalman_trust
+                        * (1.0 + 0.15 * min(normalized_error, 10.0)),
+                        1e-3,
+                    ),
+                    0.25,
+                    4.0,
+                )
+            )
+            alpha = 1.0 - math.exp(-step_s / tau)
+            correction = alpha * innovation
+            # Covariance-derived display cap prevents a one-frame teleport.
+            max_visible_step = max(1.5, 0.30 * math.sqrt(covariance))
+            correction_m = float(np.linalg.norm(correction))
+            if correction_m > max_visible_step:
+                correction *= max_visible_step / correction_m
+            pos = pos + correction
+            covariance = max((1.0 - alpha) * covariance, 1e-6)
+        else:
+            raise ValueError(f"unknown rejoin policy: {policy}")
         out[i] = pos
     return out
+
+
+def _drop_latency_ms(t: np.ndarray, i0: int) -> float | None:
+    """First valid DR sample after loss, skipping invalid/non-monotonic stamps."""
+    if i0 < 0 or i0 >= t.size - 1 or not np.isfinite(t[i0]):
+        return None
+    for i in range(i0 + 1, t.size):
+        delta = float(t[i] - t[i0])
+        if np.isfinite(delta) and delta > 0.0:
+            return delta * 1000.0
+    return None
 
 
 def _settle_ms(
@@ -155,7 +212,7 @@ def run_file(data: dict[str, Any], deny_s: float, segments: int) -> dict[str, An
         # --- drop side -------------------------------------------------
         # The estimator carries the last fused state forward, so the first DR
         # fix lands on the next sample. Measure it rather than asserting it.
-        drop_latency_ms = float((t[i0] - t[i0 - 1]) * 1000.0)
+        drop_latency_ms = _drop_latency_ms(t, i0)
 
         # --- reacquire side --------------------------------------------
         gnss = _enu(lat[i1:i2], lon[i1:i2], float(lat[0]), float(lon[0]))
@@ -169,8 +226,18 @@ def run_file(data: dict[str, Any], deny_s: float, segments: int) -> dict[str, An
             "dr_offset_at_reacquire_m": offset_m,
             "truth_source": r["truth_source"],
         }
-        for policy in ("hard_snap", "blended"):
-            fused = _rejoin(dr_end, gnss, dt, policy, BLEND_TAU_S)
+        initial_cov_m2 = (
+            ADAPTIVE_DR_SIGMA0_M + ADAPTIVE_DR_GROWTH_MPS * float(r["deny_s"])
+        ) ** 2
+        for policy in POLICIES:
+            fused = _rejoin(
+                dr_end,
+                gnss,
+                dt,
+                policy,
+                BLEND_TAU_S,
+                initial_cov_m2=initial_cov_m2,
+            )
             # The displayed position starts at the dead-reckoned estimate, so
             # the very first step -- the one that carries the whole accumulated
             # offset under hard_snap -- must be included. Prepending dr_end is
@@ -190,16 +257,24 @@ def run_file(data: dict[str, Any], deny_s: float, segments: int) -> dict[str, An
 def summarise(events: list[dict[str, Any]]) -> dict[str, Any]:
     if not events:
         return {}
+    drop = np.asarray(
+        [
+            e["drop_latency_ms"]
+            for e in events
+            if e.get("drop_latency_ms") is not None
+            and np.isfinite(e["drop_latency_ms"])
+        ],
+        dtype=np.float64,
+    )
     out: dict[str, Any] = {
         "n_events": len(events),
-        "drop_latency_ms_median": float(
-            np.median([e["drop_latency_ms"] for e in events])
-        ),
+        "drop_latency_ms_median": float(np.median(drop)) if drop.size else None,
+        "drop_latency_valid_events": int(drop.size),
         "dr_offset_at_reacquire_m_median": float(
             np.median([e["dr_offset_at_reacquire_m"] for e in events])
         ),
     }
-    for policy in ("hard_snap", "blended"):
+    for policy in POLICIES:
         lat_ms = np.array([e[policy]["reacquire_latency_ms"] for e in events])
         jump = np.array([e[policy]["reacquire_jump_m"] for e in events])
         ok = np.isfinite(lat_ms)
@@ -217,6 +292,10 @@ def summarise(events: list[dict[str, Any]]) -> dict[str, Any]:
     return out
 
 
+def _fmt_ms(value: float | None) -> str:
+    return f"{value:.0f} ms" if value is not None and np.isfinite(value) else "unavailable"
+
+
 def write_summary(path: Path, report: dict[str, Any]) -> None:
     s = report["summary"]
     lines = [
@@ -231,10 +310,10 @@ def write_summary(path: Path, report: dict[str, Any]) -> None:
         "",
         "## Drop side (GNSS lost -> first DR fix)",
         "",
-        f"Median **{s.get('drop_latency_ms', float('nan')):.0f} ms** - one sample "
-        "period at 10 Hz. The estimator carries the last fused state forward, so "
-        "there is no reacquisition delay and no freeze on the display. This half "
-        "of the requirement is met.",
+        f"Median **{_fmt_ms(s.get('drop_latency_ms_median'))}** across "
+        f"{s.get('drop_latency_valid_events', 0)}/{s.get('n_events', 0)} valid events. "
+        "The estimator carries the last fused state forward; the metric is the "
+        "first valid timestamped DR sample after loss.",
         "",
         "## Reacquire side (GNSS returns -> fused estimate converged)",
         "",
@@ -246,13 +325,13 @@ def write_summary(path: Path, report: dict[str, Any]) -> None:
         "| Policy | median latency | p90 | converged | median jump | worst jump |",
         "|---|---:|---:|---:|---:|---:|",
     ]
-    for policy in ("hard_snap", "blended"):
+    for policy in POLICIES:
         v = s.get(policy)
         if not v:
             continue
         lines.append(
-            f"| `{policy}` | {v['reacquire_latency_ms_median']:.0f} ms | "
-            f"{v['reacquire_latency_ms_p90']:.0f} ms | "
+            f"| `{policy}` | {_fmt_ms(v['reacquire_latency_ms_median'])} | "
+            f"{_fmt_ms(v['reacquire_latency_ms_p90'])} | "
             f"{100.0 * v['converged_fraction']:.0f}% | "
             f"{v['reacquire_jump_m_median']:.1f} m | {v['reacquire_jump_m_max']:.1f} m |"
         )
@@ -262,7 +341,9 @@ def write_summary(path: Path, report: dict[str, Any]) -> None:
         "teleports the icon by the full accumulated offset, which is exactly the "
         "\"jump erratically\" behaviour the problem statement asks us to remove. "
         "`blended` keeps the icon continuous and pays for it in convergence time. "
-        "Quoting the latency alone from either policy would be misleading.",
+        "`adaptive` uses only online innovation and propagated covariance, and caps "
+        "each correction according to uncertainty. Quoting latency without jump "
+        "would be misleading.",
         "",
         f"The blend uses a first-order filter with tau = {BLEND_TAU_S:.0f} s. "
         "Tuning tau trades these two columns against each other directly; the "
@@ -277,6 +358,7 @@ def main() -> int:
     ap.add_argument("--deny", type=float, default=60.0)
     ap.add_argument("--segments", type=int, default=8)
     ap.add_argument("--files", type=int, default=0)
+    ap.add_argument("--output-dir")
     args = ap.parse_args()
 
     csvs = find_smartphone_csvs()
@@ -302,22 +384,26 @@ def main() -> int:
         "summary": summarise(all_events),
         "files": files,
     }
-    out_dir = _STRESS / "results" / "transition"
+    out_dir = (
+        Path(args.output_dir).resolve()
+        if args.output_dir
+        else _STRESS / "results" / "transition"
+    )
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
     write_summary(out_dir / "summary.md", report)
 
     s = report["summary"]
     if s:
-        print(f"\ndrop latency        : {s['drop_latency_ms_median']:.0f} ms (median)")
+        print(f"\ndrop latency        : {_fmt_ms(s['drop_latency_ms_median'])} (median)")
         print(
             f"DR offset at rejoin : "
             f"{s['dr_offset_at_reacquire_m_median']:.0f} m (median)"
         )
-        for policy in ("hard_snap", "blended"):
+        for policy in POLICIES:
             v = s[policy]
             print(
-                f"{policy:12s}: converge {v['reacquire_latency_ms_median']:7.0f} ms  "
+                f"{policy:12s}: converge {_fmt_ms(v['reacquire_latency_ms_median']):>12s}  "
                 f"jump {v['reacquire_jump_m_median']:7.1f} m  "
                 f"({100.0 * v['converged_fraction']:.0f}% converged)"
             )

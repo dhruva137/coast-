@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>COAST · map-in-loop replay</title>
+  <link rel="stylesheet" href="trace_replay.css" />
+</head>
+<body>
+  <header class="tr-top">
+    <div class="tr-brand">
+      <b>COAST</b>
+      <span>truth vs free-DR vs map-in-loop on the exported road graph</span>
+    </div>
+    <div class="tr-badge is-unknown" id="honesty" title="From meta.honesty — not inferred">honesty unknown</div>
+    <div class="tr-src" id="source" title=""></div>
+  </header>
+
+  <div class="tr-bar">
+    <label class="tr-file tr-btn">
+      Open JSON
+      <input type="file" id="file" accept="application/json,.json" />
+    </label>
+    <select class="tr-select" id="trace-select" aria-label="Console traces">
+      <option value="">Console traces…</option>
+    </select>
+    <button type="button" class="tr-btn" id="btn-reload" disabled>Reload</button>
+    <span class="tr-sep" aria-hidden="true"></span>
+    <label><input type="checkbox" id="ly-graph" checked /> graph</label>
+    <label><input type="checkbox" id="ly-particles" checked /> particles</label>
+    <label><input type="checkbox" id="ly-free" checked /> free-DR</label>
+    <label><input type="checkbox" id="ly-truth" checked /> truth</label>
+    <label><input type="checkbox" id="ly-coast" checked /> COAST</label>
+    <label><input type="checkbox" id="ly-post" checked /> edge mass</label>
+    <span class="tr-sep" aria-hidden="true"></span>
+    <label><input type="checkbox" id="follow" /> follow</label>
+    <button type="button" class="tr-btn" id="btn-fit">Fit</button>
+  </div>
+
+  <div class="tr-main">
+    <div class="tr-stage" id="stage">
+      <canvas id="map" aria-label="Road graph replay"></canvas>
+      <div class="tr-empty show" id="empty">
+        <div>
+          <strong>No filter trace loaded</strong>
+          <p>
+            Open a JSON from <code>lab/stress/results/traces/</code>, or run the console
+            (<code>python -m web.coast_console</code>) and pick a listed file.
+            Particles are drawn only when the JSON includes <code>lat</code>/<code>lon</code>
+            — positions are never invented.
+          </p>
+        </div>
+      </div>
+      <div class="tr-legend" aria-hidden="true">
+        <span><i class="lg-graph"></i>road graph</span>
+        <span><i class="lg-free"></i>free-DR (dashed)</span>
+        <span><i class="lg-truth"></i>truth (dotted)</span>
+        <span><i class="lg-coast"></i>COAST estimate</span>
+        <span><i class="lg-part"></i>particles (exported subset)</span>
+      </div>
+      <div class="tr-hud" id="hud">drag · wheel zoom · space play</div>
+    </div>
+
+    <aside class="tr-rail" aria-label="Telemetry">
+      <div>
+        <h2>Clip</h2>
+        <div class="tr-kv">
+          <span class="k">drive</span><span class="v" id="k-drive">—</span>
+          <span class="k">t</span><span class="v num" id="k-t">—</span>
+          <span class="k">step</span><span class="v num" id="k-step">—</span>
+          <span class="k">rate</span><span class="v num" id="k-hz">—</span>
+        </div>
+      </div>
+      <div>
+        <h2>Effective sample size</h2>
+        <div class="tr-kv">
+          <span class="k">n_eff</span><span class="v num" id="k-neff">—</span>
+        </div>
+        <div class="tr-bar-track"><i id="k-neffbar"></i></div>
+        <p class="tr-flag" id="k-resample" hidden>resampled this step</p>
+      </div>
+      <div>
+        <h2>Edge posterior</h2>
+        <div class="tr-post" id="k-post"></div>
+      </div>
+      <div>
+        <h2>Inputs</h2>
+        <div class="tr-kv">
+          <span class="k">speed</span><span class="v num" id="k-spd">—</span>
+          <span class="k">yaw rate</span><span class="v num" id="k-yaw">—</span>
+          <span class="k">MAP edge</span><span class="v num" id="k-edge">—</span>
+        </div>
+      </div>
+      <div>
+        <h2>Error now</h2>
+        <div class="tr-err">
+          <div class="coast"><span>COAST ↔ truth</span><b class="num" id="k-err-pf">—</b></div>
+          <div class="free"><span>free-DR ↔ truth</span><b class="num" id="k-err-free">—</b></div>
+        </div>
+        <canvas class="tr-err-chart" id="err-chart" width="252" height="52" aria-label="Error vs time"></canvas>
+      </div>
+      <div>
+        <h2>End of clip</h2>
+        <div class="tr-err">
+          <div class="coast"><span>COAST</span><b class="num" id="k-end-pf">—</b></div>
+          <div class="free"><span>free-DR</span><b class="num" id="k-end-free">—</b></div>
+        </div>
+        <p class="tr-note" id="k-end-src">Computed from the last step’s lat/lon when meta does not report it.</p>
+      </div>
+      <div>
+        <h2>Particles</h2>
+        <div class="tr-kv">
+          <span class="k">drawn</span><span class="v num" id="k-pdraw">—</span>
+          <span class="k">shown in JSON</span><span class="v num" id="k-pshown">—</span>
+          <span class="k">filter total</span><span class="v num" id="k-ptotal">—</span>
+        </div>
+        <p class="tr-note">Downsampled export only. Missing lat/lon is skipped, not filled in.</p>
+      </div>
+      <p class="tr-note" id="k-notes"></p>
+    </aside>
+  </div>
+
+  <div class="tr-transport">
+    <button type="button" class="tr-btn primary" id="btn-play" disabled>Play</button>
+    <button type="button" class="tr-btn" id="btn-prev" disabled>−1</button>
+    <button type="button" class="tr-btn" id="btn-next" disabled>+1</button>
+    <input type="range" id="scrub" min="0" max="1000" value="0" disabled />
+    <span class="tr-time num" id="time">0:00.0 / 0:00.0</span>
+    <button type="button" class="tr-btn" id="btn-speed">1×</button>
+    <button type="button" class="tr-btn" id="btn-loop">Loop</button>
+    <span class="tr-hint">Space · ← → · 0–8×</span>
+  </div>
+
+  <script src="trace_replay.js"></script>
+</body>
+</html>

@@ -14,9 +14,10 @@ from pathlib import Path
 from typing import Any
 
 # POST bodies that are not tiny JSON frames are not part of the pairing contract.
-MAX_BODY_BYTES = 65_536
+MAX_BODY_BYTES = 262_144
 # Hard cap on concurrent paired devices per process (DoS / memory bound).
 MAX_DEVICES = 32
+MAX_INGEST_POINTS = 400
 # Speed: reject absurd values rather than clamping into a plausible track.
 MAX_SPEED_MPS = 120.0  # ~430 km/h — above any demo bike, finite and bounded
 MAX_ACC_M = 10_000.0
@@ -146,6 +147,24 @@ def validate_acc_m(acc: Any) -> tuple[float | None, str | None]:
     return v, None
 
 
+def _optional_client_time(raw: Any) -> float | None:
+    """Unix seconds from the phone. Rejects far-future / ancient stamps."""
+    if raw is None or raw == "":
+        return None
+    try:
+        t = float(raw)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(t):
+        return None
+    if t > 1e12:
+        t = t / 1000.0
+    now = time.time()
+    if t > now + 120.0 or (now - t) > 7 * 86400:
+        return None
+    return t
+
+
 def validate_ingest_payload(payload: dict[str, Any]) -> dict[str, Any] | str:
     """Validate a pairing ingest object. Returns cleaned fields or an error string."""
     token, err = validate_token(payload.get("token"))
@@ -169,6 +188,8 @@ def validate_ingest_payload(payload: dict[str, Any]) -> dict[str, Any] | str:
     if err:
         return err
 
+    queued = payload.get("queued") in (True, 1, "1", "true", "True")
+    t_client = _optional_client_time(payload.get("t") if payload.get("t") is not None else payload.get("t_client"))
     return {
         "token": token,
         "lat": lat,
@@ -176,7 +197,30 @@ def validate_ingest_payload(payload: dict[str, Any]) -> dict[str, Any] | str:
         "mode": mode,
         "speed_mps": speed,
         "acc_m": acc,
+        "queued": queued,
+        "t_client": t_client,
     }
+
+
+def validate_ingest_batch(payload: dict[str, Any]) -> dict[str, Any] | str:
+    """Validate a store-and-forward flush: token + points[]."""
+    token, err = validate_token(payload.get("token"))
+    if err:
+        return err
+    points = payload.get("points")
+    if not isinstance(points, list) or not points:
+        return "empty points"
+    if len(points) > MAX_INGEST_POINTS:
+        return f"too many points (max {MAX_INGEST_POINTS})"
+    cleaned: list[dict[str, Any]] = []
+    for p in points:
+        if not isinstance(p, dict):
+            return "bad point"
+        one = validate_ingest_payload({**p, "token": token})
+        if isinstance(one, str):
+            return one
+        cleaned.append(one)
+    return {"token": token, "points": cleaned}
 
 
 def is_under(path: Path, root: Path) -> bool:

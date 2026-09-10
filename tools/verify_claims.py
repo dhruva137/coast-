@@ -34,7 +34,7 @@ import sys
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Sequence
 
 REPO = Path(__file__).resolve().parents[1]
 REGISTRY_PATH = REPO / "win_tuning" / "CLAIMS.json"
@@ -56,6 +56,137 @@ class Claim:
     tolerance: float = 0.01
     confidence: str = "measured"
     note: str = ""
+
+
+@dataclass(frozen=True)
+class RegistryClaim:
+    """One serialized claim, independent of this module's live resolvers."""
+
+    value: float
+    unit: str
+
+
+@dataclass(frozen=True)
+class UnsourcedClaim:
+    path: Path
+    line: int
+    token: str
+
+
+@dataclass(frozen=True)
+class ClaimCheckResult:
+    checked: int
+    unsourced: tuple[UnsourcedClaim, ...]
+
+
+def load_claim_registry(path: Path) -> list[RegistryClaim]:
+    """Load both historical top-level arrays and the current object wrapper."""
+
+    raw = json.loads(Path(path).read_text(encoding="utf-8"))
+    rows = raw.get("claims", []) if isinstance(raw, dict) else raw
+    if not isinstance(rows, list):
+        raise ValueError("claim registry must be an array or contain claims[]")
+    out: list[RegistryClaim] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        try:
+            out.append(RegistryClaim(value=float(row["value"]), unit=str(row["unit"])))
+        except (KeyError, TypeError, ValueError):
+            continue
+    return out
+
+
+def discover_product_scan_files(root: Path) -> list[Path]:
+    """Product copy only; excludes decks and research narratives."""
+
+    patterns = (
+        "web/src/**/*.ts",
+        "web/src/**/*.tsx",
+        "web/static/**/*.js",
+        "web/*.py",
+        "site/**/*.html",
+        "site/**/*.js",
+        "android/app/src/main/java/**/*.kt",
+    )
+    files: set[Path] = set()
+    for pattern in patterns:
+        files.update(p for p in root.glob(pattern) if p.is_file())
+    return sorted(files)
+
+
+def discover_scan_files(
+    root: Path,
+    *,
+    include_readme: bool = False,
+    include_docs: bool = False,
+    product: bool = False,
+) -> list[Path]:
+    if product:
+        return discover_product_scan_files(root)
+    patterns = list(SURFACES)
+    if include_readme:
+        patterns.extend(("README.md", "**/README.md"))
+    if include_docs:
+        patterns.append("docs/**/*.md")
+    files: set[Path] = set()
+    for pattern in patterns:
+        files.update(p for p in root.glob(pattern) if p.is_file())
+    return sorted(files)
+
+
+def run_claim_check(
+    *,
+    root: Path,
+    claims_path: Path,
+    allowlist_path: Path,
+    strict_phrases: bool = True,
+    scan_files: Sequence[Path] | None = None,
+) -> ClaimCheckResult:
+    """Portable registry scan used by tests and product-only verification."""
+
+    del strict_phrases  # Reserved for phrase-level policy checks.
+    claims = load_claim_registry(claims_path)
+    known = set(ALLOWED_LITERALS)
+    for claim in claims:
+        for rendered in (
+            f"{claim.value:.0f}",
+            f"{claim.value:.1f}",
+            f"{claim.value:.2f}",
+            f"{claim.value:,.0f}",
+        ):
+            known.add(rendered)
+    try:
+        allowed = {
+            line.strip()
+            for line in allowlist_path.read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.lstrip().startswith("#")
+        }
+    except OSError:
+        allowed = set()
+
+    files = list(scan_files) if scan_files is not None else discover_scan_files(root)
+    checked = 0
+    findings: list[UnsourcedClaim] = []
+    for path in files:
+        for lineno, line in enumerate(
+            path.read_text(encoding="utf-8", errors="replace").splitlines(), 1
+        ):
+            if IGNORE_MARK in line:
+                continue
+            for match in CLAIM_PATTERN.finditer(line):
+                checked += 1
+                literal = match.group(1)
+                suffix = match.group(2)
+                token = f"{literal}{suffix}"
+                if (
+                    literal in known
+                    or literal.replace(",", "") in known
+                    or token in allowed
+                ):
+                    continue
+                findings.append(UnsourcedClaim(path=path, line=lineno, token=token))
+    return ClaimCheckResult(checked=checked, unsourced=tuple(findings))
 
 
 def _mapfilter(field: str) -> Callable[[], float]:
@@ -348,7 +479,7 @@ ALLOWED_LITERALS = {
 }
 
 CLAIM_PATTERN = re.compile(
-    r"(?<![\w.])(\d[\d,]*(?:\.\d+)?)\s*(?:\*\*)?\s*(Hz|×|x the|% drift|deg|°)",
+    r"(?<![\w.])(\d[\d,]*(?:\.\d+)?)\s*(?:\*\*)?\s*(Hz|×|x(?:\s+the)?|% drift|deg|°)",
     re.IGNORECASE,
 )
 
@@ -403,28 +534,39 @@ def _known_literals(values: dict[str, float]) -> set[str]:
     return out
 
 
-def _scan_surfaces(values: dict[str, float]) -> list[str]:
+def _scan_files(values: dict[str, float], files: Sequence[Path]) -> list[str]:
     known = _known_literals(values)
     findings: list[str] = []
-    for pattern in SURFACES:
-        for path in sorted(REPO.glob(pattern)):
-            if not path.is_file():
+    for path in files:
+        if not path.is_file():
+            continue
+        rel = path.relative_to(REPO).as_posix()
+        for lineno, line in enumerate(
+            path.read_text(encoding="utf-8", errors="replace").splitlines(), 1
+        ):
+            if IGNORE_MARK in line:
                 continue
-            rel = path.relative_to(REPO).as_posix()
-            for lineno, line in enumerate(
-                path.read_text(encoding="utf-8", errors="replace").splitlines(), 1
-            ):
-                if IGNORE_MARK in line:
+            for match in CLAIM_PATTERN.finditer(line):
+                literal = match.group(1)
+                if literal in known or literal.replace(",", "") in known:
                     continue
-                for match in CLAIM_PATTERN.finditer(line):
-                    literal = match.group(1)
-                    if literal in known or literal.replace(",", "") in known:
-                        continue
-                    findings.append(
-                        f"{rel}:{lineno}: unsourced claim-shaped number "
-                        f"{literal!r} in {match.group(0).strip()!r}"
-                    )
+                findings.append(
+                    f"{rel}:{lineno}: unsourced claim-shaped number "
+                    f"{literal!r} in {match.group(0).strip()!r}"
+                )
     return findings
+
+
+def _scan_surfaces(values: dict[str, float]) -> list[str]:
+    return _scan_files(
+        values,
+        discover_scan_files(
+            REPO,
+            include_readme=False,
+            include_docs=False,
+            product=False,
+        ),
+    )
 
 
 def _demo_failure() -> int:
@@ -453,6 +595,11 @@ def _demo_failure() -> int:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--json", action="store_true", help="(re)write win_tuning/CLAIMS.json")
+    ap.add_argument(
+        "--product",
+        action="store_true",
+        help="scan shipped web/Android product copy instead of pitch decks",
+    )
     ap.add_argument("--demo-failure", action="store_true", help="show the check catching a planted number")
     args = ap.parse_args()
 
@@ -470,7 +617,11 @@ def main() -> int:
         _write_registry(values)
         print(f"\nWrote {REGISTRY_PATH.relative_to(REPO)}")
 
-    findings = _scan_surfaces(values)
+    findings = (
+        _scan_files(values, discover_product_scan_files(REPO))
+        if args.product
+        else _scan_surfaces(values)
+    )
 
     if errors:
         print(f"\n{len(errors)} claim(s) could not be resolved:")

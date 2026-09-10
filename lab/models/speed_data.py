@@ -2,8 +2,8 @@
 
 Why this module exists
 ----------------------
-``lab/datasets/io_vnbd.py`` builds windows against the *smartphone* GNSS speed
-column. Two problems with that label:
+Older versions of ``lab/datasets/io_vnbd.py`` built windows against the
+*smartphone* GNSS speed column. Two problems with that label:
 
 1. It used to be divided by 3.6 on the strength of the ``(Kmh)`` header. The
    column is metres per second; ``lab/stress/load_iovnbd.resolve_speed_unit``
@@ -45,8 +45,11 @@ WINDOW_SAMPLES = 20
 IMU_HZ = 10.0
 WINDOW_SECONDS = WINDOW_SAMPLES / IMU_HZ
 DEFAULT_STRIDE = 2  # 0.2 s hop
+IMU_AXES = ("ax", "ay", "az", "gx", "gy", "gz")
+IMU_UNITS = ("m/s^2", "m/s^2", "m/s^2", "rad/s", "rad/s", "rad/s")
+CAN_LABELS = ("indicated_vehicle_speed_mps", "yaw_rate_rad_s")
 CACHE_DIR = Path(__file__).resolve().parent / "results" / "speed_bakeoff" / "cache"
-CACHE_VERSION = 3  # bump to invalidate cached npz
+CACHE_VERSION = 4  # v4 adds CAN yaw-rate labels
 
 
 @dataclass(frozen=True)
@@ -63,6 +66,7 @@ class DriveWindows:
     speed_unit_decision: str
     speed_unit_ratio: float
     csv_path: str
+    yaw_rate: np.ndarray | None = None  # (N,) CAN yaw rate, rad/s
 
     def __len__(self) -> int:
         return int(self.imu.shape[0])
@@ -80,6 +84,7 @@ class DriveWindows:
             "max_speed_mps": round(float(np.max(self.speed)), 3),
             "frac_stopped": round(float(np.mean(self.speed < 0.5)), 4),
             "duration_s": round(float(self.t_end[-1] - self.t_end[0]), 1),
+            "has_can_yaw_rate": self.yaw_rate is not None,
         }
 
 
@@ -89,7 +94,8 @@ def _windows_from_arrays(
     t_rows: np.ndarray,
     *,
     stride: int,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    yaw_rate_rows: np.ndarray | None = None,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray | None]:
     """Stride a sliding view over the drive; label is the window's last sample.
 
     The last sample is the causal choice: on the phone the network sees the
@@ -101,6 +107,7 @@ def _windows_from_arrays(
             np.empty((0, WINDOW_SAMPLES, 6), np.float32),
             np.empty(0, np.float32),
             np.empty(0, np.float32),
+            None if yaw_rate_rows is None else np.empty(0, np.float32),
         )
     starts = np.arange(0, n - WINDOW_SAMPLES + 1, stride, dtype=np.int64)
     idx = starts[:, None] + np.arange(WINDOW_SAMPLES, dtype=np.int64)[None, :]
@@ -108,12 +115,19 @@ def _windows_from_arrays(
     last = starts + WINDOW_SAMPLES - 1
     speed = speed_rows[last]
     t_end = t_rows[last]
+    yaw_rate = None if yaw_rate_rows is None else yaw_rate_rows[last]
     # Drop windows with any non-finite IMU sample or a non-finite label.
     ok = np.isfinite(imu).all(axis=(1, 2)) & np.isfinite(speed)
+    if yaw_rate is not None:
+        ok &= np.isfinite(yaw_rate)
+    filtered_yaw_rate = None
+    if yaw_rate is not None:
+        filtered_yaw_rate = np.ascontiguousarray(yaw_rate[ok], dtype=np.float32)
     return (
         np.ascontiguousarray(imu[ok], dtype=np.float32),
         np.ascontiguousarray(speed[ok], dtype=np.float32),
         np.ascontiguousarray(t_end[ok], dtype=np.float32),
+        filtered_yaw_rate,
     )
 
 
@@ -127,14 +141,22 @@ def build_drive_windows(path: Path | str, *, stride: int = DEFAULT_STRIDE) -> Dr
     if data.get("truth_source") == "can_10hz":
         n = int(data["can_n"])
         label = np.asarray(data["can_speed_mps"], dtype=np.float32)[:n]
+        yaw_rate_rows = np.asarray(data["can_yaw_rate_rad_s"], dtype=np.float32)[:n]
         imu_rows = imu_rows[:n]
         t_rows = np.asarray(data["t_s"], dtype=np.float32)[:n]
         label_source = "can_10hz"
     else:
         label = np.asarray(data["speed_mps"], dtype=np.float32)
+        yaw_rate_rows = None
         t_rows = np.asarray(data["t_s"], dtype=np.float32)
         label_source = "phone_gnss"
-    imu, speed, t_end = _windows_from_arrays(imu_rows, label, t_rows, stride=stride)
+    imu, speed, t_end, yaw_rate = _windows_from_arrays(
+        imu_rows,
+        label,
+        t_rows,
+        stride=stride,
+        yaw_rate_rows=yaw_rate_rows,
+    )
     unit = data.get("speed_unit", {}) or {}
     return DriveWindows(
         name=path.stem,
@@ -147,6 +169,7 @@ def build_drive_windows(path: Path | str, *, stride: int = DEFAULT_STRIDE) -> Dr
         speed_unit_decision=str(unit.get("decision", "unknown")),
         speed_unit_ratio=float(unit.get("ratio", float("nan"))),
         csv_path=str(path),
+        yaw_rate=yaw_rate,
     )
 
 
@@ -165,6 +188,11 @@ def load_drive_windows(
     cache = _cache_path(path.stem, stride)
     if use_cache and cache.is_file():
         with np.load(cache, allow_pickle=False) as z:
+            cached_yaw = None
+            if "yaw_rate" in z.files:
+                yaw_rate = z["yaw_rate"]
+                if yaw_rate.size:
+                    cached_yaw = yaw_rate
             return DriveWindows(
                 name=str(z["name"]),
                 imu=z["imu"],
@@ -176,6 +204,7 @@ def load_drive_windows(
                 speed_unit_decision=str(z["speed_unit_decision"]),
                 speed_unit_ratio=float(z["speed_unit_ratio"]),
                 csv_path=str(z["csv_path"]),
+                yaw_rate=cached_yaw,
             )
     dw = build_drive_windows(path, stride=stride)
     if use_cache:
@@ -192,6 +221,7 @@ def load_drive_windows(
             speed_unit_decision=dw.speed_unit_decision,
             speed_unit_ratio=dw.speed_unit_ratio,
             csv_path=dw.csv_path,
+            yaw_rate=dw.yaw_rate if dw.yaw_rate is not None else np.empty(0, np.float32),
         )
     return dw
 
@@ -249,6 +279,21 @@ def stack(drives: Iterable[DriveWindows]) -> tuple[np.ndarray, np.ndarray]:
         np.concatenate([d.imu for d in ds], axis=0),
         np.concatenate([d.speed for d in ds], axis=0),
     )
+
+
+def is_clean_drive(drive: DriveWindows) -> bool:
+    """Whether a drive is suitable for final CAN-supervised training."""
+    return (
+        drive.label_source == "can_10hz"
+        and drive.yaw_rate is not None
+        and 0.8 <= drive.speed_unit_ratio <= 1.25
+        and float(np.mean(drive.speed)) >= 2.0
+    )
+
+
+def clean_drives(drives: Iterable[DriveWindows]) -> list[DriveWindows]:
+    """Keep moving drives with trustworthy 10 Hz CAN speed and yaw labels."""
+    return [drive for drive in drives if is_clean_drive(drive)]
 
 
 if __name__ == "__main__":

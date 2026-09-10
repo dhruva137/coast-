@@ -2,6 +2,7 @@ package `in`.sih26168.idr
 
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
+import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -24,7 +25,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
 import `in`.sih26168.idr.ui.IdrApp
-import `in`.sih26168.idr.ui.theme.IdrTheme
 
 /**
  * Launch is one continuous motion: the system splash paints our own background
@@ -53,50 +53,87 @@ class MainActivity : ComponentActivity() {
         Handler(Looper.getMainLooper()).postDelayed({ uiReady = true }, SPLASH_MAX_HOLD_MS)
 
         splash.setOnExitAnimationListener { provider ->
-            val icon: View = provider.iconView
-            AnimatorSet().apply {
-                playTogether(
-                    ObjectAnimator.ofFloat(icon, View.SCALE_X, 1f, 1.22f),
-                    ObjectAnimator.ofFloat(icon, View.SCALE_Y, 1f, 1.22f),
-                    ObjectAnimator.ofFloat(icon, View.ALPHA, 1f, 0f),
-                    ObjectAnimator.ofFloat(provider.view, View.ALPHA, 1f, 0f),
-                )
-                duration = EXIT_MS
-                interpolator = AccelerateInterpolator(1.4f)
-                addListener(
-                    object : android.animation.AnimatorListenerAdapter() {
-                        override fun onAnimationEnd(animation: android.animation.Animator) {
-                            provider.remove()
-                        }
-                    },
-                )
-                start()
+            // SplashScreenView.getIconView() is @Nullable on the platform, but
+            // core-splashscreen's Kotlin accessor asserts non-null, so reading it
+            // throws on ROMs that compose a splash without an icon view. This runs
+            // inside the platform's exit callback on the first frame, so an
+            // exception here is an instant crash on launch -- and only on those
+            // devices, which is exactly the kind we cannot test for.
+            //
+            // The animation is a nicety. Losing it must never cost the app its
+            // startup, so every step degrades to simply removing the splash.
+            val icon: View? = runCatching { provider.iconView }.getOrNull()
+            if (icon == null) {
+                provider.remove()
+                return@setOnExitAnimationListener
             }
+            runCatching {
+                AnimatorSet().apply {
+                    playTogether(
+                        ObjectAnimator.ofFloat(icon, View.SCALE_X, 1f, 1.22f),
+                        ObjectAnimator.ofFloat(icon, View.SCALE_Y, 1f, 1.22f),
+                        ObjectAnimator.ofFloat(icon, View.ALPHA, 1f, 0f),
+                        ObjectAnimator.ofFloat(provider.view, View.ALPHA, 1f, 0f),
+                    )
+                    duration = EXIT_MS
+                    interpolator = AccelerateInterpolator(1.4f)
+                    addListener(
+                        object : android.animation.AnimatorListenerAdapter() {
+                            override fun onAnimationEnd(animation: android.animation.Animator) {
+                                provider.remove()
+                            }
+                            override fun onAnimationCancel(animation: android.animation.Animator) {
+                                provider.remove()
+                            }
+                        },
+                    )
+                    start()
+                }
+            }.onFailure { provider.remove() }
         }
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
         enableEdgeToEdge()
         val bus = (application as IdrApplication).bus
+        consumePairIntent(intent, bus)
 
         setContent {
-            IdrTheme {
-                var shown by remember { mutableStateOf(false) }
-                // Rises as the splash falls, so the handoff is a cross-fade
-                // rather than a cut.
-                val fade by animateFloatAsState(
-                    targetValue = if (shown) 1f else 0f,
-                    animationSpec = tween(durationMillis = ENTER_MS),
-                    label = "contentFade",
-                )
-                LaunchedEffect(Unit) {
-                    shown = true
-                    uiReady = true
-                }
-                Box(Modifier.fillMaxSize().alpha(fade)) {
-                    IdrApp(bus = bus)
-                }
+            var shown by remember { mutableStateOf(false) }
+            // Rises as the splash falls, so the handoff is a cross-fade
+            // rather than a cut. Theme lives inside [IdrApp].
+            val fade by animateFloatAsState(
+                targetValue = if (shown) 1f else 0f,
+                animationSpec = tween(durationMillis = ENTER_MS),
+                label = "contentFade",
+            )
+            LaunchedEffect(Unit) {
+                shown = true
+                uiReady = true
+            }
+            Box(Modifier.fillMaxSize().alpha(fade)) {
+                IdrApp(bus = bus)
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        consumePairIntent(intent, (application as IdrApplication).bus)
+    }
+
+    private fun consumePairIntent(intent: Intent?, bus: IdrBus) {
+        val data = intent?.data ?: return
+        val scheme = data.scheme.orEmpty()
+        val host = data.host.orEmpty()
+        val path = data.path.orEmpty()
+        val raw = data.toString()
+        val isCoast = scheme.equals("coast", ignoreCase = true) &&
+            host.equals("pair", ignoreCase = true)
+        val isHttpPair = scheme.startsWith("http", ignoreCase = true) &&
+            (path == "/pair" || path.endsWith("/pair")) &&
+            !data.getQueryParameter("s").isNullOrBlank()
+        if (isCoast || isHttpPair) bus.offerPendingPair(raw)
     }
 
     private companion object {

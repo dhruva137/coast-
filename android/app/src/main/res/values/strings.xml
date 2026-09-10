@@ -18,4 +18,7 @@
     <string name="notif_record_title">Recording a ride log</string>
     <string name="notif_record_gnss">Writing raw motion-sensor and GPS readings to CSV files in this app\'s own storage on your phone. Nothing is uploaded.</string>
     <string name="notif_record_imu">Writing raw motion-sensor readings to CSV files in this app\'s own storage on your phone. No location is being recorded and nothing is uploaded.</string>
+
+    <!-- Public console relay used when the phone mints a pairing code. Not a secret. -->
+    <string name="default_pair_relay" translatable="false">https://coast.paper2anything.com</string>
 </resources>

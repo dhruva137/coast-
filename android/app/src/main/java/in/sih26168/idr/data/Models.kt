@@ -290,6 +290,12 @@ data class HudState(
     val distanceSinceFixM: Double = 0.0,
     val locationStatus: LocationStatus = LocationStatus.UNKNOWN,
     /**
+     * Which estimator is producing the displayed coast: MAP-PF when the native
+     * graph filter is loaded, FREE-DR for [nav.SimpleIns], RELATIVE when there
+     * is no Earth origin. Never treat particle-filter spread as this label.
+     */
+    val engineLabel: String = "FREE-DR",
+    /**
      * True once heading has been tied to true north by a GNSS bearing.
      *
      * Until then [headingDeg] is integrated from an arbitrary zero -- it is the
@@ -349,6 +355,15 @@ data class HudState(
     val floorChangeNote: String = "",
     /** Smoothed pressure last seen by the floor detector, hPa. */
     val pressureHpa: Double = Double.NaN,
+
+    /**
+     * True on the last IMU tick when outage heading was pulled toward the
+     * onset-calibrated compass. False while GNSS-locked, mag-invalid, or
+     * fusion is switched off.
+     */
+    val compassFused: Boolean = false,
+    /** True while the user has asserted [Prefs.forceStationary]. */
+    val forceHold: Boolean = false,
 )
 
 /**

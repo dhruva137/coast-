@@ -337,7 +337,7 @@ def slide4(s, args):
          "Gravity-axis canonicalisation cut mount-swap degradation by ~63% in "
          "ablation. Yaw-to-vehicle remains our open problem, and we say so.", TEAL),
         ("We do not yet meet the <10% drift bar",
-         f"We are at {C['coast_median_drift_pct']:.1f}% against a {C['free_median_drift_pct']:.1f}% baseline — "
+         f"We are at {C['coast_median_drift_pct']:.2f}% against a {C['free_median_drift_pct']:.2f}% baseline — "
          "roughly half the gap closed, with a measured route to the rest.", RED),
         ("Our uncertainty estimate is not trustworthy",
          "It correlates −0.23 with real error, so we hide it rather than show a "
@@ -467,9 +467,9 @@ def slide6(s, args):
         ("Perfect-gyro ablation",
          f"still fails {C['perfect_gyro_fail_pct']:.0f}% of segments", RED),
         ("Median drift, free DR → COAST",
-         f"{C['free_median_drift_pct']:.1f}% → {C['coast_median_drift_pct']:.1f}%", TEAL),
+         f"{C['free_median_drift_pct']:.2f}% → {C['coast_median_drift_pct']:.2f}%", TEAL),
         ("Heading channel, gyro → compass",
-         f"{C['heading_gyro_drift_pct']:.1f}% → {C['heading_compass_drift_pct']:.1f}%", TEAL),
+         f"{C['heading_gyro_drift_pct']:.2f}% → {C['heading_compass_drift_pct']:.2f}%", TEAL),
         ("GNSS+INS fusion",
          f"{C['gnss_ins_fusion_x']:.2f}× — a wash, reported as such", RED),
         ("Edge engine, worst configuration",

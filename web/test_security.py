@@ -18,6 +18,7 @@ from web.security import (  # noqa: E402
     assert_path_in_roots,
     parse_content_length,
     safe_join,
+    validate_ingest_batch,
     validate_ingest_payload,
     validate_lat_lon,
     validate_mode,
@@ -84,6 +85,26 @@ def test_ingest_payload() -> None:
     check("bad mode rejected (no coerce)", isinstance(bad, str))
 
 
+def test_ingest_batch() -> None:
+    print("ingest batch")
+    tok = "tok_" + "x" * 12
+    ok = validate_ingest_batch(
+        {
+            "token": tok,
+            "points": [
+                {"lat": 1.0, "lon": 2.0, "mode": "IDR", "speed_mps": 1, "queued": True},
+                {"lat": 1.1, "lon": 2.1, "mode": "GNSS", "speed_mps": 1},
+            ],
+        }
+    )
+    check("batch accepted", isinstance(ok, dict) and len(ok["points"]) == 2 and ok["points"][0]["queued"])
+    bad = validate_ingest_batch({"token": tok, "points": []})
+    check("empty batch rejected", isinstance(bad, str))
+    too_many = [{"lat": 1.0, "lon": 2.0, "mode": "GNSS", "speed_mps": 0}] * 401
+    bad = validate_ingest_batch({"token": tok, "points": too_many})
+    check("oversize batch rejected", isinstance(bad, str))
+
+
 def test_body_size() -> None:
     print("body size")
     length, err = parse_content_length({"Content-Length": str(MAX_BODY_BYTES)})
@@ -148,6 +169,7 @@ def main() -> int:
         test_lat_lon()
         test_mode_speed_token()
         test_ingest_payload()
+        test_ingest_batch()
         test_body_size()
         test_path_traversal()
         test_rate_limiter()

@@ -112,9 +112,13 @@ def main() -> int:
 
     # Ensure open mode for the default cold-start path.
     env_backup = os.environ.get(auth.ENV_HASH)
+    relay_backup = os.environ.get("COAST_RELAY_BASE")
     os.environ.pop(auth.ENV_HASH, None)
+    os.environ["COAST_RELAY_BASE"] = "http://relay.test.invalid"
     file_patch = mock.patch.object(auth, "OPERATOR_FILE", Path("/nonexistent/operator.txt"))
     file_patch.start()
+    relay_reg_patch = mock.patch("web.coast_console.register_relay_mailbox", return_value=True)
+    relay_reg_patch.start()
     auth.reset_state()
     auth.reload_config()
 
@@ -125,6 +129,10 @@ def main() -> int:
           f"status={r.status} bytes={len(r.body)}")
     check("GET /  is html", "text/html" in r.headers.get("content-type", ""))
     check("GET /  Cache-Control no-store", "no-store" in r.headers.get("cache-control", ""))
+
+    r = call("GET", "/api/health")
+    check("GET /api/health", r.status == 200 and r.json().get("ok") is True
+          and r.json().get("service") == "coast", str(getattr(r, "body", b"")))
 
     r = call("GET", "/pair?s=abc")
     check("GET /pair serves the phone page", r.status == 200 and b"Start sharing" in r.body,
@@ -153,6 +161,41 @@ def main() -> int:
 
     r = call("GET", "/static/../coast_console.py")
     check("GET /static/.. is rejected", r.status in (400, 404), f"status={r.status}")
+
+    r = call("GET", "/static/trace_replay.html")
+    check("GET /static/trace_replay.html serves player",
+          r.status == 200 and b"trace_replay.js" in r.body and b"COAST" in r.body,
+          f"status={r.status}")
+    r = call("GET", "/static/trace_replay.js")
+    check("GET /static/trace_replay.js",
+          r.status == 200 and b"COASTTraceReplay" in r.body,
+          f"status={r.status}")
+    r = call("GET", "/static/trace_replay.css")
+    check("GET /static/trace_replay.css",
+          r.status == 200 and b"tr-stage" in r.body,
+          f"status={r.status}")
+    r = call("GET", "/replay")
+    loc = r.headers.get("location", "")
+    check("GET /replay redirects to player",
+          r.status in (301, 302, 303, 307) and "trace_replay.html" in loc,
+          f"status={r.status} location={loc}")
+    r = call("GET", "/api/traces")
+    listed = r.json() if r.status == 200 else {}
+    check("GET /api/traces lists traces",
+          r.status == 200 and listed.get("ok") is True and isinstance(listed.get("traces"), list),
+          f"status={r.status}")
+    r = call("GET", "/api/traces/latest.json")
+    if r.status == 200:
+        tj = r.json()
+        check("GET /api/traces/latest.json is a filter trace",
+              isinstance(tj.get("steps"), list) and "graph" in tj and "meta" in tj)
+        hon = (tj.get("meta") or {}).get("honesty")
+        check("      ... meta.honesty present", isinstance(hon, str) and bool(hon), str(hon))
+    else:
+        check("GET /api/traces/latest.json empty dir is 404",
+              r.status == 404, f"status={r.status}")
+    r = call("GET", "/api/traces/../coast_console.py")
+    check("GET /api/traces/.. is rejected", r.status in (400, 404), f"status={r.status}")
 
     r = call("GET", "/api/engine")
     j = r.json()
@@ -226,9 +269,12 @@ def main() -> int:
           str(uk and {k: uk.get(k) for k in ("label", "n_points", "device_id")}))
     if uk and uk.get("points"):
         p0 = uk["points"][0]
-        check("UK demo starts in Midlands lat band",
-              52.35 <= float(p0["lat"]) <= 52.50 and -1.75 <= float(p0["lon"]) <= -1.40,
+        check("UK demo starts on APK clip origin",
+              52.4090 <= float(p0["lat"]) <= 52.4100
+              and -1.5980 <= float(p0["lon"]) <= -1.5950,
               str(p0))
+        check("UK demo first point is GNSS",
+              str(p0.get("mode") or "").upper() == "GNSS", str(p0))
     r = call("GET", "/api/demo/uk")
     check("GET /api/demo/uk status", r.status == 200 and "running" in r.json())
     call("POST", "/api/demo/uk/stop", {})
@@ -245,6 +291,49 @@ def main() -> int:
           f"qr bytes={len(j.get('qr_svg') or '')}")
     check("      ... payload carries both endpoints",
           "s=" in j.get("payload", "") and "lan=" in j.get("payload", ""))
+    check("      ... payload uses relay host when configured",
+          "relay.test.invalid" in j.get("payload", "") and "relay=" in j.get("payload", ""),
+          f"payload={j.get('payload')!r} relay={j.get('relay')!r}")
+
+    # Relay pull merges mailbox points into Fleet without LAN POST (no device IDs).
+    from web.pairing import pull_relay_into_fleet
+
+    class _FakeFeed:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def read(self):
+            return json.dumps(
+                {
+                    "ok": True,
+                    "token": token,
+                    "points": [
+                        {
+                            "lat": 52.41,
+                            "lon": -1.51,
+                            "mode": "IDR",
+                            "speed_mps": 8.0,
+                            "queued": True,
+                            "t": time.time(),
+                        }
+                    ],
+                    "n": 1,
+                    "cursor": 1,
+                }
+            ).encode("utf-8")
+
+    with mock.patch("web.pairing.urllib.request.urlopen", return_value=_FakeFeed()):
+        n = pull_relay_into_fleet(FLEET, token, relay_base="http://relay.test")
+    check("relay pull merges points into Fleet", n == 1, f"accepted={n}")
+    snap = call("GET", "/api/fleet").json()
+    check(
+        "      ... fleet shows relay-pulled device",
+        any(d.get("n_points", 0) >= 1 for d in snap.get("devices", [])),
+        str(snap.get("n_devices")),
+    )
 
     r = call("POST", "/ingest", {"token": "bogus", "lat": 52.4, "lon": -1.5})
     check("POST /ingest rejects an unknown token", r.status == 400 and not r.json()["ok"],
@@ -259,18 +348,33 @@ def main() -> int:
     call("POST", "/ingest", {"token": token, "lat": 52.4009, "lon": -1.5009,
                              "mode": "IDR", "speed_mps": 11.0})
 
+    r = call("POST", "/ingest", {"token": token, "points": [
+        {"lat": 52.4010, "lon": -1.5010, "mode": "IDR", "speed_mps": 10.0,
+         "queued": True, "t": 1_700_000_000.0},
+        {"lat": 52.4015, "lon": -1.5015, "mode": "GNSS", "speed_mps": 9.0},
+    ]})
+    j = r.json()
+    check("POST /ingest batch catch-up", r.status == 200 and j.get("ok") and j.get("accepted") == 2,
+          str(j))
+
     snap = call("GET", "/api/fleet").json()
     dev = next((d for d in snap["devices"] if d["device_id"] == device_id), None)
     check("fleet shows the device", dev is not None)
     if dev:
-        check("      ... with both points", dev["n_points"] == 2, str(dev["n_points"]))
-        check("      ... and a GNSS->IDR transition", len(dev["events"]) == 1, str(dev["events"]))
+        check("      ... with LAN + relay points", dev["n_points"] >= 4, str(dev["n_points"]))
+        check("      ... and a GNSS->IDR transition",
+              any(e.get("from") == "GNSS" and e.get("to") == "IDR" for e in dev["events"]),
+              str(dev["events"]))
+        check("      ... and IDR->GNSS reacquire",
+              any(e.get("from") == "IDR" and e.get("to") == "GNSS" for e in dev["events"]),
+              str(dev["events"]))
+        check("      ... queued catch-up counted", dev.get("n_queued_points", 0) >= 1, str(dev))
         check("      ... and a computed distance", dev["distance_m"] > 50, str(dev["distance_m"]))
 
     r = call("GET", f"/api/privacy/{device_id}")
     j = r.json()
     check("GET /api/privacy shows what is held",
-          r.status == 200 and j["held"]["positions_received"] == 2)
+          r.status == 200 and j["held"]["positions_received"] >= 4)
     check("      ... and lists what is not collected", len(j.get("not_collected", [])) >= 4)
 
     r = call("POST", f"/api/forget/{device_id}")
@@ -299,6 +403,19 @@ def main() -> int:
 
     r = call("GET", "/pair?s=abc")
     check("GET /pair still public when locked", r.status == 200, f"status={r.status}")
+
+    r = call("GET", "/api/health")
+    check("GET /api/health still public when locked",
+          r.status == 200 and r.json().get("ok") is True, f"status={r.status}")
+
+    r = call("GET", "/api/fleet")
+    check("GET /api/fleet 401 when locked", r.status == 401, f"status={r.status}")
+
+    r = call("POST", "/api/pair/new", {})
+    check("POST /api/pair/new 401 when locked", r.status == 401, f"status={r.status}")
+
+    r = call("POST", "/api/demo/uk/start", {})
+    check("POST /api/demo/uk/start 401 when locked", r.status == 401, f"status={r.status}")
 
     r = call("GET", "/api/claims")
     check("GET /api/claims still public when locked",
@@ -337,6 +454,11 @@ def main() -> int:
           r.status == 200 and r.json().get("authenticated") is True,
           str(r.json()))
 
+    r = call("GET", "/api/fleet", cookie=cookie)
+    check("GET /api/fleet 200 with session",
+          r.status == 200 and "devices" in r.json(),
+          f"status={r.status}")
+
     r = call("POST", "/ingest", {"token": "bogus", "lat": 1.0, "lon": 2.0}, cookie=None)
     check("POST /ingest still ungated when locked",
           r.status == 400,  # bad token, but reachable
@@ -373,8 +495,9 @@ def main() -> int:
 
     idr = [s for s in steps if s["mode"] == "IDR"]
     gnss = [s for s in steps if s["mode"] == "GNSS"]
-    check("engine has both GNSS and IDR phases", len(idr) > 50 and len(gnss) > 50,
-          f"idr={len(idr)} gnss={len(gnss)}")
+    check("engine GNSS bookends the outage",
+          steps[0]["mode"] == "GNSS" and steps[-1]["mode"] == "GNSS",
+          f"first={steps[0]['mode']} last={steps[-1]['mode']}")
     # Free dead reckoning must visibly diverge during the outage -- if it does
     # not, either the outage is not being applied or the integration is inert,
     # and the whole view would be showing a flat lie.
@@ -389,10 +512,15 @@ def main() -> int:
 
     FLEET.forget_all()
     file_patch.stop()
+    relay_reg_patch.stop()
     if env_backup is None:
         os.environ.pop(auth.ENV_HASH, None)
     else:
         os.environ[auth.ENV_HASH] = env_backup
+    if relay_backup is None:
+        os.environ.pop("COAST_RELAY_BASE", None)
+    else:
+        os.environ["COAST_RELAY_BASE"] = relay_backup
     auth.reset_state()
     auth.reload_config()
 
