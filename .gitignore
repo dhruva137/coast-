@@ -41,3 +41,5 @@ lab/models/results/speed_bakeoff/cache/
 console_run.log
 web/_preview/
 web/operator.txt
+android/build-tmp/
+android/dist/*.apk
