@@ -18,6 +18,7 @@ the quick run.
 from __future__ import annotations
 
 import json
+import math
 import shutil
 import sys
 import time
@@ -35,12 +36,18 @@ _MAPFILTER_SUMMARY = _REPO / "lab" / "stress" / "results" / "mapfilter" / "summa
 _ISRO_REPORT = _REPO / "lab" / "stress" / "results" / "isro_benchmark" / "report.json"
 _ISRO_SUMMARY = _REPO / "lab" / "stress" / "results" / "isro_benchmark" / "summary.md"
 _SPEED_SUMMARY = _REPO / "lab" / "models" / "results" / "speed_bakeoff" / "summary.md"
+_NLL_DIAG = _REPO / "lab" / "models" / "results" / "nll_diagnosis"
 
 # Fixed seed for reproducible figure regeneration.
 SEED = 26168
 
 # Quick-run training budget (live on stage). Does NOT replace the full bakeoff.
 QUICK_EPOCHS = 4
+# Re-integrate the held-out drive every N batches so the trail morphs
+# continuously rather than jumping once per epoch. Each tick costs one forward
+# pass over the held-out drive, so this trades a little wall time for the demo
+# actually looking like training.
+PATH_EVERY = 4
 QUICK_CAP = 24_000
 QUICK_FOLDS = 1
 
@@ -116,6 +123,74 @@ def _integrate_path(
     return [[round(float(a), 1), round(float(b), 1)] for a, b in zip(x[::step], y[::step])]
 
 
+def _path_endpoint_err_m(
+    pred_path: list[list[float]], truth_path: list[list[float]]
+) -> float | None:
+    """Closed-loop endpoint distance (m) between two downsampled paths."""
+    if not pred_path or not truth_path:
+        return None
+    px, py = pred_path[-1]
+    tx, ty = truth_path[-1]
+    return float(math.hypot(float(px) - float(tx), float(py) - float(ty)))
+
+
+def _write_nll_diagnosis(rows: list[dict], hold_baseline_rmse: float, held: str) -> None:
+    """Log predicted sigma vs held RMSE so variance inflation is checkable."""
+    _NLL_DIAG.mkdir(parents=True, exist_ok=True)
+    log_path = _NLL_DIAG / "epoch_log.jsonl"
+    log_path.write_text(
+        "".join(json.dumps(r, sort_keys=True) + "\n" for r in rows),
+        encoding="utf-8",
+    )
+    nll_rows = [r for r in rows if r.get("objective") == "NLL"]
+    finding = "insufficient NLL epochs to judge variance inflation"
+    if len(nll_rows) >= 2:
+        first, last = nll_rows[0], nll_rows[-1]
+        loss_down = float(last["loss"]) < float(first["loss"])
+        rmse_up = float(last["held_rmse"]) > float(first["held_rmse"])
+        sigma_up = float(last["sigma_mean"]) > float(first["sigma_mean"])
+        if loss_down and rmse_up and sigma_up:
+            finding = (
+                "CONFIRMED variance inflation signature: NLL loss fell while "
+                f"held-out RMSE rose ({first['held_rmse']:.3f}→{last['held_rmse']:.3f}) "
+                f"and mean predicted σ rose ({first['sigma_mean']:.3f}→{last['sigma_mean']:.3f}). "
+                "NLL can improve by admitting uncertainty without a better mean."
+            )
+        elif loss_down and rmse_up:
+            finding = (
+                "PARTIAL: NLL loss fell while held-out RMSE rose "
+                f"({first['held_rmse']:.3f}→{last['held_rmse']:.3f}); "
+                f"σ_mean {first['sigma_mean']:.3f}→{last['sigma_mean']:.3f}. "
+                "Investigate further — classic inflation if σ climbs."
+            )
+        else:
+            finding = (
+                "No clear variance-inflation signature in this quick run "
+                f"(NLL loss {first['loss']:.4f}→{last['loss']:.4f}, "
+                f"held RMSE {first['held_rmse']:.3f}→{last['held_rmse']:.3f}, "
+                f"σ_mean {first['sigma_mean']:.3f}→{last['sigma_mean']:.3f})."
+            )
+    summary = (
+        "# NLL diagnosis (lab.demo quick run)\n\n"
+        f"Held-out drive: `{held}`\n\n"
+        f"Hold-last-speed baseline RMSE: **{hold_baseline_rmse:.3f} m/s**\n\n"
+        f"## Finding\n\n{finding}\n\n"
+        "## Per-epoch log\n\n"
+        "| epoch | objective | loss | held_rmse | sigma_mean | sigma_median | cl_end_err_m |\n"
+        "|------:|:----------|-----:|----------:|-----------:|-------------:|-------------:|\n"
+        + "".join(
+            f"| {r['epoch']} | {r['objective']} | {r['loss']:.4f} | {r['held_rmse']:.3f} | "
+            f"{r['sigma_mean']:.3f} | {r['sigma_median']:.3f} | "
+            f"{r['cl_end_err_m'] if r.get('cl_end_err_m') is not None else '—'} |\n"
+            for r in rows
+        )
+        + "\nSource: live `python -m lab.demo` stdout / `epoch_log.jsonl`. "
+        "Numbers are measured, not invented.\n"
+    )
+    (_NLL_DIAG / "summary.md").write_text(summary, encoding="utf-8")
+    print(f"      wrote {_NLL_DIAG.relative_to(_REPO)}/summary.md", flush=True)
+
+
 def _quick_train() -> dict:
     """Short leave-file-out fold with live epoch/loss lines.
 
@@ -175,8 +250,36 @@ def _quick_train() -> dict:
     # so what a viewer watches is purely the speed model improving.
     gz_win = held.imu[:, :, 5].astype(np.float64).mean(axis=1)
     t_end_h = held.t_end.astype(np.float64)
+    hold_speed = _hold_label(held).astype(np.float64)
+    hold_baseline_rmse = _rmse(hold_speed, y_h)
     truth_path = _integrate_path(y_h, gz_win, t_end_h)
-    hold_path = _integrate_path(_hold_label(held).astype(np.float64), gz_win, t_end_h)
+    hold_path = _integrate_path(hold_speed, gz_win, t_end_h)
+    nll_from_epoch = warmup + 1  # 1-based epoch index where NLL starts
+    print(
+        f"      objective schedule: MSE warmup epochs 1..{warmup}, "
+        f"then NLL from epoch {nll_from_epoch}  "
+        f"(do NOT plot MSE+NLL on one axis)",
+        flush=True,
+    )
+    print(
+        f"      hold-last-speed baseline RMSE={hold_baseline_rmse:.3f} m/s  "
+        f"(flat reference on held-out chart)",
+        flush=True,
+    )
+    print(
+        "COAST_EVENT "
+        + json.dumps(
+            {
+                "type": "train_baselines",
+                "held": held.name,
+                "hold_baseline_rmse": hold_baseline_rmse,
+                "warmup_epochs_mse": warmup,
+                "nll_from_epoch": nll_from_epoch,
+                "note": "MSE and NLL are different units — UI must not share an axis",
+            }
+        ),
+        flush=True,
+    )
     print(
         "COAST_EVENT "
         + json.dumps(
@@ -185,6 +288,7 @@ def _quick_train() -> dict:
                 "held": held.name,
                 "truth": truth_path,
                 "hold_baseline": hold_path,
+                "hold_baseline_rmse": hold_baseline_rmse,
                 "source": "held-out drive, CAN speed truth",
             }
         ),
@@ -194,11 +298,41 @@ def _quick_train() -> dict:
     model.train()
     t0 = time.time()
     last_loss = float("nan")
+    prev_objective: str | None = None
+    diag_rows: list[dict] = []
     for ep in range(QUICK_EPOCHS):
         use_nll = ep >= warmup
+        objective = "NLL" if use_nll else "MSE"
+        if prev_objective == "MSE" and objective == "NLL":
+            print(
+                f"      *** OBJECTIVE SWITCH: MSE → NLL (starting epoch {ep + 1}) ***",
+                flush=True,
+            )
+            print(
+                "COAST_EVENT "
+                + json.dumps(
+                    {
+                        "type": "objective_switch",
+                        "from": "MSE",
+                        "to": "NLL",
+                        "at_epoch": ep + 1,
+                        "label": "MSE → NLL",
+                        "note": "loss scale changes here — not an accuracy cliff",
+                    }
+                ),
+                flush=True,
+            )
+        prev_objective = objective
         perm = torch.randperm(n, device=device)
         total = 0.0
         steps = 0
+        n_steps = max(1, (n + bs - 1) // bs)
+        # Four epochs meant four screen updates, which reads as jumping rather
+        # than training. Every batch now emits its real loss -- cheap, no
+        # inference -- and every PATH_EVERY batches re-integrates the held-out
+        # drive so the trail morphs continuously. All still real weights; the
+        # only thing that changed is how often we look.
+        run_loss: float | None = None
         for i in range(0, n, bs):
             b = perm[i : i + bs]
             out = model(x[b])
@@ -218,44 +352,121 @@ def _quick_train() -> dict:
             opt.step()
             total += float(loss.detach().cpu())
             steps += 1
+
+            # Smooth loss trace: one event per batch, no inference cost.
+            batch_loss = float(loss.detach().cpu())
+            run_loss = batch_loss if run_loss is None else 0.85 * run_loss + 0.15 * batch_loss
+            print(
+                "COAST_EVENT "
+                + json.dumps(
+                    {
+                        "type": "batch",
+                        "epoch": ep + 1,
+                        "epochs": QUICK_EPOCHS,
+                        "step": steps,
+                        "steps": n_steps,
+                        "progress": round(((ep * n_steps) + steps) / (QUICK_EPOCHS * n_steps), 4),
+                        "loss": batch_loss,
+                        "loss_smoothed": run_loss,
+                        "objective": objective,
+                        "elapsed_s": time.time() - t0,
+                        "source": "lab.demo per-batch",
+                    }
+                ),
+                flush=True,
+            )
+
+            if steps % PATH_EVERY == 0 or steps == n_steps:
+                model.eval()
+                with torch.no_grad():
+                    mu_tick = (
+                        model.split_heads(model(x_held))["speed"]
+                        .cpu()
+                        .numpy()
+                        .astype(np.float64)
+                    )
+                    rmse_tick = _rmse(mu_tick, y_h)
+                    tick_path = _integrate_path(mu_tick, gz_win, t_end_h)
+                model.train()
+                print(
+                    "COAST_EVENT "
+                    + json.dumps(
+                        {
+                            "type": "path_progress",
+                            "epoch": ep + 1,
+                            "epochs": QUICK_EPOCHS,
+                            "step": steps,
+                            "steps": max(1, (n + bs - 1) // bs),
+                            "held_rmse": rmse_tick,
+                            "objective": objective,
+                            "path": tick_path,
+                            "source": "lab.demo mid-epoch held path",
+                        }
+                    ),
+                    flush=True,
+                )
         last_loss = total / max(steps, 1)
-        mode = "NLL" if use_nll else "MSE"
         model.eval()
         with torch.no_grad():
-            mu_ep = model.split_heads(model(x_held))["speed"]
+            heads_ep = model.split_heads(model(x_held))
+            mu_ep = heads_ep["speed"]
             mu_ep_np = mu_ep.cpu().numpy().astype(np.float64)
+            logvar_ep = heads_ep["logvar_speed"].clamp(-4.0, 2.0)
+            sigma_ep = torch.exp(0.5 * logvar_ep).cpu().numpy().astype(np.float64)
             rmse_ep = _rmse(mu_ep_np, y_h)
+            sigma_mean = float(np.mean(sigma_ep))
+            sigma_median = float(np.median(sigma_ep))
         epoch_path = _integrate_path(mu_ep_np, gz_win, t_end_h)
+        cl_end_err_m = _path_endpoint_err_m(epoch_path, truth_path)
         model.train()
         elapsed = time.time() - t0
+        cl_part = (
+            f"  cl_end_err_m={cl_end_err_m:.1f}" if cl_end_err_m is not None else ""
+        )
+        # Human + regex-friendly line. Tag objective= so UI never confuses units.
         print(
-            f"      epoch {ep + 1}/{QUICK_EPOCHS}  loss={last_loss:.4f}  "
-            f"rmse={rmse_ep:.3f}  ({mode})  {elapsed:.1f}s",
+            f"      epoch {ep + 1}/{QUICK_EPOCHS}  objective={objective}  "
+            f"loss={last_loss:.4f}  held_rmse={rmse_ep:.3f}  "
+            f"hold_baseline_rmse={hold_baseline_rmse:.3f}  "
+            f"sigma_mean={sigma_mean:.3f}{cl_part}  {elapsed:.1f}s",
             flush=True,
         )
-        print(
-            "COAST_EVENT "
-            + json.dumps(
-                {
-                    "type": "epoch",
-                    "epoch": ep + 1,
-                    "epochs": QUICK_EPOCHS,
-                    "loss": last_loss,
-                    "rmse": rmse_ep,
-                    "mode": mode,
-                    "elapsed_s": elapsed,
-                    "path": epoch_path,
-                    "source": "lab.demo stdout",
-                }
-            ),
-            flush=True,
+        epoch_ev = {
+            "type": "epoch",
+            "epoch": ep + 1,
+            "epochs": QUICK_EPOCHS,
+            "loss": last_loss,
+            "rmse": rmse_ep,  # alias: held-out RMSE (headline metric)
+            "held_rmse": rmse_ep,
+            "hold_baseline_rmse": hold_baseline_rmse,
+            "sigma_mean": sigma_mean,
+            "sigma_median": sigma_median,
+            "cl_end_err_m": cl_end_err_m,
+            "mode": objective,
+            "objective": objective,
+            "elapsed_s": elapsed,
+            "path": epoch_path,
+            "source": "lab.demo stdout",
+        }
+        print("COAST_EVENT " + json.dumps(epoch_ev), flush=True)
+        diag_rows.append(
+            {
+                "epoch": ep + 1,
+                "objective": objective,
+                "loss": last_loss,
+                "held_rmse": rmse_ep,
+                "hold_baseline_rmse": hold_baseline_rmse,
+                "sigma_mean": sigma_mean,
+                "sigma_median": sigma_median,
+                "cl_end_err_m": cl_end_err_m,
+                "elapsed_s": elapsed,
+            }
         )
 
     model.eval()
     with torch.no_grad():
         mu = model.split_heads(model(x_held))["speed"]
         mu_np = mu.cpu().numpy().astype(np.float64)
-    hold = _hold_label(held).astype(np.float64)
     quick = {
         "held": held.name,
         "epochs": QUICK_EPOCHS,
@@ -263,12 +474,13 @@ def _quick_train() -> dict:
         "device": device,
         "final_loss": last_loss,
         "model_rmse": _rmse(mu_np, y_h),
-        "hold_rmse": _rmse(hold, y_h),
+        "hold_rmse": hold_baseline_rmse,
         "seconds": time.time() - t0,
         "note": "quick-run only; PPT cites full bakeoff summary.md",
     }
     print(f"      quick RMSE model={quick['model_rmse']:.3f}  "
           f"hold={quick['hold_rmse']:.3f}  ({quick['seconds']:.1f}s)")
+    _write_nll_diagnosis(diag_rows, hold_baseline_rmse, held.name)
     print()
     return quick
 

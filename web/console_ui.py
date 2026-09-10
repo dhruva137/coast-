@@ -90,6 +90,7 @@ PAIR_PAGE = r"""<!doctype html>
       <b>COAST Android app</b> does.</p>
     <p class="note" style="margin-top:10px">Install the app for the real thing:</p>
     <a href="/download/apk" style="text-decoration:none"><button class="ghost" type="button">Download the APK</button></a>
+    <a id="openapp" href="#" style="text-decoration:none"><button class="go" type="button">Open in COAST app</button></a>
   </div>
 
   <div class="card">
@@ -106,9 +107,14 @@ const base = (qs.get("lan") || location.origin).replace(/\/+$/,"");
 let watchId = null, sent = 0;
 const $ = s => document.querySelector(s);
 $("#tok").textContent = token ? token.slice(0,10)+"…" : "missing";
+const appLink = "coast://pair" + location.search;
+const openApp = $("#openapp");
+if(openApp) openApp.href = appLink;
 
 if(!window.isSecureContext && location.hostname!=="localhost" && location.hostname!=="127.0.0.1"){
-  $("#ctx").textContent = "Browsers only give location to https or localhost. Over plain http on LAN, use the COAST app instead.";
+  $("#ctx").innerHTML = "This page is plain HTTP, so the <b>browser</b> will not give GPS. "+
+    "Open the QR <b>inside the COAST app</b> (SCAN QR), or tap Open in COAST app. "+
+    "The app keeps tracking in a tunnel and uploads when radio returns.";
 } else { $("#ctx").style.display="none"; }
 
 function post(p){
@@ -193,14 +199,20 @@ PAGE = r"""<!doctype html>
   .col{display:flex;flex-direction:column;gap:14px;min-height:0}
   .cwrap{position:relative;flex:1 1 auto;min-height:0}
   canvas{display:block;width:100%;height:100%}
+  .map-seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;flex:0 0 auto}
+  .map-seg button{min-height:28px;padding:3px 9px;border:0;background:transparent;color:var(--dim);
+                  font:600 10px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.08em;
+                  text-transform:uppercase;cursor:pointer}
+  .map-seg button.is-on{background:var(--accent);color:#04120e}
+  #fleet-stage .world-map,#fleet-stage > canvas{position:absolute;inset:0;width:100%;height:100%}
   .legend{position:absolute;left:12px;bottom:10px;display:flex;gap:14px;font-size:11px;
           color:var(--dim);background:color-mix(in srgb,var(--bg) 78%,transparent);
-          padding:6px 10px;border-radius:6px;border:1px solid var(--line)}
+          padding:6px 10px;border-radius:6px;border:1px solid var(--line);z-index:3}
   .legend i{display:inline-block;width:14px;height:0;border-top-width:2px;
             border-top-style:solid;vertical-align:middle;margin-right:5px}
   .scalebar{position:absolute;right:12px;bottom:10px;font-size:11px;color:var(--dim);
             background:color-mix(in srgb,var(--bg) 78%,transparent);padding:5px 9px;
-            border-radius:6px;border:1px solid var(--line)}
+            border-radius:6px;border:1px solid var(--line);z-index:3}
 
   .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
   .muted{color:var(--dim);font-size:var(--fs-meta)}
@@ -419,28 +431,45 @@ PAGE = r"""<!doctype html>
       <div class="view-panel rail col" style="gap:0">
         <h2>Devices <span class="sp num" id="dev-count">0</span></h2>
         <div class="body" id="dev-list" style="flex:1 1 auto">
-          <div class="state state--empty">
+          <div class="state state--empty fleet-empty">
             <p class="state__title">No phone paired yet</p>
-            <p class="state__body">Scan the code, or play the UK IO-VNBD demo track (same geography as training).</p>
+            <p class="state__body">This console owns the recorded UK demo clip the APK also replays. Play it to populate the map with a scripted GNSS→IDR handover <b>and the reverse</b> (IDR→GNSS reacquire), or scan the code to pair a live phone. Fleet playback is not the on-phone particle filter.</p>
+            <button class="act fleet-empty__cta" type="button" id="btn-uk-demo-empty">Play UK demo track</button>
+            <p class="fleet-empty__legend">
+              <span><i style="border-color:var(--gnss)"></i>GNSS</span>
+              <span><i style="border-color:var(--accent)"></i>IDR (dead reckoning)</span>
+            </p>
           </div>
         </div>
-        <div style="border-top:1px solid var(--line);padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+        <div id="fleet-rail-actions" style="border-top:1px solid var(--line);padding:12px 14px;display:none;flex-direction:column;gap:8px">
           <button class="act" id="btn-uk-demo" style="width:100%">Play UK demo track</button>
           <button class="ghost" id="btn-uk-demo-stop" style="width:100%;display:none">Stop UK demo</button>
           <button class="ghost" id="btn-forget-all" style="width:100%">Forget all devices</button>
-          <p class="tiny" id="uk-demo-hint" style="margin:0">Coventry / Midlands · measured S-S1 filter trace · GNSS → IDR handover</p>
+          <p class="tiny" id="uk-demo-hint" style="margin:0">Coventry / Midlands · APK IO-VNBD clip · GNSS → IDR (20–80 s) → GNSS. Not a live phone PF.</p>
         </div>
       </div>
 
       <div class="view-panel grow">
-        <h2>Live tracks <span class="sp tiny" id="fleet-hint">GNSS blue · IDR teal — where the line changes colour, GPS was gone</span></h2>
-        <div class="cwrap">
-          <canvas id="cv-fleet"></canvas>
+        <h2>Fleet map
+          <span class="map-seg" id="fleet-mode" role="group" aria-label="Map mode">
+            <button type="button" data-mode="world" class="is-on">World</button>
+            <button type="button" data-mode="track">Track</button>
+          </span>
+          <span class="map-seg" id="fleet-tiles" role="group" aria-label="OpenStreetMap style">
+            <button type="button" data-style="osm">OSM</button>
+            <button type="button" data-style="dark" class="is-on">Dark OSM</button>
+          </span>
+          <span class="sp tiny" id="fleet-hint">OpenStreetMap · no API key · click a device</span>
+        </h2>
+        <div class="cwrap" id="fleet-stage">
+          <div class="world-map" id="fleet-map-world"></div>
+          <canvas id="cv-fleet" hidden></canvas>
           <div class="legend">
             <span><i style="border-color:var(--gnss)"></i>GNSS</span>
             <span><i style="border-color:var(--accent)"></i>IDR (dead reckoning)</span>
+            <span><i style="border-color:var(--warn);border-style:dashed"></i>queued catch-up</span>
           </div>
-          <div class="scalebar num" id="fleet-scale">—</div>
+          <div class="scalebar num" id="fleet-scale">drag · scroll zoom</div>
         </div>
       </div>
 
@@ -448,8 +477,15 @@ PAGE = r"""<!doctype html>
         <h2>Pair a phone</h2>
         <div class="body" id="pair-body">
           <div class="row" style="justify-content:center"><div class="qrbox" id="qr"></div></div>
-          <p class="muted" style="margin:12px 0 4px">Scan with the COAST app. The code carries a
-            one-time token plus both a LAN and a relay endpoint — the phone uses whichever answers.</p>
+          <div class="pair-hint">
+            <b style="color:var(--text)">Same Wi-Fi will often fail</b> (AP isolation).
+            Fastest path: laptop <b>Mobile hotspot</b>, phone joins it, then scan
+            <b>inside the COAST app</b> — not the system camera.
+            <div class="pair-ips" id="pair-ips"></div>
+          </div>
+          <p class="muted" style="margin:12px 0 4px">Scan with the COAST app. The QR is a pairing URL
+            (token + LAN + optional relay). The phone queues points while underground and
+            flushes them when radio returns.</p>
           <p class="tiny" style="margin:0 0 10px">Endpoint <code id="pair-url">—</code></p>
           <div class="row">
             <button class="ghost" id="btn-newqr">New code</button>
@@ -467,6 +503,7 @@ PAGE = r"""<!doctype html>
         <h2>Estimator — live arithmetic
           <span class="sp tiny" id="ec-src">real IO-VNBD strip · Coventry UK · CAN speed truth</span>
         </h2>
+        <p class="view-context">Free dead-reckoning on the measured UK IO-VNBD demo clip — sensor inputs, integration steps, and position error vs GNSS truth. Map-in-loop PF is a later drop-in; this view is the baseline engine arithmetic.</p>
 
         <div class="ec">
           <!-- ── column 1: what the sensors report ── -->
@@ -522,7 +559,9 @@ PAGE = r"""<!doctype html>
                 <code class="ec-eq">ψ ← ψ − ω<sub>z</sub>·Δt</code>
                 <div class="ec-out num" id="ec-dpsi">—</div>
                 <div class="ec-note">Gyro drifts. The compass does not, but it is noisy —
-                  we measured 16.87% vs 7.22% drift over 60 s.</div>
+                  we measured 16.87% vs 7.22% drift over 60 s (heading channel only).
+                  The APK now applies the onset-calibrated compass during an outage;
+                  the system headline remains mapfilter 2.02× median position error.</div>
               </div>
             </div>
 
@@ -533,7 +572,8 @@ PAGE = r"""<!doctype html>
                 <code class="ec-eq">v ← v + a<sub>y</sub>·Δt</code>
                 <div class="ec-out num" id="ec-vint">—</div>
                 <div class="ec-note">Zero-velocity update clamps v to 0 when the IMU says
-                  stationary. <span id="ec-zn">0</span> clamps so far.</div>
+                  stationary (engine idle / lights). High-band VNet is the pothole/vibration
+                  path; low-band is vehicle motion. <span id="ec-zn">0</span> clamps so far.</div>
               </div>
             </div>
 
@@ -625,7 +665,8 @@ PAGE = r"""<!doctype html>
     <section class="view" data-view="training" data-live id="tab-train" hidden>
       <div class="view-panel grow col" style="gap:0">
         <h2>Model learning — held-out UK drive
-          <span class="sp tiny" id="tr-held">IO-VNBD · Coventry / Midlands · re-integrated after every epoch</span></h2>
+          <span class="sp tiny" id="tr-held">IO-VNBD · Coventry / Midlands · re-integrated continuously while it trains</span></h2>
+        <p class="view-context">Frequency-decoupled VNet (low-band motion / high-band vibration) is the PS speed filter. This quick run is real IO-VNBD — CAN truth, hold-last-speed baseline, and the model path re-integrated after each epoch. Per-window it loses to hold-last-speed 23/23; closed-loop it is ~8% better.</p>
         <div class="cwrap"><canvas id="cv-traj"></canvas>
           <div class="legend">
             <span><i style="border-color:var(--text)"></i>CAN truth</span>
@@ -669,11 +710,24 @@ PAGE = r"""<!doctype html>
     <section class="view" data-view="evidence" data-live id="tab-evidence" hidden>
       <div class="view-panel grow">
         <h2>Claim registry <span class="sp tiny">every number re-derived from its measured file</span></h2>
+        <p class="view-context">The claim registry — every published number tied to a source file and re-verified by <code>tools/verify_claims.py</code>.</p>
         <div class="body flush"><table id="claims"><tbody><tr><td class="tiny">loading…</td></tr></tbody></table></div>
       </div>
       <div class="view-panel rail">
         <h2>How to read this</h2>
         <div class="body">
+          <div class="gaps-publish">
+            <p class="gaps-publish__title">Gaps we publish</p>
+            <ul class="gaps-publish__list">
+              <li>GNSS+INS classical LC-EKF is <b>1.07×</b> vs phone GNSS — a wash.
+                IO-VNBD has no pseudoranges, so no tight coupling.</li>
+              <li>Map-in-loop median drift <b>27.58% → 16.77%</b> vs the PS bar &lt;10% —
+                we do not meet the bar. The headline is <b>2.02×</b> lower median
+                position error, not drift %.</li>
+              <li>Magnetometer is now fused in the APK as an onset-calibrated compass
+                (heading channel: gyro <b>16.87%</b> → <b>7.22%</b>).</li>
+            </ul>
+          </div>
           <p class="muted"><code>tools/verify_claims.py</code> re-reads every source file and fails
             the build if a slide states a number the registry does not know.</p>
           <p class="muted">The registry deliberately includes our <b>negative</b> results. A registry
@@ -704,6 +758,7 @@ PAGE = r"""<!doctype html>
   </main>
 </div>
 
+<script src="/static/world_map.js"></script>
 <script src="/static/engine_viz.js"></script>
 <script src="/static/engine_calc.js"></script>
 <script src="/static/app.js"></script>
@@ -952,12 +1007,56 @@ function gridBg(g,w,h){
 
 /* ================= FLEET ================= */
 let fleet = {devices:[]}, selected = null, pairToken = null;
+let worldMap = null, lastFitId = "__init__";
+const FLEET_MAP_KEY = "coast.fleetMap";
+const FLEET_TILE_KEY = "coast.fleetTiles";
+function fleetMapMode(){ return localStorage.getItem(FLEET_MAP_KEY) || "world"; }
+function fleetTileStyle(){ return localStorage.getItem(FLEET_TILE_KEY) || "dark"; }
+function applyFleetMapChrome(){
+  const world = fleetMapMode()==="world";
+  const w=$("#fleet-map-world"), cv=$("#cv-fleet"), tiles=$("#fleet-tiles"), hint=$("#fleet-hint");
+  if(w) w.hidden = !world;
+  if(cv) cv.hidden = world;
+  if(tiles) tiles.hidden = !world;
+  document.querySelectorAll("#fleet-mode button").forEach(b=>b.classList.toggle("is-on", b.dataset.mode===fleetMapMode()));
+  document.querySelectorAll("#fleet-tiles button").forEach(b=>b.classList.toggle("is-on", b.dataset.style===fleetTileStyle()));
+  if(hint) hint.textContent = world
+    ? "OpenStreetMap · no API key · click a device · GNSS blue · IDR teal · dashed = radio catch-up"
+    : "Track only · no tiles · same GNSS/IDR colours";
+}
+function setFleetMapMode(m){
+  localStorage.setItem(FLEET_MAP_KEY, m);
+  applyFleetMapChrome();
+  lastFitId = "__init__";
+  drawFleet();
+}
+function setFleetTileStyle(s){
+  localStorage.setItem(FLEET_TILE_KEY, s);
+  if(worldMap && worldMap.setStyle) worldMap.setStyle(s);
+  applyFleetMapChrome();
+}
 
 function llToXY(lat, lon, lat0, lon0){
   const R=6371000, rad=Math.PI/180;
   return [ (lon-lon0)*rad*R*Math.cos(lat0*rad), (lat-lat0)*rad*R ];
 }
 function drawFleet(){
+  applyFleetMapChrome();
+  const host=$("#fleet-map-world");
+  if(fleetMapMode()==="world" && host && window.CoastWorldMap){
+    if(!worldMap) worldMap = window.CoastWorldMap(host, {
+      onSelect: function(id){
+        selected = selected===id ? null : id;
+        renderDevices(); drawFleet(); loadPrivacy();
+      }
+    });
+    if(worldMap.setStyle) worldMap.setStyle(fleetTileStyle());
+    const fit = lastFitId==="__init__" || selected!==lastFitId;
+    worldMap.setDevices(fleet.devices||[], selected, {fit:fit});
+    lastFitId = selected;
+    const sc=$("#fleet-scale"); if(sc) sc.textContent="OpenStreetMap · drag · scroll zoom";
+    return;
+  }
   const cv=$("#cv-fleet"); if(!cv || !cv.getBoundingClientRect().width) return;
   const {g,w,h}=fit(cv); gridBg(g,w,h);
   const devs=fleet.devices.filter(d=>d.points && d.points.length);
@@ -1009,12 +1108,25 @@ function renderDevices(){
   const on = fleet.devices.filter(d=>d.online).length;
   $("#p-dev-t").textContent = fleet.devices.length + (fleet.devices.length===1?" device":" devices");
   $("#pill-dev").className = "pill" + (on ? " pill--ok" : "");
+  const railActions=$("#fleet-rail-actions");
+  const footerDemo=$("#btn-uk-demo");
   if(!fleet.devices.length){
-    el.innerHTML=`<div class="state state--empty">
+    el.innerHTML=`<div class="state state--empty fleet-empty">
       <p class="state__title">No phone paired yet</p>
-      <p class="state__body">Scan the code to put your phone on the map.</p></div>`;
+      <p class="state__body">This console owns the recorded UK demo clip the APK also replays. Play it to populate the map with a scripted GNSS→IDR handover <b>and the reverse</b> (IDR→GNSS reacquire), or scan the code to pair a live phone. Fleet playback is not the on-phone particle filter.</p>
+      <button class="act fleet-empty__cta" type="button" id="btn-uk-demo-empty">Play UK demo track</button>
+      <p class="fleet-empty__legend">
+        <span><i style="border-color:var(--gnss)"></i>GNSS</span>
+        <span><i style="border-color:var(--accent)"></i>IDR (dead reckoning)</span>
+      </p></div>`;
+    const emptyBtn=$("#btn-uk-demo-empty");
+    if(emptyBtn) emptyBtn.onclick=()=>$("#btn-uk-demo").click();
+    if(railActions) railActions.style.display="none";
+    if(footerDemo) footerDemo.style.display="none";
     $("#privacy").innerHTML=""; return;
   }
+  if(railActions) railActions.style.display="flex";
+  if(footerDemo) footerDemo.style.display="block";
   el.innerHTML = fleet.devices.map(d=>`
     <div class="dev ${selected===d.device_id?"sel":""} ${d.online?"":"off"}" data-id="${d.device_id}">
       <span class="swatch" style="background:${d.color}"></span>
@@ -1033,16 +1145,31 @@ function renderDevices(){
 async function loadPrivacy(){
   const box=$("#privacy");
   if(!selected){ box.innerHTML=""; return; }
+  const live=(fleet.devices||[]).find(d=>d.device_id===selected);
+  const ev=(live&&live.events)||[];
+  const timeline = ev.length ? `<h2 style="border:0;padding:0 0 8px;font-size:11px;letter-spacing:.09em;
+        text-transform:uppercase;color:var(--dim)">Where it went</h2>
+      <ul class="timeline">${ev.slice().reverse().slice(0,12).map(e=>{
+        const to=(e.to||"").toUpperCase();
+        const cls=to==="GNSS"?"gnss":to==="IDR"?"":"warn";
+        const when=e.t?new Date(e.t*1000).toLocaleTimeString():"";
+        const label=to==="IDR"?"GPS lost — coasting":to==="GNSS"?"GPS back":(e.from||"")+" → "+(e.to||"");
+        return `<li><i class="${cls}"></i><span>${label}<br/><span class="tiny">${when}${e.lat!=null?" · "+Number(e.lat).toFixed(5)+", "+Number(e.lon).toFixed(5):""}</span></span></li>`;
+      }).join("")}</ul>` : `<p class="tiny">No GPS/radio handovers recorded yet.</p>`;
   try{
     const r=await fetch("/api/privacy/"+encodeURIComponent(selected));
-    if(!r.ok){ box.innerHTML=""; return; }
+    if(!r.ok){ box.innerHTML=timeline; return; }
     const d=await r.json();
+    const queued = live && live.n_queued_points ? `<span class="k">flushed after radio</span><span class="v">${live.n_queued_points}</span>` : "";
     box.innerHTML=`
-      <h2 style="border:0;padding:0 0 8px;font-size:11px;letter-spacing:.09em;
+      ${timeline}
+      <p class="tiny">${live&&!live.online?"Radio last seen "+fmt(live.age_s,0)+"s ago — track is still here.":"Live."}</p>
+      <h2 style="border:0;padding:12px 0 8px;font-size:11px;letter-spacing:.09em;
                  text-transform:uppercase;color:var(--dim)">What we know about ${d.label}</h2>
       <div class="kv">
         ${Object.entries(d.held).map(([k,v])=>`<span class="k">${k.replace(/_/g," ")}</span>
           <span class="v">${typeof v==="number"?commas(v):v}</span>`).join("")}
+        ${queued}
       </div>
       <p class="tiny" style="margin:10px 0 4px">Not collected:</p>
       <ul class="tiny" style="margin:0 0 10px;padding-left:16px;color:var(--faint)">
@@ -1052,7 +1179,7 @@ async function loadPrivacy(){
       await fetch("/api/forget/"+encodeURIComponent(selected),{method:"POST"});
       selected=null; await pollFleet();
     };
-  }catch(e){ box.innerHTML=""; }
+  }catch(e){ box.innerHTML=timeline; }
 }
 
 async function pollFleet(){
@@ -1066,30 +1193,48 @@ async function pollFleet(){
     $("#p-srv-t").textContent="server up";
     renderDevices(); drawFleet();
     if(selected && !fleet.devices.some(d=>d.device_id===selected)){ selected=null; $("#privacy").innerHTML=""; }
+    else if(selected) loadPrivacy();
   }catch(e){
     $("#pill-srv").className="pill pill--warn";
     $("#p-srv-t").textContent="server unreachable";
   }
 }
 
-async function newQR(){
+async function newQR(host){
   try{
-    const r=await fetch("/api/pair/new",{method:"POST"});
+    const q = host ? ("?host="+encodeURIComponent(host)) : "";
+    const r=await fetch("/api/pair/new"+q,{method:"POST"});
     const d=await r.json();
     pairToken=d.token;
     $("#qr").innerHTML = d.qr_svg || '<div style="color:#000;padding:20px;font:12px system-ui">QR encoder unavailable</div>';
     $("#pair-url").textContent = d.payload;
+    const box=$("#pair-ips");
+    if(box){
+      const cands=d.candidates||[];
+      box.innerHTML = cands.map(c=>`<button type="button" class="${c.url===d.lan?"is-on":""}" data-host="${c.ip}">${c.ip}${c.hint?" · "+c.hint:""}</button>`).join("");
+      box.querySelectorAll("button").forEach(b=>b.onclick=()=>newQR(b.dataset.host));
+    }
   }catch(e){ $("#pair-url").textContent="could not mint a pairing code"; }
 }
 $("#btn-newqr").onclick=newQR;
 $("#btn-forget-all").onclick=async()=>{ await fetch("/api/forget_all",{method:"POST"}); selected=null; pollFleet(); };
 
 function setUkDemoUi(running){
-  const go=$("#btn-uk-demo"), stop=$("#btn-uk-demo-stop"), hint=$("#uk-demo-hint");
-  if(go){ go.disabled=!!running; go.textContent=running?"Playing UK demo…":"Play UK demo track"; }
+  const go=$("#btn-uk-demo"), emptyGo=$("#btn-uk-demo-empty"),
+        stop=$("#btn-uk-demo-stop"), hint=$("#uk-demo-hint"), rail=$("#fleet-rail-actions");
+  [go, emptyGo].forEach(btn=>{
+    if(btn){ btn.disabled=!!running; btn.textContent=running?"Playing UK demo…":"Play UK demo track"; }
+  });
   if(stop) stop.style.display=running?"block":"none";
-  if(hint && !running) hint.textContent="Coventry / Midlands · measured S-S1 filter trace · GNSS → IDR handover";
+  if(rail){
+    if(running){ rail.style.display="flex"; if(go) go.style.display="none"; }
+    else if(!fleet.devices.length){ rail.style.display="none"; if(go) go.style.display="none"; }
+    else { rail.style.display="flex"; if(go) go.style.display="block"; }
+  }
+  if(hint && !running) hint.textContent="Coventry / Midlands · APK IO-VNBD clip · GNSS → IDR (20–80 s) → GNSS. Not a live phone PF.";
 }
+const ukDemoEmpty=$("#btn-uk-demo-empty");
+if(ukDemoEmpty) ukDemoEmpty.onclick=()=>$("#btn-uk-demo").click();
 $("#btn-uk-demo").onclick=async()=>{
   setUkDemoUi(true);
   try{
@@ -1109,17 +1254,45 @@ $("#btn-uk-demo-stop").onclick=async()=>{
 
 /* ================= TRAINING ================= */
 let tr = {truth:[], hold:[], epochs:[], cur:null, prev:null, mix:1, held:"",
-          holdBaselineRmse:null, switchEpoch:null};
+          holdBaselineRmse:null, switchEpoch:null, reveal:1, animStart:0};
+const TRAIN_MIX_MS = 1100;
 function objOf(e){ return String(e.objective||e.mode||"").toUpperCase(); }
 function heldOf(e){
   const v = (typeof e.held_rmse==="number") ? e.held_rmse
     : (typeof e.rmse==="number" ? e.rmse : NaN);
   return Number.isFinite(v) ? v : null;
 }
+function easeInOut(t){ t=Math.max(0,Math.min(1,t)); return t*t*(3-2*t); }
+function resamplePath(pts, n){
+  if(!pts || !pts.length) return [];
+  if(pts.length===1) return Array.from({length:n},()=>[pts[0][0],pts[0][1]]);
+  const out=[];
+  for(let i=0;i<n;i++){
+    const u=i/(n-1)*(pts.length-1), j=Math.floor(u), f=u-j;
+    const a=pts[j], b=pts[Math.min(j+1,pts.length-1)];
+    out.push([a[0]+(b[0]-a[0])*f, a[1]+(b[1]-a[1])*f]);
+  }
+  return out;
+}
+function lerpPath(a, b, t){
+  if(!a||!a.length) return b||[];
+  if(!b||!b.length) return a;
+  const n=Math.max(a.length,b.length,2);
+  const A=resamplePath(a,n), B=resamplePath(b,n);
+  return A.map((p,i)=>[p[0]+(B[i][0]-p[0])*t, p[1]+(B[i][1]-p[1])*t]);
+}
+function growingPath(pts, reveal){
+  if(!pts||pts.length<2) return pts||[];
+  const r=Math.max(0.02, Math.min(1, reveal));
+  const n=Math.max(2, Math.ceil(pts.length*r));
+  return pts.slice(0,n);
+}
 function drawTraj(){
   const cv=$("#cv-traj"); if(!cv || !cv.getBoundingClientRect().width) return;
   const {g,w,h}=fit(cv); gridBg(g,w,h);
-  const all=[tr.truth,tr.hold,tr.cur].filter(p=>p&&p.length);
+  const morph = (tr.prev && tr.cur) ? lerpPath(tr.prev, tr.cur, easeInOut(tr.mix)) : (tr.cur||tr.prev);
+  const shown = growingPath(morph, tr.reveal);
+  const all=[tr.truth,tr.hold,shown,tr.cur].filter(p=>p&&p.length);
   if(!all.length){
     g.fillStyle="#5A6673"; g.font="13px system-ui"; g.textAlign="center";
     g.fillText("Press Train — the estimated path will converge onto the truth as it learns.", w/2, h/2);
@@ -1128,8 +1301,12 @@ function drawTraj(){
   const pr=projector(all,w,h,46); if(!pr) return;
   stroke(g,tr.hold,pr,"#FF6B6B",2,[6,5]);
   stroke(g,tr.truth,pr,"#E8EDF2",2.4);
-  if(tr.prev && tr.mix<1){ g.globalAlpha=1-tr.mix; stroke(g,tr.prev,pr,"#00D4AA",2.2); g.globalAlpha=1; }
-  if(tr.cur){ g.globalAlpha=tr.mix; stroke(g,tr.cur,pr,"#00D4AA",3); g.globalAlpha=1; }
+  if(shown && shown.length>=2) stroke(g,shown,pr,"#00D4AA",3);
+  if(shown && shown.length){
+    const last=shown[shown.length-1];
+    g.fillStyle="#00D4AA"; g.beginPath();
+    g.arc(pr.px(last[0]), pr.py(last[1]), 4.5, 0, Math.PI*2); g.fill();
+  }
   const barM=niceScale(pr.spanM/4);
   $("#traj-scale").textContent = (barM>=1000?(barM/1000)+" km":barM+" m");
   g.strokeStyle="#5A6673"; g.lineWidth=2; g.beginPath();
@@ -1196,7 +1373,9 @@ function drawLoss(){
   const cv=$("#cv-loss"); if(!cv || !cv.getBoundingClientRect().width) return;
   const {g,w,h}=fit(cv);
   g.fillStyle="#0C1016"; g.fillRect(0,0,w,h);
-  const eps=tr.epochs;
+  // Prefer the dense per-batch series: 96 points instead of 4, so the
+  // curve moves continuously instead of stepping once per epoch.
+  const eps=(tr.live && tr.live.length) ? tr.live : tr.epochs;
   if(eps.length<1){
     g.fillStyle="#5A6673"; g.font="11px system-ui"; g.textAlign="center";
     g.fillText("Waiting for epoch 1… (no invented curve)", w/2, h/2); return;
@@ -1242,14 +1421,28 @@ function drawLoss(){
     ],
     [], markerIdx, n);
 }
-function animateMix(){
-  if(tr.mix<1){ tr.mix=Math.min(1,tr.mix+0.06); drawTraj(); requestAnimationFrame(animateMix); }
+function animateMix(now){
+  if(!tr.animStart) tr.animStart = now || performance.now();
+  const t = ((now||performance.now()) - tr.animStart) / TRAIN_MIX_MS;
+  tr.mix = Math.min(1, easeInOut(t));
+  tr.reveal = Math.min(1, 0.15 + 0.85 * tr.mix);
+  drawTraj();
+  if(tr.mix < 1) requestAnimationFrame(animateMix);
+}
+function beginPathMorph(nextPath){
+  if(!nextPath || !nextPath.length) return;
+  tr.prev = tr.cur && tr.cur.length ? tr.cur : (tr.hold && tr.hold.length ? tr.hold : nextPath);
+  tr.cur = nextPath;
+  tr.mix = 0;
+  tr.reveal = 0.12;
+  tr.animStart = 0;
+  requestAnimationFrame(animateMix);
 }
 function onEpoch(e){
   if(typeof e.hold_baseline_rmse==="number" && Number.isFinite(e.hold_baseline_rmse))
     tr.holdBaselineRmse=e.hold_baseline_rmse;
   tr.epochs.push(e);
-  if(e.path && e.path.length){ tr.prev=tr.cur; tr.cur=e.path; tr.mix=0; requestAnimationFrame(animateMix); }
+  if(e.path && e.path.length) beginPathMorph(e.path);
   const obj=objOf(e)||"?";
   const held=heldOf(e);
   $("#s-ep").textContent=e.epoch+" / "+e.epochs;
@@ -1271,12 +1464,38 @@ function onEpoch(e){
   $("#p-trn-t").textContent="training epoch "+e.epoch+(held!=null?" · held "+fmt(held,3):"");
   drawLoss(); drawTraj();
 }
+let _lossRaf=0;
+function scheduleLoss(){
+  // 96 batch events in ~34s; coalesce redraws onto animation frames so the
+  // curve is smooth without repainting the canvas on every message.
+  if(_lossRaf) return;
+  _lossRaf=requestAnimationFrame(()=>{ _lossRaf=0; drawLoss(); });
+}
+function onBatch(d){
+  tr.live.push(d);
+  if(typeof d.progress==="number"){
+    const pct=Math.round(d.progress*100);
+    $("#p-trn-t").textContent="training "+pct+"%  ·  epoch "+(d.epoch||"?")+"/"+(d.epochs||"?");
+    $("#pill-trn").className="pill pill--ok";
+  }
+  if(Number.isFinite(d.loss)) $("#s-loss").textContent=fmt(d.loss,4);
+  if(Number.isFinite(d.elapsed_s)) $("#s-el").textContent=fmt(d.elapsed_s,1)+"s";
+  scheduleLoss();
+}
+function onPathProgress(d){
+  tr.live.push(d);
+  if(d.path && d.path.length) beginPathMorph(d.path);
+  if(typeof d.held_rmse==="number" && Number.isFinite(d.held_rmse))
+    $("#s-rmse").textContent=fmt(d.held_rmse,3);
+  $("#p-trn-t").textContent="learning epoch "+(d.epoch||"?")+" · step "+(d.step||"?");
+  $("#pill-trn").className="pill pill--ok";
+}
 function trainBanner(html, cls){ $("#tr-banner").innerHTML = html?`<div class="banner-box ${cls}">${html}</div>`:""; }
 
 $("#btn-train").onclick=async()=>{
   const b=$("#btn-train"); b.disabled=true; b.textContent="Training…";
-  tr={truth:[],hold:[],epochs:[],cur:null,prev:null,mix:1,held:"",
-      holdBaselineRmse:null, switchEpoch:null};
+  tr={truth:[],hold:[],epochs:[],live:[],cur:null,prev:null,mix:1,held:"",
+      holdBaselineRmse:null, switchEpoch:null, reveal:1, animStart:0};
   $("#s-ep").textContent="—"; $("#s-ep-sub").textContent="not started";
   $("#s-loss").textContent="—";
   const lossSub=$("#s-loss-sub"); if(lossSub) lossSub.textContent="phase-normalised on chart";
@@ -1298,7 +1517,10 @@ $("#btn-train").onclick=async()=>{
   es.onmessage=ev=>{
     let d; try{ d=JSON.parse(ev.data); }catch(_){ return; }
     if(d.type==="traj_ref"){ tr.truth=d.truth||[]; tr.hold=d.hold_baseline||[]; tr.held=d.held||"";
-      $("#tr-held").textContent="held-out drive "+tr.held+" · re-integrated after every epoch"; drawTraj(); }
+      $("#tr-held").textContent="held-out drive "+tr.held+" · re-integrated after every epoch";
+      beginPathMorph(tr.hold.length?tr.hold:tr.truth); drawTraj(); }
+    else if(d.type==="batch"){ onBatch(d); }
+    else if(d.type==="path_progress"){ onPathProgress(d); }
     else if(d.type==="train_baselines"){
       if(typeof d.hold_baseline_rmse==="number" && Number.isFinite(d.hold_baseline_rmse))
         tr.holdBaselineRmse=d.hold_baseline_rmse;
@@ -1417,8 +1639,11 @@ async function loadClaims(){
 }
 
 /* ---------- boot console (after enter) ---------- */
-function resizeAll(){ drawFleet(); drawTraj(); drawLoss(); }
+function resizeAll(){ if(worldMap) worldMap.resize(); drawFleet(); drawTraj(); drawLoss(); }
 function bootConsole(){
+  applyFleetMapChrome();
+  document.querySelectorAll("#fleet-mode button").forEach(b=>b.onclick=()=>setFleetMapMode(b.dataset.mode));
+  document.querySelectorAll("#fleet-tiles button").forEach(b=>b.onclick=()=>setFleetTileStyle(b.dataset.style));
   newQR(); pollFleet(); loadEngine(); loadClaims(); loadExistingFigs();
   setInterval(pollFleet, 1000);
   setInterval(pollUkDemo, 1500);
