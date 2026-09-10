@@ -246,11 +246,12 @@ class ConsolePairClient {
         const val RACE_TIMEOUT_MS = 3_500
         const val POST_TIMEOUT_MS = 3_500
         const val FAIL_BEFORE_RERACE = 3
-        const val MINT_TOKEN_LEN_MIN = 8
+        const val MINT_TOKEN_LEN_MIN = 6
         const val MINT_TOKEN_LEN_MAX = 12
-        const val MINT_TOKEN_LEN_DEFAULT = 10
+        const val MINT_TOKEN_LEN_DEFAULT = 6
         const val LOCAL_TOKEN_TTL_MS = 15 * 60 * 1000L
-        private val TOKEN_RE = Regex("""^[A-Za-z0-9_-]{8,64}$""")
+        /** Six-digit phone codes or longer URL-safe console tokens. */
+        private val TOKEN_RE = Regex("""^(\d{6}|[A-Za-z0-9_-]{6,64})$""")
         private const val URL_SAFE = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
         private val rng = SecureRandom()
 
@@ -260,11 +261,14 @@ class ConsolePairClient {
         fun isPairToken(raw: String): Boolean = TOKEN_RE.matches(raw.trim())
 
         /**
-         * Short-lived URL-safe nonce for phone-initiated pairing (8–12 chars).
-         * Not a device id — a one-time session value, same shape as the console mint.
+         * Short-lived pairing nonce. Default is a **6-digit** code the operator
+         * can type into the console. Longer lengths stay URL-safe for QR payloads.
          */
         fun mintToken(length: Int = MINT_TOKEN_LEN_DEFAULT): String {
             val n = length.coerceIn(MINT_TOKEN_LEN_MIN, MINT_TOKEN_LEN_MAX)
+            if (n == 6) {
+                return "%06d".format(rng.nextInt(1_000_000))
+            }
             val chars = CharArray(n)
             for (i in 0 until n) {
                 chars[i] = URL_SAFE[rng.nextInt(URL_SAFE.length)]
@@ -278,7 +282,7 @@ class ConsolePairClient {
          */
         fun pairPayload(token: String, relayBase: String, lanBase: String? = null): String {
             val tok = token.trim()
-            require(TOKEN_RE.matches(tok)) { "pairing token must be 8–64 URL-safe characters" }
+            require(TOKEN_RE.matches(tok)) { "pairing token must be a 6-digit code or 6–64 URL-safe characters" }
             val relay = normalizeBase(relayBase)
             require(relay.isNotEmpty()) { "relay URL is required for a phone-minted pair code" }
             val q = ArrayList<String>(3)

@@ -35,8 +35,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Layers
 import androidx.compose.material.icons.outlined.MyLocation
-import androidx.compose.material.icons.outlined.Visibility
-import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.Button
@@ -157,6 +155,35 @@ fun DriveScreen(
     var prevNavMode by remember { mutableStateOf(NavMode.IDLE) }
     var showHandover by remember { mutableStateOf(false) }
     var showReacquire by remember { mutableStateOf(false) }
+
+    // Ask for location as soon as Drive opens — sensors need no runtime grant,
+    // but GNSS does.
+    var askedPerms by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        if (!permsOk && !askedPerms) {
+            askedPerms = true
+            requestPerms()
+        }
+    }
+
+    // Location master-switch / provider death → treat as GNSS loss (COAST).
+    LaunchedEffect(locationStatus, live) {
+        if (!live) return@LaunchedEffect
+        val lost = locationStatus == LocationStatus.SERVICES_OFF ||
+            locationStatus == LocationStatus.PERMISSION_DENIED ||
+            locationStatus == LocationStatus.NO_PROVIDER ||
+            locationStatus == LocationStatus.LOST
+        if (lost && !blackout) bus.setBlackout(true)
+        if (!lost && blackout && !demoActive && !prefs.demoMode) {
+            // Only clear auto-blackout when the OS really has a fix path again;
+            // leave intentional demo blackout alone (demoActive / prefs.demoMode).
+        }
+        if (!lost && locationStatus == LocationStatus.LIVE && blackout &&
+            !demoActive && !prefs.demoMode && !replayEnabled
+        ) {
+            bus.setBlackout(false)
+        }
+    }
 
     // Session start / end bookends. Skip the first composition so opening Drive
     // does not fake a SESSION_END while live is still false.
@@ -332,7 +359,7 @@ fun DriveScreen(
                 )
             }
 
-            // Top overlays — status pill centered.
+            // Google Maps-style chrome: tiny mode pill, critical banners only.
             Column(
                 Modifier
                     .align(Alignment.TopCenter)
@@ -340,10 +367,8 @@ fun DriveScreen(
                     .statusBarsPadding()
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                // Just the mode pill at the top — no competing labels.
-                // Demo mode is entered from Settings, not from the map.
                 ModePill(
                     navMode = navMode,
                     nSats = hud.nSats,
@@ -351,128 +376,25 @@ fun DriveScreen(
                     blackout = blackout,
                 )
 
-                if (live) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        MotionChip(label = motionLabel, speedText = speedText, speedUnit = speedUnit)
-                        HoldStillChip(
-                            held = forceStationary,
-                            onToggle = {
-                                val next = !forceStationary
-                                bus.setForceStationary(next)
-                                prefs.forceStationary = next
-                            },
-                        )
-                    }
-                }
-
-                // In-frame honesty label — same visual layer as the map.
                 if (demoActive || replayActive || replayEnabled) {
                     Text(
-                        DemoMode.REPLAY_LABEL,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Amber.copy(alpha = 0.22f))
-                            .border(2.dp, Amber, RoundedCornerShape(8.dp))
-                            .padding(horizontal = 12.dp, vertical = 8.dp)
-                            .semantics {
-                                contentDescription = DemoMode.REPLAY_LABEL
-                            },
-                        color = Amber,
-                        fontFamily = IdrMono,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.8.sp,
-                        textAlign = TextAlign.Center,
-                    )
-                }
-
-                if (demoActive || (blackout && live)) {
-                    Text(
-                        DemoMode.EXPLAINER,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Bg2.copy(alpha = 0.94f))
-                            .border(1.dp, Accent.copy(alpha = 0.55f), RoundedCornerShape(8.dp))
-                            .padding(horizontal = 12.dp, vertical = 10.dp)
-                            .semantics { contentDescription = DemoMode.EXPLAINER },
-                        color = Fg,
-                        fontFamily = IdrSans,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        textAlign = TextAlign.Center,
-                        lineHeight = 18.sp,
-                    )
-                }
-
-                if (showHandover) {
-                    HandoverBanner(reacquire = false)
-                }
-                if (showReacquire) {
-                    HandoverBanner(reacquire = true)
-                }
-
-                // Paired indicator — only when actively streaming to a console.
-                // Not-paired state moves into the bottom sheet to keep the map clean.
-                run {
-                    val pairStore = remember { PairingStore(ctx) }
-                    var pairTick by remember { mutableIntStateOf(0) }
-                    val consolePaired = remember(pairTick) { pairStore.paired }
-                    val pairLabel = remember(pairTick) {
-                        pairStore.label.ifBlank { "console" }
-                    }
-                    if (consolePaired) {
-                        Row(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(99.dp))
-                                .background(Bg2.copy(alpha = 0.92f))
-                                .border(1.dp, Danger.copy(alpha = 0.7f), RoundedCornerShape(99.dp))
-                                .padding(horizontal = 12.dp, vertical = 6.dp)
-                                .semantics {
-                                    contentDescription =
-                                        "Paired with $pairLabel. Sharing live position."
-                                },
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Box(
-                                Modifier
-                                    .size(8.dp)
-                                    .clip(CircleShape)
-                                    .background(Danger),
-                            )
-                            Text(
-                                "PAIRED · $pairLabel",
-                                color = Danger,
-                                fontFamily = IdrMono,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 1.0.sp,
-                            )
-                        }
-                    }
-                }
-
-                DeviceWarningLine(device)
-
-                if (coarseOnly) {
-                    Text(
-                        "Approximate location — reduced precision",
+                        "REPLAY",
                         modifier = Modifier
                             .clip(RoundedCornerShape(99.dp))
-                            .background(Bg2.copy(alpha = 0.92f))
-                            .border(1.dp, Amber.copy(alpha = 0.45f), RoundedCornerShape(99.dp))
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                            .background(Amber.copy(alpha = 0.18f))
+                            .border(1.dp, Amber.copy(alpha = 0.55f), RoundedCornerShape(99.dp))
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                            .semantics { contentDescription = DemoMode.REPLAY_LABEL },
                         color = Amber,
                         fontFamily = IdrMono,
                         fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
                         letterSpacing = 1.0.sp,
                     )
                 }
+
+                if (showHandover) HandoverBanner(reacquire = false)
+                if (showReacquire) HandoverBanner(reacquire = true)
 
                 LocationBanner(
                     status = locationStatus,
@@ -491,16 +413,41 @@ fun DriveScreen(
                     },
                     onSetStart = { showOriginDialog = true },
                 )
+            }
 
-                if (!live) {
-                    LastLocationCard(
-                        lastFix = lastFix,
-                        liveHud = hud,
+            // Speed HUD — bottom-start, like Google Maps navigation.
+            if (live) {
+                Column(
+                    Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(start = 14.dp, bottom = pad.calculateBottomPadding() + 12.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color.White.copy(alpha = 0.92f))
+                        .border(1.dp, Line.copy(alpha = 0.35f), RoundedCornerShape(14.dp))
+                        .padding(horizontal = 14.dp, vertical = 10.dp)
+                        .semantics {
+                            contentDescription = "$motionLabel $speedText $speedUnit"
+                        },
+                ) {
+                    Text(
+                        speedText,
+                        color = Color(0xFF1A1A1A),
+                        fontFamily = IdrSans,
+                        fontSize = 34.sp,
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = 36.sp,
+                    )
+                    Text(
+                        "$speedUnit · $motionLabel",
+                        color = Color(0xFF5A6673),
+                        fontFamily = IdrMono,
+                        fontSize = 11.sp,
+                        letterSpacing = 0.6.sp,
                     )
                 }
             }
 
-            // Map FABs — above the sheet, Maps/Uber style.
+            // Map FABs — recenter + layers only. Blackout lives in the sheet.
             Column(
                 Modifier
                     .align(Alignment.BottomEnd)
@@ -525,16 +472,6 @@ fun DriveScreen(
                         basemapWanted = !basemapWanted
                         prefs.basemapEnabled = basemapWanted
                     },
-                )
-                DriveFab(
-                    icon = if (blackout) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
-                    contentDescription = if (blackout) {
-                        "Restore GNSS — end simulated blackout"
-                    } else {
-                        "Simulate GNSS blackout for demo"
-                    },
-                    tint = if (blackout) Amber else Mute,
-                    onClick = { bus.setBlackout(!blackout) },
                 )
             }
         }

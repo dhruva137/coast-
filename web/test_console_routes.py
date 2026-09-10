@@ -286,7 +286,7 @@ def main() -> int:
     r = call("POST", "/api/pair/new", {})
     j = r.json()
     token = j.get("token", "")
-    check("POST /api/pair/new mints a token", r.status == 200 and len(token) > 10)
+    check("POST /api/pair/new mints a token", r.status == 200 and len(token) == 6 and token.isdigit())
     check("      ... and renders a QR", bool(j.get("qr_svg", "").startswith("<svg")),
           f"qr bytes={len(j.get('qr_svg') or '')}")
     check("      ... payload carries both endpoints",

@@ -61,6 +61,7 @@ import com.journeyapps.barcodescanner.BarcodeView
 import com.journeyapps.barcodescanner.DefaultDecoderFactory
 import com.journeyapps.barcodescanner.camera.CameraSettings
 import `in`.sih26168.idr.IdrBus
+import `in`.sih26168.idr.data.NavMode
 import `in`.sih26168.idr.pair.ConsolePairClient
 import `in`.sih26168.idr.pair.PairingStore
 import `in`.sih26168.idr.pair.PairingUploader
@@ -81,20 +82,15 @@ import java.security.SecureRandom
 import java.util.Random
 import java.util.concurrent.atomic.AtomicBoolean
 
-/** Same shape as [ConsolePairClient.parse] tokens — 8–64 url-safe chars. */
-internal val PAIR_TOKEN_SHAPE = Regex("^[A-Za-z0-9_-]{8,64}$")
-
-/** Typeable alphabet (no 0/O/1/l) that still matches [PAIR_TOKEN_SHAPE]. */
-private const val PAIR_TOKEN_ALPHABET =
-    "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"
+/** Same shape as [ConsolePairClient] tokens — 6-digit or 6–64 url-safe chars. */
+internal val PAIR_TOKEN_SHAPE = Regex("""^(\d{6}|[A-Za-z0-9_-]{6,64})$""")
 
 internal fun isDisplayablePairToken(raw: String): Boolean =
     PAIR_TOKEN_SHAPE.matches(raw.trim())
 
-/** Phone-minted code the console operator can type. Not an IMEI or account id. */
+/** Six-digit code the operator types into the console. */
 internal fun generatePhonePairingCode(random: Random = SecureRandom()): String =
-    CharArray(16) { PAIR_TOKEN_ALPHABET[random.nextInt(PAIR_TOKEN_ALPHABET.length)] }
-        .concatToString()
+    "%06d".format(random.nextInt(1_000_000))
 
 private const val CONSENT =
     "Pairing shares your live position with this console until you unpair. " +
@@ -149,6 +145,50 @@ fun PairingScreen(
         clipboard.setText(AnnotatedString(value))
         status = "Copied"
         error = null
+    }
+
+    fun runMintPhoneCode(forceNew: Boolean = false) {
+        if (busy) return
+        error = null
+        status = "Minting a 6-digit code…"
+        busy = true
+        scope.launch {
+            try {
+                if (forceNew) {
+                    // Drop the cached mint so NEW CODE actually rotates.
+                    store.clearMint()
+                }
+                val (code, result) = withContext(Dispatchers.IO) {
+                    PairingUploader.activateLocalMint(
+                        context = ctx,
+                        lanBase = fallbackBase.takeIf { it.isNotBlank() },
+                        lat = hud.lat,
+                        lon = hud.lon,
+                        mode = when (hud.navMode) {
+                            NavMode.DEAD_RECKONING, NavMode.RELATIVE -> "IDR"
+                            NavMode.GNSS -> "GNSS"
+                            else -> "HOLD"
+                        },
+                        speedMps = hud.speedMps.takeIf { it.isFinite() && it >= 0 } ?: 0.0,
+                        accM = hud.accH.takeIf { it.isFinite() && it > 0 },
+                    )
+                }
+                phoneCode = code.token
+                if (result.ok) {
+                    status = "Code ready — type it into the console on the same Wi‑Fi (or relay)."
+                    refresh()
+                } else {
+                    status = "Code ${code.token} — tell the console; phone will connect when reachable."
+                    error = result.error
+                }
+            } catch (t: Throwable) {
+                phoneCode = generatePhonePairingCode()
+                error = t.message ?: "Could not mint. Enter the console Wi‑Fi address above, then try again."
+                status = null
+            } finally {
+                busy = false
+            }
+        }
     }
 
     fun runActivate(raw: String) {
@@ -479,7 +519,7 @@ fun PairingScreen(
 
                     // ——— SECONDARY: the phone's code, for the operator to type. ———
                     Text(
-                        "2. OR — SHOW THIS CODE TO THE OPERATOR",
+                        "2. OR — SHOW THIS 6-DIGIT CODE",
                         fontFamily = IdrMono,
                         color = Mute,
                         fontSize = 11.sp,
@@ -487,8 +527,8 @@ fun PairingScreen(
                         modifier = Modifier.padding(top = 8.dp),
                     )
                     Text(
-                        "Read this out. The operator types it into the console — pairing " +
-                            "goes the other direction.",
+                        "Same Wi‑Fi as the laptop (or the public relay). Tap NEW CODE, " +
+                            "then type these six digits into the console — no VLAN setup.",
                         fontFamily = IdrSans,
                         color = Mute,
                         fontSize = 12.sp,
@@ -501,15 +541,14 @@ fun PairingScreen(
                         },
                         fontFamily = IdrMono,
                         color = Fg,
-                        fontSize = 22.sp,
+                        fontSize = 36.sp,
                         fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.4.sp,
+                        letterSpacing = 4.sp,
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
                         SecondaryButton("COPY CODE", Modifier.weight(1f)) { copyToken(phoneCode) }
                         SecondaryButton("NEW CODE", Modifier.weight(1f)) {
-                            phoneCode = generatePhonePairingCode()
-                            status = null
+                            runMintPhoneCode(forceNew = true)
                         }
                     }
 

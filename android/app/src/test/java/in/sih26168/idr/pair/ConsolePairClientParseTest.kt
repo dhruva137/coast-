@@ -145,26 +145,29 @@ class ConsolePairClientParseTest {
     }
 
     @Test
-    fun mintTokenIsUrlSafeAndShortLivedLength() {
+    fun mintTokenIsSixDigitByDefault() {
         val seen = HashSet<String>()
         repeat(40) {
             val t = ConsolePairClient.mintToken()
             assertTrue(ConsolePairClient.isPairToken(t))
-            assertTrue(t.length in 8..12)
-            assertTrue(t.all { it.isLetterOrDigit() || it == '-' || it == '_' })
+            assertEquals(6, t.length)
+            assertTrue(t.all { it.isDigit() })
             seen.add(t)
         }
-        assertEquals(40, seen.size)
-        assertEquals(8, ConsolePairClient.mintToken(3).length)
+        assertTrue(seen.size > 20)
+        assertEquals(8, ConsolePairClient.mintToken(8).length)
         assertEquals(12, ConsolePairClient.mintToken(99).length)
     }
 
     @Test
-    fun rejectsSevenCharTokenInPhoneUrl() {
-        assertNull(
-            ConsolePairClient.parse(
-                "https://relay.example/pair?s=AbCdEfG&relay=https%3A%2F%2Frelay.example",
-            ),
-        )
+    fun acceptsSixDigitPhoneCode() {
+        val parsed = ConsolePairClient.parse("482917")
+        assertNotNull(parsed)
+        assertEquals("482917", parsed!!.token)
+    }
+
+    @Test
+    fun rejectsFiveDigitCode() {
+        assertNull(ConsolePairClient.parse("48291"))
     }
 }

@@ -61,6 +61,8 @@ def test_mode_speed_token() -> None:
     check("speed rejects nan", v is None and not math.isfinite(0 if v else float("nan")))
     t, err = validate_token("abc")
     check("token rejects short", t is None)
+    t, err = validate_token("482917")
+    check("token accepts 6-digit", t == "482917" and err is None)
     t, err = validate_token("a" * 16)
     check("token accepts charset", t == "a" * 16 and err is None)
     t, err = validate_token("../etc/passwd")

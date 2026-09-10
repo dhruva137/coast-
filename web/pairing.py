@@ -204,7 +204,8 @@ class Fleet:
                     return existing
                 s = Session(token=tok, created=now)
             else:
-                s = Session(token=secrets.token_urlsafe(16), created=now)
+                # Six digits — readable aloud, typed into the console by the operator.
+                s = Session(token=f"{secrets.randbelow(1_000_000):06d}", created=now)
             self._sessions[s.token] = s
             return s
 

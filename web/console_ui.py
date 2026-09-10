@@ -617,8 +617,8 @@ PAGE = r"""<!doctype html>
             <button type="button" data-mode="track">Track</button>
           </span>
           <span class="map-seg" id="fleet-tiles" role="group" aria-label="OpenStreetMap style">
-            <button type="button" data-style="osm">OSM</button>
-            <button type="button" data-style="dark" class="is-on">Dark OSM</button>
+            <button type="button" data-style="osm" class="is-on">OSM</button>
+            <button type="button" data-style="dark">Dark OSM</button>
           </span>
           <span class="sp tiny" id="fleet-hint">OpenStreetMap · no API key · click a device</span>
         </h2>
@@ -640,11 +640,21 @@ PAGE = r"""<!doctype html>
           <div class="row" style="justify-content:center"><div class="qrbox" id="qr"></div></div>
           <span class="pair-code-lab">pairing code</span>
           <div class="pair-code" id="pair-code">—</div>
+          <div class="pair-phone-entry" style="margin:12px 0;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)">
+            <label class="pair-code-lab" for="pair-phone-code">Type the phone’s 6-digit code</label>
+            <div class="row" style="gap:8px;margin-top:8px;align-items:center">
+              <input id="pair-phone-code" inputmode="numeric" maxlength="6" pattern="[0-9]{6}"
+                     placeholder="123456" autocomplete="one-time-code"
+                     style="flex:1;min-width:0;font:700 22px ui-monospace,Menlo,Consolas,monospace;letter-spacing:0.25em;text-align:center;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text)"/>
+              <button type="button" class="act" id="btn-open-phone-code">Pair</button>
+            </div>
+            <p class="tiny" id="pair-phone-hint" style="margin:8px 0 0;color:var(--dim)">
+              Phone and laptop on the same Wi‑Fi (or relay). No VLAN. Bluetooth is optional later — this path is wireless over IP.
+            </p>
+          </div>
           <div class="pair-hint">
-            <b style="color:var(--text)">Same Wi-Fi will often fail</b> (AP isolation).
-            Fastest path: laptop <b>Mobile hotspot</b>, phone joins it, then scan
-            <b>inside the COAST app</b> — not the system camera.
-            Or keep the public relay: phone posts to the internet; this laptop pulls.
+            <b style="color:var(--text)">Fastest path:</b> phone taps <b>NEW CODE</b>, you type the six digits here.
+            Same Wi‑Fi hotspot works; AP isolation is why a public relay exists as backup.
             <div class="pair-ips" id="pair-ips"></div>
           </div>
           <p class="muted" style="margin:12px 0 4px">Scan with the COAST app. The QR is a pairing URL
@@ -971,7 +981,15 @@ PAGE = r"""<!doctype html>
             <span><i style="border-color:var(--bad)"></i>hold-last-speed baseline</span>
             <span><i style="border-color:var(--accent)"></i>COAST @ epoch <b class="num" id="tr-ep">0</b></span>
           </div>
-          <div class="scalebar num" id="traj-scale">—</div>
+          <div class="row" style="gap:8px;padding:8px 10px;border-top:1px solid var(--line);align-items:center">
+            <span class="tiny" style="color:var(--dim)">Path playback</span>
+            <button type="button" class="ghost" data-train-speed="0.25">0.25×</button>
+            <button type="button" class="ghost" data-train-speed="0.5">0.5×</button>
+            <button type="button" class="ghost is-on" data-train-speed="1">1×</button>
+            <button type="button" class="ghost" data-train-speed="2">2×</button>
+            <button type="button" class="ghost" id="btn-train-replay-path">Replay path</button>
+            <span class="scalebar num" id="traj-scale" style="margin-left:auto">—</span>
+          </div>
         </div>
         <div style="border-top:1px solid var(--line);height:220px;flex:0 0 220px">
           <canvas id="cv-loss"></canvas>
@@ -1329,7 +1347,7 @@ let worldMap = null, lastFitId = "__init__";
 const FLEET_MAP_KEY = "coast.fleetMap";
 const FLEET_TILE_KEY = "coast.fleetTiles";
 function fleetMapMode(){ return localStorage.getItem(FLEET_MAP_KEY) || "world"; }
-function fleetTileStyle(){ return localStorage.getItem(FLEET_TILE_KEY) || "dark"; }
+function fleetTileStyle(){ return localStorage.getItem(FLEET_TILE_KEY) || "osm"; }
 function applyFleetMapChrome(){
   const world = fleetMapMode()==="world";
   const w=$("#fleet-map-world"), cv=$("#cv-fleet"), tiles=$("#fleet-tiles"), hint=$("#fleet-hint");
@@ -1449,9 +1467,10 @@ function renderDevices(){
     <div class="dev ${selected===d.device_id?"sel":""} ${d.online?"":"off"}" data-id="${d.device_id}">
       <span class="swatch" style="background:${d.color}"></span>
       <span class="grow">
-        <div class="nm">${d.label}</div>
+        <div class="nm">${d.label} <span class="tag ${d.online?"tagm":"tagh"}">${d.online?"LIVE":"DISCONNECTED"}</span></div>
         <div class="meta num">${d.latest? (d.latest.mode+" · "+fmt(d.latest.speed_mps*3.6,0)+" km/h") : "waiting for fix"}</div>
-        <div class="meta num">${d.n_points} pts · ${fmt(d.distance_m,0)} m${d.online?"":" · "+fmt(d.age_s,0)+"s ago"}</div>
+        <div class="meta num">${d.n_points} pts · ${fmt(d.distance_m,0)} m${d.online?"":" · last seen "+fmt(d.age_s,0)+"s ago"}</div>
+        ${d.online?"":`<div class="tiny" style="color:var(--warn);margin-top:4px">GPS/radio gap — trail kept on the map.</div>`}
       </span>
     </div>`).join("");
   el.querySelectorAll(".dev").forEach(n=>n.onclick=()=>{
@@ -1537,6 +1556,41 @@ async function newQR(host){
   }catch(e){ $("#pair-url").textContent="could not mint a pairing code"; }
 }
 $("#btn-newqr").onclick=newQR;
+
+(function(){
+  const input=$("#pair-phone-code"), btn=$("#btn-open-phone-code"), hint=$("#pair-phone-hint");
+  if(!input || !btn) return;
+  async function openPhoneCode(){
+    const tok=(input.value||"").trim();
+    if(!/^\d{6}$/.test(tok)){
+      if(hint) hint.textContent="Enter the six digits shown on the phone.";
+      return;
+    }
+    btn.disabled=true;
+    try{
+      const r=await fetch("/api/pair/open",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:tok})});
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok){
+        if(hint) hint.textContent=d.error||("Could not open session ("+r.status+")");
+        return;
+      }
+      pairToken=d.token||tok;
+      const codeEl=$("#pair-code");
+      if(codeEl) codeEl.textContent=pairToken;
+      if(d.qr_svg) $("#qr").innerHTML=d.qr_svg;
+      if(d.payload) $("#pair-url").textContent=d.payload;
+      if(hint) hint.textContent="Paired session open for "+pairToken+". Waiting for the phone on this Wi‑Fi / relay…";
+      pollFleet();
+    }catch(e){
+      if(hint) hint.textContent="Network error — is the console running?";
+    }finally{
+      btn.disabled=false;
+    }
+  }
+  btn.onclick=openPhoneCode;
+  input.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); openPhoneCode(); }});
+})();
+
 (function(){
   const b=$("#btn-copy-pair"), hint=$("#pair-copy-hint");
   if(!b) return;
@@ -1592,8 +1646,9 @@ $("#btn-uk-demo-stop").onclick=async()=>{
 
 /* ================= TRAINING ================= */
 let tr = {truth:[], hold:[], epochs:[], cur:null, prev:null, mix:1, held:"",
-          holdBaselineRmse:null, switchEpoch:null, reveal:1, animStart:0};
-const TRAIN_MIX_MS = 1100;
+          holdBaselineRmse:null, switchEpoch:null, reveal:1, animStart:0,
+          pathSpeed:1};
+const TRAIN_MIX_MS = 4200;
 function objOf(e){ return String(e.objective||e.mode||"").toUpperCase(); }
 function heldOf(e){
   const v = (typeof e.held_rmse==="number") ? e.held_rmse
@@ -1761,21 +1816,34 @@ function drawLoss(){
 }
 function animateMix(now){
   if(!tr.animStart) tr.animStart = now || performance.now();
-  const t = ((now||performance.now()) - tr.animStart) / TRAIN_MIX_MS;
+  const dur = TRAIN_MIX_MS / Math.max(0.25, tr.pathSpeed||1);
+  const t = ((now||performance.now()) - tr.animStart) / dur;
   tr.mix = Math.min(1, easeInOut(t));
-  tr.reveal = Math.min(1, 0.15 + 0.85 * tr.mix);
+  // Reveal the path along the route like Replay — slow crawl, not a pop.
+  tr.reveal = Math.min(1, t);
   drawTraj();
-  if(tr.mix < 1) requestAnimationFrame(animateMix);
+  if(tr.mix < 1 || tr.reveal < 1) requestAnimationFrame(animateMix);
 }
 function beginPathMorph(nextPath){
   if(!nextPath || !nextPath.length) return;
   tr.prev = tr.cur && tr.cur.length ? tr.cur : (tr.hold && tr.hold.length ? tr.hold : nextPath);
   tr.cur = nextPath;
   tr.mix = 0;
-  tr.reveal = 0.12;
+  tr.reveal = 0;
   tr.animStart = 0;
   requestAnimationFrame(animateMix);
 }
+document.querySelectorAll("[data-train-speed]").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    tr.pathSpeed=parseFloat(btn.dataset.trainSpeed)||1;
+    document.querySelectorAll("[data-train-speed]").forEach(b=>b.classList.toggle("is-on", b===btn));
+  });
+});
+const btnTrainReplay=$("#btn-train-replay-path");
+if(btnTrainReplay) btnTrainReplay.onclick=()=>{
+  const path = (tr.cur && tr.cur.length) ? tr.cur : (tr.hold && tr.hold.length ? tr.hold : null);
+  if(path) beginPathMorph(path);
+};
 function onEpoch(e){
   if(typeof e.hold_baseline_rmse==="number" && Number.isFinite(e.hold_baseline_rmse))
     tr.holdBaselineRmse=e.hold_baseline_rmse;

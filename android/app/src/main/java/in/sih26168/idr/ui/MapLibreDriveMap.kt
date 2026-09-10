@@ -9,7 +9,6 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -61,10 +60,8 @@ import `in`.sih26168.idr.ui.theme.Bg
 import `in`.sih26168.idr.ui.theme.Ghost
 import `in`.sih26168.idr.ui.theme.Gnss
 import `in`.sih26168.idr.ui.theme.IdrMono
-import `in`.sih26168.idr.ui.theme.LocalThemePreference
 import `in`.sih26168.idr.ui.theme.Mute
 import `in`.sih26168.idr.ui.theme.Text as Fg
-import `in`.sih26168.idr.ui.theme.resolveDarkTheme
 import java.io.File
 import kotlin.math.cos
 import kotlin.math.min
@@ -145,8 +142,6 @@ fun DriveMapPanel(
         onBasemapWantedChange?.invoke(v)
     }
     val showUncertainty = prefs.showUncertaintyRadius
-    val themePref = LocalThemePreference.current
-    val mapDark = resolveDarkTheme(themePref, isSystemInDarkTheme())
     val online by rememberOnline()
     // Survives rotation deliberately: once tiles have arrived, MapLibre serves
     // them from its own cache, so dropping the network must NOT tear the map
@@ -171,10 +166,10 @@ fun DriveMapPanel(
     val chrome = rememberVehicleChrome(bus.hud)
     val origin = chrome.origin
     val insidePack = chrome.insideBundledBounds
-    // Only hand the pack path to MapLibre when we are *inside* its coverage.
-    // Passing it outside Coventry still selects MapBackend.OSM when online, but
-    // the style would point at an empty tile source — blank dark map (the bug).
-    val useBundledMbtiles = hasBundledMbtiles && insidePack
+    // Prefer live light OSM whenever the radio is up — the bundled pack is
+    // dark Carto and looks like a black map. Keep mbtiles only for airplane /
+    // offline demos inside the Coventry bbox.
+    val useBundledMbtiles = hasBundledMbtiles && insidePack && !online
     val choice = chooseMapBackend(
         basemapWanted = basemapOn,
         online = online,
@@ -201,7 +196,8 @@ fun DriveMapPanel(
                 showGhost = showGhost,
                 recenterTick = recenterTick,
                 showRecenterChip = showRecenterChip,
-                darkBasemap = mapDark,
+                // Always light OSM chrome — matches the console Fleet map.
+                darkBasemap = false,
             )
         } else {
             DriveMap(
@@ -279,7 +275,9 @@ internal const val BUNDLED_MBTILES_ASSET = "maps/demo_neighbourhood.mbtiles"
  * Prefer [bundledMbtilesStyleJson] when the neighbourhood `.mbtiles` is on disk.
  */
 private fun osmStyleJson(dark: Boolean): String {
-    val bg = if (dark) "#0B0E11" else "#E8ECF0"
+    // Light paper-map background. `dark` kept for call-site stability; demo
+    // always wants white OSM (same tiles as the console Fleet "OSM" style).
+    val bg = if (dark) "#0B0E11" else "#F5F5F0"
     return """
 {
   "version": 8,
@@ -292,7 +290,7 @@ private fun osmStyleJson(dark: Boolean): String {
       "tileSize": 256,
       "minzoom": 0,
       "maxzoom": 19,
-      "attribution": "© OpenStreetMap contributors"
+      "attribution": "© OpenStreetMap"
     }
   },
   "layers": [

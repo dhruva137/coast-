@@ -22,8 +22,8 @@ MAX_INGEST_POINTS = 400
 MAX_SPEED_MPS = 120.0  # ~430 km/h — above any demo bike, finite and bounded
 MAX_ACC_M = 10_000.0
 ALLOWED_MODES = frozenset({"GNSS", "IDR", "HOLD"})
-# secrets.token_urlsafe lengths we mint (8–16 bytes → ~11–22 chars); allow margin.
-TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]{8,64}$")
+# Phone mints 6-digit codes; console may still mint longer URL-safe tokens.
+TOKEN_RE = re.compile(r"^(\d{6}|[A-Za-z0-9_-]{6,64})$")
 FIGURE_SUFFIXES = frozenset({".png", ".jpg", ".jpeg", ".webp", ".json"})
 
 

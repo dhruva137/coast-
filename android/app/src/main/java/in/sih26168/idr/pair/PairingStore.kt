@@ -100,13 +100,18 @@ class PairingStore(context: Context) {
         val relay = ConsolePairClient.normalizeBase(
             relayUrl?.takeIf { it.isNotBlank() } ?: defaultRelayBase(),
         )
-        require(relay.isNotEmpty()) {
-            "No pairing relay configured (string default_pair_relay / BuildConfig.DEFAULT_PAIR_RELAY)"
-        }
         val lan = lanBase?.let { ConsolePairClient.normalizeBase(it) }?.takeIf { it.isNotEmpty() }
+        // Same-Wi-Fi demo: console address alone is enough (no public relay / VLAN).
+        val endpoint = when {
+            relay.isNotEmpty() -> relay
+            lan != null -> lan
+            else -> throw IllegalArgumentException(
+                "No pairing relay or console Wi-Fi address configured",
+            )
+        }
 
         if (paired && ConsolePairClient.isPairToken(token)) {
-            val liveRelay = relayBase.ifBlank { relay }
+            val liveRelay = relayBase.ifBlank { endpoint }
             val liveLan = this.lanBase.takeIf { it.isNotBlank() } ?: lan
             return LocalPairCode(
                 token = token,
@@ -118,11 +123,11 @@ class PairingStore(context: Context) {
         }
 
         currentLocalMint(nowMs)?.let { existing ->
-            if (existing.relayBase.equals(relay, ignoreCase = true)) {
+            if (existing.relayBase.equals(endpoint, ignoreCase = true)) {
                 if (lan != null && lan != existing.lanBase) {
                     val updated = existing.copy(
                         lanBase = lan,
-                        qrPayload = ConsolePairClient.pairPayload(existing.token, relay, lan),
+                        qrPayload = ConsolePairClient.pairPayload(existing.token, endpoint, lan),
                     )
                     persistMint(updated)
                     return updated
@@ -134,10 +139,10 @@ class PairingStore(context: Context) {
         val nonce = ConsolePairClient.mintToken()
         val code = LocalPairCode(
             token = nonce,
-            relayBase = relay,
+            relayBase = endpoint,
             lanBase = lan,
             expiresAtMs = nowMs + ConsolePairClient.LOCAL_TOKEN_TTL_MS,
-            qrPayload = ConsolePairClient.pairPayload(nonce, relay, lan),
+            qrPayload = ConsolePairClient.pairPayload(nonce, endpoint, lan),
         )
         persistMint(code)
         return code
@@ -163,6 +168,16 @@ class PairingStore(context: Context) {
 
     fun clear() {
         sp.edit().clear().apply()
+    }
+
+    /** Drop a cached phone-minted code so NEW CODE rotates. */
+    fun clearMint() {
+        sp.edit()
+            .remove(KEY_MINT_TOKEN)
+            .remove(KEY_MINT_RELAY)
+            .remove(KEY_MINT_LAN)
+            .remove(KEY_MINT_EXPIRES)
+            .apply()
     }
 
     private fun persistMint(code: LocalPairCode) {
