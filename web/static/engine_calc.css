@@ -1,0 +1,254 @@
+/* Engine — live arithmetic view.
+   An instrument, not a chart: monospace, dense, near-black, numbers moving. */
+
+.ec {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 260px 1fr 300px;
+  gap: 1px;
+  background: var(--line);
+  overflow: hidden;
+}
+.ec-col {
+  background: #05070A;
+  padding: 12px 14px;
+  overflow: auto;
+  min-width: 0;
+}
+.ec-h {
+  display: flex;
+  align-items: center;
+  font: 600 10px/1 var(--mono, ui-monospace, Menlo, Consolas, monospace);
+  letter-spacing: 0.14em;
+  color: var(--faint);
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.ec-hz,
+.ec-mode {
+  margin-left: auto;
+  color: var(--dim);
+  letter-spacing: 0.04em;
+}
+.ec-mode.is-idr {
+  color: var(--accent);
+  text-shadow: 0 0 10px rgba(0, 212, 170, 0.5);
+}
+.ec-mode.is-gnss {
+  color: var(--gnss);
+}
+
+.ec-grp {
+  margin-bottom: 18px;
+}
+.ec-lbl {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin-bottom: 6px;
+}
+.ec-vec {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 2px 8px;
+  font-family: var(--mono, ui-monospace, Menlo, Consolas, monospace);
+  font-size: 13px;
+}
+.ec-vec span {
+  color: var(--faint);
+}
+.ec-vec b {
+  font-weight: 500;
+  text-align: right;
+  color: var(--text);
+}
+.ec-scope {
+  width: 100%;
+  height: 44px;
+  margin-top: 8px;
+  display: block;
+  background: #04060A;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+/* ---- the calculation column ---- */
+.ec-calc {
+  background: #06080C;
+}
+.ec-stage {
+  display: flex;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #12181F;
+  opacity: 0.45;
+  transition: opacity 160ms ease-out;
+}
+.ec-stage.is-hot {
+  opacity: 1;
+}
+.ec-stage:last-child {
+  border-bottom: 0;
+}
+.ec-sn {
+  flex: 0 0 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  display: grid;
+  place-items: center;
+  font: 600 11px var(--mono, ui-monospace, monospace);
+  color: var(--faint);
+}
+.ec-stage.is-hot .ec-sn {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 12px rgba(0, 212, 170, 0.28);
+}
+.ec-sb {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.ec-st {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ec-eq {
+  display: block;
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 11.5px;
+  color: var(--dim);
+  background: #0A0E14;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 5px 8px;
+  margin-bottom: 6px;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.ec-out {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 14px;
+  color: var(--accent);
+  margin-bottom: 5px;
+  min-height: 1.3em;
+}
+.ec-note {
+  font-size: 11px;
+  color: var(--faint);
+  line-height: 1.45;
+}
+.ec-zupt {
+  font: 600 9px var(--mono, ui-monospace, monospace);
+  letter-spacing: 0.1em;
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--line);
+  color: var(--faint);
+}
+.ec-zupt.is-on {
+  border-color: var(--warn);
+  color: var(--warn);
+  background: rgba(255, 209, 102, 0.1);
+}
+
+/* ---- output column ---- */
+.ec-card {
+  background: #080B10;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+.ec-kv {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 10px;
+  align-items: baseline;
+  font-size: 12.5px;
+  padding: 2px 0;
+}
+.ec-kv span {
+  color: var(--dim);
+}
+.ec-kv b {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-weight: 500;
+}
+.ec-kv i {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-style: normal;
+  font-size: 11px;
+  color: var(--faint);
+  min-width: 3.5em;
+  text-align: right;
+}
+.ec-truth b {
+  color: var(--text);
+}
+.ec-truth span {
+  color: var(--faint);
+}
+.ec-big {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 30px;
+  line-height: 1.1;
+  color: var(--bad);
+  margin: 2px 0 6px;
+}
+.ec-err.is-quiet .ec-big {
+  color: var(--dim);
+}
+.ec-errchart {
+  width: 100%;
+  height: 52px;
+  display: block;
+  background: #04060A;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+/* ---- transport ---- */
+.ec-bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+}
+.ec-rate {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--dim);
+}
+.ec-rate select {
+  background: var(--panel2);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 4px 6px;
+  font: inherit;
+}
+.ec-status {
+  margin-left: auto;
+  font-family: var(--mono, ui-monospace, monospace);
+}
+
+@media (max-width: 1180px) {
+  .ec {
+    grid-template-columns: 1fr;
+    grid-auto-rows: minmax(200px, auto);
+    overflow: auto;
+  }
+}

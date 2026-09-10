@@ -10,7 +10,12 @@ measured algorithm ledger, and figures/ when training finishes.
 
 Endpoints
 ---------
-GET  /            single dark console page
+GET  /            console / front-door HTML shell
+GET  /static/*    design-system assets (MIME + Cache-Control: no-store)
+GET  /api/claims  headline + full claim registry from win_tuning/CLAIMS.json
+POST /api/login   operator passcode → session cookie (when auth configured)
+POST /api/logout  clear operator session
+GET  /api/session open_mode / authenticated snapshot
 POST /ingest      phone LAN frames (same contract as tracker_server)
 GET  /feed        latest + trail
 POST /train       start real ``python -m lab.demo`` subprocess (quick-run)
@@ -18,6 +23,11 @@ GET  /train/stream  SSE: real stdout lines + parsed epoch metrics (no fake loss)
 GET  /train/status  JSON snapshot of the current / last train run
 GET  /metrics     baseline ledger from committed measured summary files
 GET  /figures/<name>  serve PNGs under figures/
+GET  /api/traces/<name.json>  filter traces from lab/stress/results/traces/ (basename only; ``latest.json`` → newest)
+GET  /lab/stress/results/traces/<name.json>  same traces (legacy path)
+
+``/pair``, ``/ingest``, and ``/api/claims`` stay reachable without an operator
+session. Static assets stay public so the front-door / sign-in can load offline.
 
 Stdlib only (http.server + SSE). Bind 0.0.0.0:8787 so a phone on LAN can POST /ingest.
 Cold start with no network and no phone must still render a useful page (CDN map/chart
@@ -27,6 +37,7 @@ are optional; Train/ledger stay local).
 from __future__ import annotations
 
 import json
+import mimetypes
 import os
 import queue
 import re
@@ -45,6 +56,10 @@ PORT = 8787
 MAX_TRAIL = 400
 REPO = Path(__file__).resolve().parents[1]
 FIGURES = REPO / "figures"
+TRACES_DIR = REPO / "lab" / "stress" / "results" / "traces"
+STATIC_DIR = Path(__file__).resolve().parent / "static"
+_API_TRACE_PREFIX = "/api/traces/"
+_TRACE_URL_PREFIX = "/lab/stress/results/traces/"
 
 # Console UI and the pairing/fleet layer. Imported both ways so the module runs
 # as `python -m web.coast_console` and as a plain script.
@@ -52,14 +67,106 @@ try:  # pragma: no cover - import shim
     from web.console_ui import PAGE as CONSOLE_PAGE
     from web.console_ui import PAIR_PAGE
     from web.pairing import Fleet, pair_payload, qr_svg
+    from web import uk_demo as _uk_demo
 except ImportError:  # pragma: no cover
     from console_ui import PAGE as CONSOLE_PAGE  # type: ignore
     from console_ui import PAIR_PAGE  # type: ignore
     from pairing import Fleet, pair_payload, qr_svg  # type: ignore
+    import uk_demo as _uk_demo  # type: ignore
+
+# Operator session auth (Phase 1 §1.3). Optional only if the module is absent.
+try:  # pragma: no cover - import shim
+    from web import auth as _auth
+except ImportError:  # pragma: no cover
+    try:
+        import auth as _auth  # type: ignore
+    except ImportError:
+        _auth = None  # type: ignore
+
+# Input hardening (Phase 6) — optional if another agent has not landed yet.
+try:  # pragma: no cover - import shim
+    from web.security import (
+        FIGURE_SUFFIXES,
+        MAX_BODY_BYTES,
+        RateLimiter,
+        assert_path_in_roots,
+        parse_content_length,
+        require_json_content_type,
+        safe_join,
+    )
+except ImportError:  # pragma: no cover
+    try:
+        from security import (  # type: ignore
+            FIGURE_SUFFIXES,
+            MAX_BODY_BYTES,
+            RateLimiter,
+            assert_path_in_roots,
+            parse_content_length,
+            require_json_content_type,
+            safe_join,
+        )
+    except ImportError:
+        MAX_BODY_BYTES = 65_536
+        FIGURE_SUFFIXES = frozenset({".png", ".jpg", ".jpeg", ".webp", ".json"})
+
+        def parse_content_length(headers: Any, *, max_bytes: int = MAX_BODY_BYTES):  # type: ignore
+            raw = headers.get("Content-Length") if headers is not None else None
+            if raw is None or raw == "":
+                return 0, None
+            try:
+                length = int(raw)
+            except (TypeError, ValueError):
+                return None, "invalid Content-Length"
+            if length < 0:
+                return None, "invalid Content-Length"
+            if length > max_bytes:
+                return None, f"body too large (max {max_bytes} bytes)"
+            return length, None
+
+        def require_json_content_type(headers: Any) -> str | None:  # type: ignore
+            return None
+
+        class RateLimiter:  # type: ignore
+            def __init__(self, **kwargs: Any) -> None:
+                pass
+
+            def allow(self, key: str) -> bool:
+                return True
+
+            def reset(self) -> None:
+                pass
+
+        def safe_join(root: Path, *parts: str) -> Path | None:  # type: ignore
+            if not parts or any(("/" in p or "\\" in p or ".." in p) for p in parts):
+                return None
+            return (root.joinpath(*parts)).resolve()
+
+        def assert_path_in_roots(path: Path, roots: list[Path]) -> bool:  # type: ignore
+            try:
+                resolved = path.resolve()
+                return any(resolved == r.resolve() or r.resolve() in resolved.parents for r in roots)
+            except OSError:
+                return False
 
 FLEET = Fleet()
+# Per-IP token buckets for deliberately unauthenticated write surfaces.
+_INGEST_LIMITER = RateLimiter(rate=60, per_s=60.0, burst=30)
+_PAIR_LIMITER = RateLimiter(rate=20, per_s=60.0, burst=10)
+_LOGIN_LIMITER = RateLimiter(rate=10, per_s=60.0, burst=5)
 CLAIMS_JSON = REPO / "win_tuning" / "CLAIMS.json"
 EDGE_README = REPO / "core" / "cpp" / "apps" / "README.md"
+
+# Front-door headline claim ids (PHASE_1_SHELL §1.2). Never invent values.
+_HEADLINE_CLAIM_IDS = (
+    "map_in_loop_improvement_x",
+    "perfect_gyro_fail_pct",
+    "edge_worst_case_hz",
+    "edge_worst_case_multiple",
+)
+
+# Console HTML gated when an operator hash is configured (unless open mode).
+# /pair, /ingest, /api/claims, and /static/* stay public.
+_PROTECTED_HTML = frozenset({"/", "/index.html"})
 
 _MAPFILTER_REPORT = REPO / "lab" / "stress" / "results" / "mapfilter" / "report.json"
 _MAPFILTER_SUMMARY = "lab/stress/results/mapfilter/summary.md"
@@ -69,9 +176,10 @@ _HEADING_REPORT = REPO / "lab" / "stress" / "results" / "heading_ablation" / "re
 _HEADING_SUMMARY = "lab/stress/results/heading_ablation/summary.md"
 _SPEED_SUMMARY = "lab/models/results/speed_bakeoff/summary.md"
 
-# lab.demo prints: "epoch 1/4  loss=1.2345  rmse=0.456  (MSE)  2.3s"
+# lab.demo human line (legacy) OR COAST_EVENT JSON (preferred).
 _EPOCH_RE = re.compile(
-    r"epoch\s+(\d+)\s*/\s*(\d+)\s+loss=([0-9.eE+-]+)(?:\s+rmse=([0-9.eE+-]+))?\s+\((\w+)\)\s+([0-9.]+)s",
+    r"epoch\s+(\d+)\s*/\s*(\d+)\s+(?:objective=\w+\s+)?loss=([0-9.eE+-]+)"
+    r"(?:\s+(?:held_)?rmse=([0-9.eE+-]+))?(?:\s+\((\w+)\))?\s+.*?([0-9.]+)s",
     re.IGNORECASE,
 )
 _RMSE_RE = re.compile(
@@ -245,10 +353,15 @@ PAGE = r"""<!DOCTYPE html>
       </div>
       <p class="honest">
         Train runs the same code as <code>python -m lab.demo</code> (quick AVNet).
-        Loss curve is real stdout epochs — not simulated. If training fails, the real error is shown; no invented curve.
+        <strong>Held-out RMSE</strong> is the headline chart; train loss is secondary and
+        MSE/NLL never share an axis (fake cliff at the objective switch). Hold-last-speed
+        baseline is the flat reference. If training fails, the real error is shown; no invented curve.
         Headline <strong>2.02× lower median position error</strong> always cites the full committed mapfilter run, not this fast re-run.
       </p>
-      <div class="chart-wrap" id="chartWrap"><canvas id="lossChart"></canvas></div>
+      <div class="chart-stack" id="chartStack">
+        <div class="chart-wrap" id="chartWrap"><canvas id="rmseChart"></canvas></div>
+        <div class="chart-wrap secondary" id="chartWrapLoss"><canvas id="lossChart"></canvas></div>
+      </div>
       <div id="log"></div>
     </div>
   </section>
@@ -306,6 +419,11 @@ const FIGURE_NAMES = ['drift_comparison.png', 'cdf_error.png', 'trajectory_overl
 let map = null;
 let follow = true;
 let lossChart = null;
+let rmseChart = null;
+let holdBaselineRmse = null;
+let switchEpoch = null;
+let mseLossStart = null;
+let nllLossStart = null;
 
 function showMapFallback(reason) {
   const el = document.getElementById('map');
@@ -348,7 +466,7 @@ function initMap() {
           { id: 'osm', type: 'raster', source: 'osm', paint: { 'raster-opacity': 0.55, 'raster-saturation': -0.85, 'raster-brightness-min': 0.05 } }
         ]
       },
-      center: [77.59, 12.97],
+      center: [-1.5969, 52.4095],  // Coventry / IO-VNBD (training + APK demo)
       zoom: 14
     });
   } catch (err) {
@@ -461,50 +579,158 @@ function initChart() {
         '<div class="chart-fallback">Chart.js CDN unavailable offline. ' +
         'Train still runs; real epoch lines appear in the log below — no fake curve.</div>';
     }
+    const lossWrap = document.getElementById('chartWrapLoss');
+    if (lossWrap) lossWrap.innerHTML = '';
     return;
   }
-  const canvas = document.getElementById('lossChart');
-  if (!canvas) return;
-  lossChart = new Chart(canvas, {
+  const rmseCanvas = document.getElementById('rmseChart');
+  const lossCanvas = document.getElementById('lossChart');
+  if (!rmseCanvas || !lossCanvas) return;
+  const axisOpts = {
+    x: { ticks: { color: '#8A929B' }, grid: { color: 'rgba(255,255,255,0.04)' }, title: { display: true, text: 'epoch', color: '#8A929B' } },
+    y: { ticks: { color: '#8A929B' }, grid: { color: 'rgba(255,255,255,0.06)' } }
+  };
+  rmseChart = new Chart(rmseCanvas, {
     type: 'line',
     data: {
       labels: [],
-      datasets: [{
-        label: 'train loss (real)',
-        data: [],
-        borderColor: IDR,
-        backgroundColor: 'rgba(0,224,164,0.12)',
-        tension: 0.25,
-        pointRadius: 3,
-        borderWidth: 2
-      }]
+      datasets: [
+        {
+          label: 'held-out RMSE (m/s)',
+          data: [],
+          borderColor: IDR,
+          backgroundColor: 'rgba(0,224,164,0.12)',
+          tension: 0.2,
+          pointRadius: 3,
+          borderWidth: 2
+        },
+        {
+          label: 'hold-last-speed baseline',
+          data: [],
+          borderColor: '#8A929B',
+          borderDash: [6, 4],
+          pointRadius: 0,
+          borderWidth: 1.5,
+          tension: 0
+        }
+      ]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       animation: { duration: 200 },
       scales: {
-        x: { ticks: { color: '#8A929B' }, grid: { color: 'rgba(255,255,255,0.04)' }, title: { display: true, text: 'epoch', color: '#8A929B' } },
-        y: { ticks: { color: '#8A929B' }, grid: { color: 'rgba(255,255,255,0.06)' }, title: { display: true, text: 'loss', color: '#8A929B' } }
+        ...axisOpts,
+        y: { ...axisOpts.y, title: { display: true, text: 'held RMSE m/s', color: '#8A929B' } }
       },
-      plugins: { legend: { labels: { color: '#E8EDF2' } } }
+      plugins: {
+        legend: { labels: { color: '#E8EDF2' } },
+        title: { display: true, text: 'Headline: held-out RMSE (task metric)', color: '#E8EDF2', font: { size: 12 } }
+      }
+    }
+  });
+  lossChart = new Chart(lossCanvas, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [
+        {
+          label: 'MSE / phase-start',
+          data: [],
+          borderColor: '#FF6B2D',
+          backgroundColor: 'rgba(255,107,45,0.10)',
+          tension: 0.2,
+          pointRadius: 3,
+          borderWidth: 2,
+          spanGaps: false
+        },
+        {
+          label: 'NLL / phase-start',
+          data: [],
+          borderColor: '#C77DFF',
+          backgroundColor: 'rgba(199,125,255,0.10)',
+          tension: 0.2,
+          pointRadius: 3,
+          borderWidth: 2,
+          spanGaps: false
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 200 },
+      scales: {
+        ...axisOpts,
+        y: { ...axisOpts.y, title: { display: true, text: 'train loss (phase-separated)', color: '#8A929B' } }
+      },
+      plugins: {
+        legend: { labels: { color: '#E8EDF2' } },
+        title: { display: true, text: 'Secondary: train loss — MSE & NLL never share meaning', color: '#E8EDF2', font: { size: 11 } },
+        annotation: undefined
+      }
     }
   });
 }
 
 function resetChart() {
-  if (!lossChart) return;
-  lossChart.data.labels = [];
-  lossChart.data.datasets[0].data = [];
-  lossChart.update();
+  holdBaselineRmse = null;
+  switchEpoch = null;
+  mseLossStart = null;
+  nllLossStart = null;
+  if (rmseChart) {
+    rmseChart.data.labels = [];
+    rmseChart.data.datasets[0].data = [];
+    rmseChart.data.datasets[1].data = [];
+    rmseChart.update();
+  }
+  if (lossChart) {
+    lossChart.data.labels = [];
+    lossChart.data.datasets[0].data = [];
+    lossChart.data.datasets[1].data = [];
+    lossChart.options.plugins.title.text =
+      'Secondary: train loss — each phase ÷ its own start (MSE/NLL not raw-shared)';
+    lossChart.update();
+  }
 }
 
-function appendEpoch(epoch, loss) {
-  if (!lossChart) return;
-  if (typeof loss !== 'number' || !Number.isFinite(loss)) return;
-  lossChart.data.labels.push(String(epoch));
-  lossChart.data.datasets[0].data.push(loss);
-  lossChart.update();
+function appendEpoch(msg) {
+  const epoch = msg.epoch;
+  const loss = msg.loss;
+  const held = (typeof msg.held_rmse === 'number') ? msg.held_rmse
+    : (typeof msg.rmse === 'number' ? msg.rmse : null);
+  const objective = String(msg.objective || msg.mode || '').toUpperCase();
+  if (typeof msg.hold_baseline_rmse === 'number' && Number.isFinite(msg.hold_baseline_rmse)) {
+    holdBaselineRmse = msg.hold_baseline_rmse;
+  }
+  const label = String(epoch);
+  if (rmseChart && held != null && Number.isFinite(held)) {
+    rmseChart.data.labels.push(label);
+    rmseChart.data.datasets[0].data.push(held);
+    rmseChart.data.datasets[1].data.push(
+      holdBaselineRmse != null && Number.isFinite(holdBaselineRmse) ? holdBaselineRmse : null
+    );
+    rmseChart.update();
+  }
+  if (lossChart && typeof loss === 'number' && Number.isFinite(loss)) {
+    lossChart.data.labels.push(label);
+    let msePoint = null;
+    let nllPoint = null;
+    if (objective === 'MSE') {
+      if (mseLossStart == null) mseLossStart = loss;
+      msePoint = (mseLossStart > 0) ? (loss / mseLossStart) : loss;
+    } else if (objective === 'NLL') {
+      if (nllLossStart == null) nllLossStart = loss;
+      nllPoint = (Math.abs(nllLossStart) > 1e-12) ? (loss / nllLossStart) : loss;
+    }
+    lossChart.data.datasets[0].data.push(msePoint);
+    lossChart.data.datasets[1].data.push(nllPoint);
+    if (switchEpoch != null && epoch === switchEpoch) {
+      lossChart.options.plugins.title.text =
+        'Secondary: train loss — MSE → NLL at epoch ' + switchEpoch + ' (normalised; not an accuracy cliff)';
+    }
+    lossChart.update();
+  }
 }
 
 function appendLog(text) {
@@ -546,9 +772,19 @@ async function startTrain() {
     let msg;
     try { msg = JSON.parse(ev.data); } catch (_) { return; }
     if (msg.type === 'line' && msg.text) appendLog(msg.text);
+    if (msg.type === 'train_baselines' && typeof msg.hold_baseline_rmse === 'number') {
+      holdBaselineRmse = msg.hold_baseline_rmse;
+    }
+    if (msg.type === 'objective_switch') {
+      switchEpoch = msg.at_epoch;
+      appendLog('OBJECTIVE SWITCH ' + (msg.label || 'MSE → NLL') + ' at epoch ' + msg.at_epoch);
+    }
     if (msg.type === 'epoch') {
-      appendEpoch(msg.epoch, msg.loss);
-      setTrainUi(true, 'epoch ' + msg.epoch + '/' + msg.epochs + ' · real loss');
+      appendEpoch(msg);
+      const obj = msg.objective || msg.mode || '?';
+      const held = (msg.held_rmse != null) ? msg.held_rmse : msg.rmse;
+      setTrainUi(true, 'epoch ' + msg.epoch + '/' + msg.epochs + ' · ' + obj +
+        (held != null ? (' · held RMSE ' + Number(held).toFixed(3)) : ''));
     }
     if (msg.type === 'rmse') {
       appendLog('quick RMSE model=' + msg.model_rmse + ' hold=' + msg.hold_rmse + ' (' + msg.seconds + 's)');
@@ -1135,13 +1371,71 @@ def _engine_report() -> dict[str, Any]:
 
 
 def _claims_payload() -> dict[str, Any]:
-    try:
-        return json.loads(CLAIMS_JSON.read_text(encoding="utf-8"))
-    except OSError:
-        return {
-            "claims": [],
-            "error": "CLAIMS.json not found - run `python tools/verify_claims.py --json`.",
-        }
+    """Load CLAIMS.json and project front-door headlines.
+
+    Raises on read/parse/schema failure — the handler maps that to HTTP 500.
+    Never invents headline numbers.
+    """
+    text = CLAIMS_JSON.read_text(encoding="utf-8")
+    data = json.loads(text)
+    claims = data.get("claims")
+    if not isinstance(claims, list):
+        raise ValueError("CLAIMS.json has no claims list")
+    by_id: dict[str, Any] = {}
+    for row in claims:
+        if isinstance(row, dict) and isinstance(row.get("id"), str):
+            by_id[row["id"]] = row
+    missing = [cid for cid in _HEADLINE_CLAIM_IDS if cid not in by_id]
+    if missing:
+        raise KeyError(
+            "CLAIMS.json missing headline claim id(s): " + ", ".join(missing)
+        )
+    headlines = {cid: by_id[cid] for cid in _HEADLINE_CLAIM_IDS}
+    return {
+        "claims": claims,
+        "headlines": headlines,
+        "source": "win_tuning/CLAIMS.json",
+    }
+
+
+def _static_content_type(path: Path) -> str:
+    guessed, _ = mimetypes.guess_type(str(path))
+    if guessed:
+        if guessed.startswith("text/") and "charset" not in guessed:
+            return guessed + "; charset=utf-8"
+        return guessed
+    ext = path.suffix.lower()
+    return {
+        ".css": "text/css; charset=utf-8",
+        ".js": "text/javascript; charset=utf-8",
+        ".mjs": "text/javascript; charset=utf-8",
+        ".svg": "image/svg+xml",
+        ".json": "application/json; charset=utf-8",
+        ".map": "application/json; charset=utf-8",
+        ".woff": "font/woff",
+        ".woff2": "font/woff2",
+    }.get(ext, "application/octet-stream")
+
+
+def _resolve_trace_file(name: str) -> Path | None:
+    """Resolve a single basename under TRACES_DIR. ``latest.json`` picks newest.
+
+    Prefer a non-SYNTHETIC* file for latest when both exist. Rejects path
+    traversal via ``safe_join``. Returns None when missing/unsafe.
+    """
+    if name == "latest.json":
+        if not TRACES_DIR.is_dir():
+            return None
+        files = [p for p in TRACES_DIR.iterdir() if p.is_file() and p.suffix.lower() == ".json"]
+        if not files:
+            return None
+        files.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+        real = [p for p in files if not p.name.upper().startswith("SYNTHETIC")]
+        return (real or files)[0]
+    fp = safe_join(TRACES_DIR, name)
+    if fp is None or not fp.is_file() or fp.suffix.lower() != ".json":
+        return None
+    return fp
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -1150,10 +1444,26 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt: str, *args: Any) -> None:
         sys.stderr.write("%s - %s\n" % (self.address_string(), fmt % args))
 
+    def _client_key(self) -> str:
+        return self.client_address[0] if self.client_address else "unknown"
+
     def _cors(self) -> None:
+        # Open CORS is required for phone pairing from a different origin on LAN;
+        # keep it off session/cookie auth if that is added later (see threat model).
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, HEAD")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
+
+    def _security_headers(self) -> None:
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Referrer-Policy", "no-referrer")
+        self.send_header("X-Frame-Options", "DENY")
+        self.send_header(
+            "Content-Security-Policy",
+            "default-src 'self'; img-src 'self' data: blob: https:; "
+            "style-src 'self' 'unsafe-inline' https:; script-src 'self' 'unsafe-inline' https:; "
+            "connect-src 'self'; frame-ancestors 'none'",
+        )
 
     def _json(self, code: int, obj: Any) -> None:
         body = json.dumps(obj).encode("utf-8")
@@ -1162,9 +1472,165 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store")
         self.send_header("Content-Length", str(len(body)))
         self._cors()
+        self._security_headers()
         self.end_headers()
         if self.command != "HEAD":
             self.wfile.write(body)
+
+    def _reject(self, code: int, message: str) -> None:
+        self._json(code, {"ok": False, "error": message})
+
+    def _read_json_body(self, *, require_body: bool = True) -> dict[str, Any] | None:
+        """Parse a capped JSON object body. Sends an error response and returns None on failure."""
+        length, err = parse_content_length(self.headers, max_bytes=MAX_BODY_BYTES)
+        if err:
+            self._reject(413 if "too large" in err else 400, err)
+            return None
+        assert length is not None
+        if require_body and length <= 0:
+            self._reject(400, "empty body")
+            return None
+        ct_err = require_json_content_type(self.headers)
+        if ct_err and length > 0:
+            self._reject(415, ct_err)
+            return None
+        raw = self.rfile.read(length) if length else b""
+        if not raw:
+            return {} if not require_body else None
+        try:
+            frame = json.loads(raw.decode("utf-8"))
+            if not isinstance(frame, dict):
+                raise ValueError("expected object")
+        except Exception:
+            self._reject(400, "invalid json")
+            return None
+        return frame
+
+    def _operator_ok(self) -> bool:
+        """True when the console is open or the request carries a live session."""
+        if _auth is None:
+            return True
+        if _auth.is_open_mode():
+            return True
+        cookie = _auth.parse_session_cookie(self.headers.get("Cookie"))
+        return _auth.validate_session(cookie)
+
+    def _session_payload(self) -> dict[str, Any]:
+        if _auth is None:
+            return {"open_mode": True, "authenticated": True, "auth_available": False}
+        open_mode = _auth.is_open_mode()
+        cookie = _auth.parse_session_cookie(self.headers.get("Cookie"))
+        authed = open_mode or _auth.validate_session(cookie)
+        return {
+            "open_mode": open_mode,
+            "authenticated": authed,
+            "auth_available": True,
+        }
+
+    def _serve_html(self, html: str, head_only: bool) -> None:
+        body = html.encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Cache-Control", "no-store, must-revalidate")
+        self.send_header("Content-Length", str(len(body)))
+        self._cors()
+        self._security_headers()
+        self.end_headers()
+        if not head_only:
+            self.wfile.write(body)
+
+    def _deny_html(self) -> None:
+        body = (
+            "<!DOCTYPE html><html><head><meta charset='utf-8'/>"
+            "<title>COAST · sign in</title>"
+            "<link rel='stylesheet' href='/static/tokens.css'/>"
+            "</head><body style='font-family:system-ui;padding:2rem'>"
+            "<h1>Operator sign-in required</h1>"
+            "<p>POST /api/login with a passcode JSON body.</p>"
+            "</body></html>"
+        ).encode("utf-8")
+        self.send_response(401)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Length", str(len(body)))
+        self._cors()
+        self._security_headers()
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _serve_static(self, path: str, head_only: bool) -> None:
+        rel = unquote(path[len("/static/") :])
+        # Allow one nested segment (e.g. tokens.css) via safe_join basename only,
+        # or join path parts that contain no traversal.
+        parts = [p for p in rel.replace("\\", "/").split("/") if p]
+        if not parts:
+            self.send_error(404, "not found")
+            return
+        fp = safe_join(STATIC_DIR, *parts)
+        if fp is None or not fp.is_file():
+            self.send_error(404, "not found")
+            return
+        data = fp.read_bytes()
+        self.send_response(200)
+        self.send_header("Content-Type", _static_content_type(fp))
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Length", str(len(data)))
+        self._cors()
+        self._security_headers()
+        self.end_headers()
+        if not head_only:
+            self.wfile.write(data)
+
+    def _handle_login(self) -> None:
+        key = self._client_key()
+        if not _LOGIN_LIMITER.allow(key):
+            sys.stderr.write(f"rate limit: login from {key}\n")
+            self._reject(429, "rate limit exceeded")
+            return
+        if _auth is None:
+            self._json(503, {"ok": False, "error": "auth unavailable"})
+            return
+        if _auth.is_open_mode():
+            self._json(200, {"ok": True, "open_mode": True, "message": "no passcode configured"})
+            return
+        if not _auth.check_rate_limit(key):
+            sys.stderr.write(f"rate limit: auth module login from {key}\n")
+            self._reject(429, "rate limit exceeded")
+            return
+        frame = self._read_json_body(require_body=True)
+        if frame is None:
+            return
+        pw = frame.get("passcode") or frame.get("password") or ""
+        if not isinstance(pw, str) or not _auth.verify_passcode(pw):
+            self._json(401, {"ok": False, "error": "invalid passcode"})
+            return
+        token = _auth.create_session()
+        body = json.dumps({"ok": True, "authenticated": True}).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Set-Cookie", _auth.session_cookie_header(token))
+        self._cors()
+        self._security_headers()
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _handle_logout(self) -> None:
+        if _auth is not None:
+            cookie = _auth.parse_session_cookie(self.headers.get("Cookie"))
+            _auth.clear_session(cookie)
+        body = json.dumps({"ok": True}).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Length", str(len(body)))
+        if _auth is not None:
+            self.send_header("Set-Cookie", _auth.session_cookie_header("", clear=True))
+        self._cors()
+        self._security_headers()
+        self.end_headers()
+        self.wfile.write(body)
 
     def do_OPTIONS(self) -> None:  # noqa: N802
         self.send_response(204)
@@ -1181,8 +1647,20 @@ class Handler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         path = parsed.path
 
+        if path.startswith("/static/"):
+            self._serve_static(path, head_only)
+            return
+
+        if path == "/api/session":
+            self._json(200, self._session_payload())
+            return
+
         if path == "/api/fleet":
             self._json(200, FLEET.snapshot())
+            return
+
+        if path == "/api/demo/uk":
+            self._json(200, {"ok": True, **_uk_demo.status(), "track": _uk_demo.load_track().get("meta")})
             return
 
         if path.startswith("/api/privacy/"):
@@ -1194,12 +1672,36 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(200, rep)
             return
 
+        if path == "/api/engine/meta":
+            try:
+                from web.engine_compute import EngineRun
+
+                self._json(200, EngineRun().meta())
+            except Exception as exc:  # missing/damaged demo strip
+                self._json(500, {"error": f"cannot load demo strip: {exc}"})
+            return
+
+        if path == "/api/engine/stream":
+            self._sse_engine(parsed)
+            return
+
         if path == "/api/engine":
             self._json(200, _engine_report())
             return
 
         if path == "/api/claims":
-            self._json(200, _claims_payload())
+            try:
+                self._json(200, _claims_payload())
+            except (OSError, json.JSONDecodeError, ValueError, KeyError, TypeError) as exc:
+                self._json(
+                    500,
+                    {
+                        "error": (
+                            "Could not read win_tuning/CLAIMS.json — "
+                            f"{exc}. Run `python tools/verify_claims.py --json`."
+                        ),
+                    },
+                )
             return
 
         if path == "/download/apk":
@@ -1207,33 +1709,18 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if path == "/pair":
-            # Scanning the QR with ANY camera app lands here. The page shares the
-            # phone's own GPS straight from the browser, so a judge sees their
-            # device on the console with nothing installed -- and it says plainly
-            # that this is GPS, not dead reckoning, which is the app's job.
-            body = PAIR_PAGE.encode("utf-8")
-            self.send_response(200)
-            self.send_header("Content-Type", "text/html; charset=utf-8")
-            self.send_header("Content-Length", str(len(body)))
-            self._cors()
-            self.end_headers()
-            if not head_only:
-                self.wfile.write(body)
+            # Scanning the QR with ANY camera app lands here. Ungated — phones
+            # must pair without an operator session.
+            self._serve_html(PAIR_PAGE, head_only)
             return
 
-        if path in ("/", "/index.html"):
-            body = CONSOLE_PAGE.encode("utf-8")
-            self.send_response(200)
-            self.send_header("Content-Type", "text/html; charset=utf-8")
-            # The page is served from source on every request, so a cached copy
-            # is always the stale one. Without this a browser left open across a
-            # restart keeps polling the old endpoints.
-            self.send_header("Cache-Control", "no-store, must-revalidate")
-            self.send_header("Content-Length", str(len(body)))
-            self._cors()
-            self.end_headers()
-            if not head_only:
-                self.wfile.write(body)
+        if path in _PROTECTED_HTML:
+            # Open mode (default cold-start): always serve. Locked mode without
+            # a session: 401 HTML that still loads /static/* for the sign-in UI.
+            if not self._operator_ok():
+                self._deny_html()
+                return
+            self._serve_html(CONSOLE_PAGE, head_only)
             return
 
         if path == "/feed":
@@ -1269,11 +1756,11 @@ class Handler(BaseHTTPRequestHandler):
 
         if path.startswith("/figures/"):
             name = unquote(path[len("/figures/") :])
-            if "/" in name or "\\" in name or name.startswith(".") or ".." in name:
+            fp = safe_join(FIGURES, name)
+            if fp is None:
                 self.send_error(400, "bad name")
                 return
-            fp = FIGURES / name
-            if not fp.is_file() or fp.suffix.lower() not in {".png", ".jpg", ".jpeg", ".webp", ".json"}:
+            if not fp.is_file() or fp.suffix.lower() not in FIGURE_SUFFIXES:
                 self.send_error(404, "not found")
                 return
             data = fp.read_bytes()
@@ -1289,12 +1776,93 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("Content-Length", str(len(data)))
             self.send_header("Cache-Control", "no-cache")
             self._cors()
+            self._security_headers()
+            self.end_headers()
+            if not head_only:
+                self.wfile.write(data)
+            return
+
+        if path.startswith(_API_TRACE_PREFIX) or path.startswith(_TRACE_URL_PREFIX):
+            prefix = (
+                _API_TRACE_PREFIX
+                if path.startswith(_API_TRACE_PREFIX)
+                else _TRACE_URL_PREFIX
+            )
+            name = unquote(path[len(prefix) :])
+            fp = _resolve_trace_file(name)
+            if fp is None:
+                # Distinguish traversal (slashes / ..) from missing file.
+                if not name or "/" in name or "\\" in name or ".." in name:
+                    self.send_error(400, "bad name")
+                else:
+                    self.send_error(404, "not found")
+                return
+            data = fp.read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Cache-Control", "no-store")
+            self._cors()
+            self._security_headers()
             self.end_headers()
             if not head_only:
                 self.wfile.write(data)
             return
 
         self.send_error(404, "not found")
+
+    def _sse_engine(self, parsed) -> None:
+        """Stream the estimator's arithmetic over the real UK demo strip.
+
+        Every field is computed in web/engine_compute.py from the committed
+        IO-VNBD recording. If the strip cannot be read the stream says so and
+        ends -- it never falls back to synthetic samples.
+        """
+        from urllib.parse import parse_qs
+
+        q = parse_qs(parsed.query or "")
+        try:
+            rate = float(q.get("rate", ["4"])[0])
+        except ValueError:
+            rate = 4.0
+        rate = max(0.25, min(20.0, rate))
+
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Accel-Buffering", "no")
+        self._cors()
+        self.end_headers()
+
+        def emit(obj: dict) -> bool:
+            try:
+                self.wfile.write(f"data: {json.dumps(obj)}\n\n".encode("utf-8"))
+                self.wfile.flush()
+                return True
+            except (BrokenPipeError, ConnectionResetError, OSError):
+                return False
+
+        try:
+            from web.engine_compute import EngineRun
+
+            run = EngineRun()
+        except Exception as exc:
+            emit({"type": "error", "error": f"cannot load demo strip: {exc}"})
+            return
+
+        if not emit({"type": "meta", **run.meta()}):
+            return
+
+        period = 1.0 / (10.0 * rate)  # source is 10 Hz; rate multiplies playback
+        while True:
+            step = run.step()
+            if step is None:
+                emit({"type": "done", "samples": run.samples})
+                return
+            step["type"] = "step"
+            if not emit(step):
+                return
+            time.sleep(period)
 
     def _sse_train(self) -> None:
         q: queue.Queue[dict[str, Any] | None] = queue.Queue(maxsize=500)
@@ -1376,12 +1944,16 @@ class Handler(BaseHTTPRequestHandler):
             return (score, -p.stat().st_mtime)
 
         apk = sorted(found, key=rank)[0]
+        if not assert_path_in_roots(apk, roots):
+            self._json(500, {"error": "APK path rejected"})
+            return
         size = apk.stat().st_size
         self.send_response(200)
         self.send_header("Content-Type", "application/vnd.android.package-archive")
         self.send_header("Content-Disposition", f'attachment; filename="{apk.name}"')
         self.send_header("Content-Length", str(size))
         self._cors()
+        self._security_headers()
         self.end_headers()
         if head_only:
             return
@@ -1395,12 +1967,44 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:  # noqa: N802
         path = urlparse(self.path).path
 
+        # Cap Content-Length on every POST before routing.
+        _length, len_err = parse_content_length(self.headers, max_bytes=MAX_BODY_BYTES)
+        if len_err:
+            self._reject(413 if "too large" in len_err else 400, len_err)
+            return
+
+        if path == "/api/login":
+            self._handle_login()
+            return
+
+        if path == "/api/logout":
+            self._handle_logout()
+            return
+
         if path in ("/train", "/train/start"):
             result = _start_train()
             self._json(200 if result.get("ok") else 409, result)
             return
 
+        if path in ("/api/demo/uk", "/api/demo/uk/start"):
+            try:
+                result = _uk_demo.start_demo(FLEET)
+            except (OSError, ValueError, FileNotFoundError, json.JSONDecodeError, KeyError) as exc:
+                self._json(500, {"ok": False, "error": str(exc)})
+                return
+            self._json(200 if result.get("ok") else 409, result)
+            return
+
+        if path == "/api/demo/uk/stop":
+            self._json(200, _uk_demo.stop_demo(FLEET))
+            return
+
         if path == "/api/pair/new":
+            key = self._client_key()
+            if not _PAIR_LIMITER.allow(key):
+                sys.stderr.write(f"rate limit: pair/new from {key}\n")
+                self._reject(429, "rate limit exceeded")
+                return
             s = FLEET.new_session()
             lan = _lan_base()
             relay = os.environ.get("COAST_RELAY_BASE") or None
@@ -1435,17 +2039,15 @@ class Handler(BaseHTTPRequestHandler):
             self.send_error(404, "not found")
             return
 
-        length = int(self.headers.get("Content-Length", "0") or 0)
-        if length <= 0 or length > 65536:
-            self.send_error(400, "bad body")
+        # /ingest stays ungated — phones pair without an operator session.
+        key = self._client_key()
+        if not _INGEST_LIMITER.allow(key):
+            sys.stderr.write(f"rate limit: ingest from {key}\n")
+            self._reject(429, "rate limit exceeded")
             return
-        raw = self.rfile.read(length)
-        try:
-            frame = json.loads(raw.decode("utf-8"))
-            if not isinstance(frame, dict):
-                raise ValueError("expected object")
-        except Exception:
-            self.send_error(400, "invalid json")
+
+        frame = self._read_json_body(require_body=True)
+        if frame is None:
             return
         # A frame carrying a pairing token belongs to the fleet view. Frames
         # without one keep the original single-device tracker behaviour, so an

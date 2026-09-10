@@ -37,7 +37,7 @@ export function fmtDeg(deg: number, digits = 1): string {
   return `${places(0, digits)}°`;
 }
 
-/** WGS84 pair for a judge readout. `12.991200°N  77.552300°E`. */
+/** WGS84 pair for a judge readout. `52.409508°N  1.596904°W` (Coventry IO-VNBD). */
 export function fmtLatLon(lat: number, lon: number, digits = 6): string {
   if (!finite(lat) || !finite(lon)) return EM;
   const ns = lat >= 0 ? "N" : "S";

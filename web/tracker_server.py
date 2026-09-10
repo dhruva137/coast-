@@ -117,7 +117,7 @@ const map = new maplibregl.Map({
       { id: 'osm', type: 'raster', source: 'osm', paint: { 'raster-opacity': 0.55, 'raster-saturation': -0.85, 'raster-brightness-min': 0.05 } }
     ]
   },
-  center: [77.59, 12.97],
+  center: [-1.5969, 52.4095],
   zoom: 14,
   attributionControl: true
 });

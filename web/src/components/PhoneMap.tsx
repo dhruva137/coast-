@@ -11,8 +11,8 @@ export function PhoneMap({ blackout }: { blackout: boolean }) {
     const map = new maplibregl.Map({
       container: ref.current,
       style: "https://tiles.openfreemap.org/styles/dark",
-      center: [77.5523, 12.9912],
-      zoom: 16.1,
+      center: [-1.5969, 52.4095],
+      zoom: 15.8,
       pitch: 42,
       bearing: -12,
       attributionControl: false,
@@ -30,9 +30,9 @@ export function PhoneMap({ blackout }: { blackout: boolean }) {
           geometry: {
             type: "LineString",
             coordinates: [
-              [77.5514, 12.9904],
-              [77.5523, 12.9912],
-              [77.5531, 12.992],
+              [-1.5969, 52.4095],
+              [-1.59686, 52.4082],
+              [-1.5965, 52.4074],
             ],
           },
         },
@@ -48,7 +48,7 @@ export function PhoneMap({ blackout }: { blackout: boolean }) {
         data: {
           type: "Feature",
           properties: {},
-          geometry: { type: "Point", coordinates: [77.5523, 12.9912] },
+          geometry: { type: "Point", coordinates: [-1.5969, 52.4095] },
         },
       });
       map.addLayer({

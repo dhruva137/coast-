@@ -2,8 +2,16 @@ export type TrainEpoch = {
   epoch: number;
   epochs: number;
   loss: number;
+  /** Held-out RMSE (m/s) — headline task metric. */
   rmse?: number;
+  held_rmse?: number;
+  hold_baseline_rmse?: number;
+  sigma_mean?: number;
+  sigma_median?: number;
+  cl_end_err_m?: number;
+  /** Objective phase: MSE | NLL (alias of objective). */
   mode?: string;
+  objective?: string;
   elapsed_s?: number;
   source?: string;
 };
@@ -13,6 +21,22 @@ export type TrainEvent =
   | ({ type: "epoch" } & TrainEpoch)
   | { type: "line"; text: string }
   | { type: "rmse"; model_rmse: number; hold_rmse: number; seconds: number; source?: string }
+  | {
+      type: "train_baselines";
+      hold_baseline_rmse?: number;
+      warmup_epochs_mse?: number;
+      nll_from_epoch?: number;
+      held?: string;
+      note?: string;
+    }
+  | {
+      type: "objective_switch";
+      from?: string;
+      to?: string;
+      at_epoch?: number;
+      label?: string;
+      note?: string;
+    }
   | { type: "done"; returncode: number; figures?: string[]; label?: string }
   | { type: "error"; error: string }
   | { type: string; [k: string]: unknown };

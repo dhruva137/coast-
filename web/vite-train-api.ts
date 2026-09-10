@@ -16,8 +16,11 @@ const ISRO_SUMMARY = "lab/stress/results/isro_benchmark/summary.md";
 const HEADING_SUMMARY = "lab/stress/results/heading_ablation/summary.md";
 
 const EPOCH_RE =
+  /epoch\s+(\d+)\s*\/\s*(\d+)\s+objective=(\w+)\s+loss=([0-9.eE+-]+)\s+held_rmse=([0-9.eE+-]+)(?:\s+hold_baseline_rmse=([0-9.eE+-]+))?(?:\s+sigma_mean=([0-9.eE+-]+))?(?:\s+cl_end_err_m=([0-9.eE+-]+))?\s+([0-9.]+)s/i;
+const EPOCH_RE_LEGACY =
   /epoch\s+(\d+)\s*\/\s*(\d+)\s+loss=([0-9.eE+-]+)(?:\s+rmse=([0-9.eE+-]+))?\s+\((\w+)\)\s+([0-9.]+)s/i;
 const RMSE_RE = /quick RMSE model=([0-9.eE+-]+)\s+hold=([0-9.eE+-]+)\s+\(([0-9.]+)s\)/i;
+const SWITCH_RE = /OBJECTIVE SWITCH:\s*(\w+)\s*→\s*(\w+)\s*\(starting epoch\s+(\d+)\)/i;
 
 type TrainEvent = Record<string, unknown>;
 
@@ -92,20 +95,56 @@ function parseLine(line: string): TrainEvent[] {
   }
   const m = EPOCH_RE.exec(trimmed);
   if (m) {
+    const held = Number(m[5]);
     const ev: TrainEvent = {
       type: "epoch",
       epoch: Number(m[1]),
       epochs: Number(m[2]),
-      loss: Number(m[3]),
-      rmse: m[4] != null ? Number(m[4]) : undefined,
-      mode: m[5],
-      elapsed_s: Number(m[6]),
+      objective: m[3],
+      mode: m[3],
+      loss: Number(m[4]),
+      held_rmse: held,
+      rmse: held,
+      hold_baseline_rmse: m[6] != null ? Number(m[6]) : undefined,
+      sigma_mean: m[7] != null ? Number(m[7]) : undefined,
+      cl_end_err_m: m[8] != null ? Number(m[8]) : undefined,
+      elapsed_s: Number(m[9]),
       source: "lab.demo stdout",
     };
     status.epochs.push(ev);
     status.last_line = trimmed;
     events.push(ev);
     return events;
+  }
+  const legacy = EPOCH_RE_LEGACY.exec(trimmed);
+  if (legacy) {
+    const ev: TrainEvent = {
+      type: "epoch",
+      epoch: Number(legacy[1]),
+      epochs: Number(legacy[2]),
+      loss: Number(legacy[3]),
+      rmse: legacy[4] != null ? Number(legacy[4]) : undefined,
+      held_rmse: legacy[4] != null ? Number(legacy[4]) : undefined,
+      mode: legacy[5],
+      objective: legacy[5],
+      elapsed_s: Number(legacy[6]),
+      source: "lab.demo stdout",
+    };
+    status.epochs.push(ev);
+    status.last_line = trimmed;
+    events.push(ev);
+    return events;
+  }
+  const sw = SWITCH_RE.exec(trimmed);
+  if (sw) {
+    events.push({
+      type: "objective_switch",
+      from: sw[1],
+      to: sw[2],
+      at_epoch: Number(sw[3]),
+      label: `${sw[1]} → ${sw[2]}`,
+      note: "loss scale changes here — not an accuracy cliff",
+    });
   }
   const m2 = RMSE_RE.exec(trimmed);
   if (m2) {

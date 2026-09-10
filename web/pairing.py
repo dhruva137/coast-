@@ -33,6 +33,11 @@ import time
 from dataclasses import dataclass, field
 from typing import Any
 
+try:  # pragma: no cover - import shim
+    from web.security import MAX_DEVICES, validate_ingest_payload
+except ImportError:  # pragma: no cover
+    from security import MAX_DEVICES, validate_ingest_payload  # type: ignore
+
 # Session lifetime. Short, because a pairing code that lingers is a pairing code
 # that leaks.
 SESSION_TTL_S = 15 * 60
@@ -174,15 +179,20 @@ class Fleet:
         for tok in [t for t, s in self._sessions.items() if s.expired(now)]:
             del self._sessions[tok]
 
-    def _claim(self, token: str, now: float) -> Device | None:
+    def _claim(self, token: str, now: float) -> Device | None | str:
         """Bind a device to a session on its first post. Returns None if the
         token is unknown or expired — an unknown token must never silently
-        create a device, or the endpoint becomes an open write."""
+        create a device, or the endpoint becomes an open write.
+
+        Returns the string 'device limit' if MAX_DEVICES would be exceeded.
+        """
         s = self._sessions.get(token)
         if s is None or s.expired(now):
             return None
         if s.device_id and s.device_id in self._devices:
             return self._devices[s.device_id]
+        if len(self._devices) >= MAX_DEVICES:
+            return "device limit"
         self._n_paired += 1
         did = secrets.token_urlsafe(8)
         dev = Device(
@@ -200,33 +210,21 @@ class Fleet:
 
     def ingest(self, payload: dict[str, Any]) -> dict[str, Any]:
         now = time.time()
-        token = str(payload.get("token") or "").strip()
-        if not token:
-            return {"ok": False, "error": "missing token"}
-        try:
-            lat = float(payload["lat"])
-            lon = float(payload["lon"])
-        except (KeyError, TypeError, ValueError):
-            return {"ok": False, "error": "lat/lon required and must be numeric"}
-        if not (-90.0 <= lat <= 90.0 and -180.0 <= lon <= 180.0):
-            return {"ok": False, "error": "lat/lon out of range"}
-
-        mode = str(payload.get("mode") or "GNSS").upper()
-        if mode not in ("GNSS", "IDR", "HOLD"):
-            mode = "GNSS"
-        try:
-            speed = float(payload.get("speed_mps") or 0.0)
-        except (TypeError, ValueError):
-            speed = 0.0
-        acc = payload.get("acc_m")
-        try:
-            acc = float(acc) if acc is not None else None
-        except (TypeError, ValueError):
-            acc = None
+        cleaned = validate_ingest_payload(payload)
+        if isinstance(cleaned, str):
+            return {"ok": False, "error": cleaned}
+        token = cleaned["token"]
+        lat = cleaned["lat"]
+        lon = cleaned["lon"]
+        mode = cleaned["mode"]
+        speed = cleaned["speed_mps"]
+        acc = cleaned["acc_m"]
 
         with self._lock:
             self._reap(now)
             dev = self._claim(token, now)
+            if dev == "device limit":
+                return {"ok": False, "error": f"device limit ({MAX_DEVICES}) reached"}
             if dev is None:
                 return {"ok": False, "error": "unknown or expired pairing token"}
             dev.add(Point(t=now, lat=lat, lon=lon, mode=mode, speed_mps=speed, acc_m=acc))
@@ -301,6 +299,61 @@ class Fleet:
             self._devices.clear()
             self._sessions.clear()
             return n
+
+    def upsert_demo_device(
+        self,
+        *,
+        device_id: str,
+        label: str,
+        color: str | None = None,
+        reset_points: bool = True,
+    ) -> Device:
+        """Create or reset a named demo device (no pairing token)."""
+        now = time.time()
+        with self._lock:
+            existing = self._devices.get(device_id)
+            if existing is not None and not reset_points:
+                return existing
+            if existing is None:
+                self._n_paired += 1
+            swatch = color or PALETTE[(self._n_paired - 1) % len(PALETTE)]
+            dev = Device(
+                device_id=device_id,
+                label=label,
+                color=swatch,
+                first_seen=now,
+                last_seen=now,
+            )
+            self._devices[device_id] = dev
+            return dev
+
+    def push_point(
+        self,
+        device_id: str,
+        *,
+        lat: float,
+        lon: float,
+        mode: str,
+        speed_mps: float,
+        acc_m: float | None = None,
+    ) -> bool:
+        """Append one position to an existing device. Returns False if unknown."""
+        now = time.time()
+        with self._lock:
+            dev = self._devices.get(device_id)
+            if dev is None:
+                return False
+            dev.add(
+                Point(
+                    t=now,
+                    lat=lat,
+                    lon=lon,
+                    mode=mode,
+                    speed_mps=speed_mps,
+                    acc_m=acc_m,
+                )
+            )
+            return True
 
 
 # -- QR ------------------------------------------------------------------

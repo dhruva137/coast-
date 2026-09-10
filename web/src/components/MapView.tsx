@@ -68,8 +68,8 @@ export function MapView({ demo, idx }: { demo: DemoBundle | null; idx: number })
     const map = new maplibregl.Map({
       container: ref.current,
       style: "https://tiles.openfreemap.org/styles/dark",
-      center: [77.5523, 12.9912],
-      zoom: 16.2,
+      center: [-1.5969, 52.4095],
+      zoom: 15.6,
       pitch: 48,
       bearing: -18,
       attributionControl: false,
