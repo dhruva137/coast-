@@ -267,7 +267,37 @@ def main() -> int:
         print(f"  + {n_so} native libs"
               + (f"  (skipped ABIs: {', '.join(sorted(skipped))})" if skipped else ""))
 
-        # 4) assets straight from source
+        # 4) Java resources from dependency jars: META-INF/services entries,
+        #    Kotlin builtins, okhttp's public-suffix list. Easy to forget and
+        #    fatal to omit -- without
+        #    META-INF/services/kotlinx.coroutines.internal.MainDispatcherFactory
+        #    the coroutines main dispatcher cannot be resolved and the app dies
+        #    on launch, with no missing class to point at.
+        jres = (
+            INTER
+            / "merged_java_res"
+            / variant
+            / f"merge{cap}JavaResource"
+            / "base.jar"
+        )
+        n_jr = 0
+        if jres.is_file():
+            with zipfile.ZipFile(jres) as jz:
+                for info in jz.infolist():
+                    if info.is_dir():
+                        continue
+                    z.writestr(
+                        zipfile.ZipInfo(info.filename, date_time=info.date_time),
+                        jz.read(info.filename),
+                        compress_type=zipfile.ZIP_DEFLATED,
+                    )
+                    n_jr += 1
+            print(f"  + {n_jr} java resources")
+        else:
+            print(f"  ! no merged java resources at {jres} -- app will likely "
+                  f"crash on launch")
+
+        # 5) assets straight from source
         n_as = 0
         if assets_src.is_dir():
             for f in sorted(assets_src.rglob("*")):
